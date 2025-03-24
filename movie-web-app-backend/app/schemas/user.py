@@ -16,8 +16,8 @@ class User(BaseModel):
     last_name : str
     phone_number: str
     hashed_password: str
-    favorite_movies: List[str] = []
-    watchlist: List[str] = []
+    favorite_movies: List[int] = []
+    watchlist: List[int] = []
     ratings: Dict[int, float] = {}
     comments: Dict[int, List[str]] = {}
 
