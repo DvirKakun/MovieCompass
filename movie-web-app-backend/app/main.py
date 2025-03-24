@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from app.api.endpoints import movies, auth
 from app.core.config import settings
 
-
 app = FastAPI()
 
 app.include_router(movies.router)

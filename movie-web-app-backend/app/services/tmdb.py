@@ -1,7 +1,7 @@
 from fastapi import HTTPException
 import httpx
 from app.core.config import settings
-from app.schemas.movie import Movie
+from app.schemas.movie import Movie, MovieCast, MovieCastResponse
 from app.schemas.genre import Genre
 
 async def fetch_popular_movies():
@@ -38,6 +38,13 @@ async def fetch_movie_details(movie_id: int):
     movie_data = await make_request(url)
 
     return Movie(**movie_data)
+
+async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
+    url = f"{settings.BASE_URL}/movie/{movie_id}/credits?api_key={settings.TMDB_API_KEY}"
+    cast_data = await make_request(url)
+    cast = [MovieCast(id=actor["id"], name=actor["name"], character=actor["character"], profile_path=actor.get("profile_path")) for actor in cast_data["cast"]]
+    
+    return MovieCastResponse(movie_id=movie_id, cast=cast)
         
 async def make_request(url: str):
     try:

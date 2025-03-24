@@ -13,3 +13,13 @@ class Movie(BaseModel):
 
 class MovieResponse(BaseModel):
     movies: List[Movie]
+
+class MovieCast(BaseModel):
+    id: int
+    name: str
+    character: str
+    profile_path: Optional[str] = None
+
+class MovieCastResponse(BaseModel):
+    movie_id: int
+    cast: List[MovieCast]

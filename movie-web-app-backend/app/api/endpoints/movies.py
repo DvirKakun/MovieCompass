@@ -1,8 +1,8 @@
 from typing import List
 from fastapi import APIRouter, HTTPException
-from app.schemas.movie import MovieResponse, Movie
+from app.schemas.movie import MovieResponse, Movie, MovieCastResponse
 from app.schemas.genre import GenreResponse
-from app.services.tmdb import fetch_movie_details, search_movies, fetch_movies_by_genre, fetch_popular_movies, fetch_movies_genres
+from app.services.tmdb import fetch_movie_details, search_movies, fetch_movies_by_genre, fetch_popular_movies, fetch_movies_genres, fetch_movie_cast
 from app.services.ollama import generate_movie_recommendations
 
 router = APIRouter()
@@ -43,6 +43,11 @@ async def recommend_movies(favorite_movies: List[str]):
     
     return MovieResponse(movies=match_movies)
 
+@router.get("/movies/{movie_id}/cast", response_model=MovieCastResponse)
+async def get_movie_cast(movie_id: int):
+    cast = await fetch_movie_cast(movie_id)
+    
+    return cast
 
 @router.get("/movies/{movie_id}", response_model=Movie)
 async def get_movie(movie_id: int):
