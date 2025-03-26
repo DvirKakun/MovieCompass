@@ -46,13 +46,17 @@ async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
     
     return MovieCastResponse(movie_id=movie_id, cast=cast)
         
-async def make_request(url: str):
+async def make_request(url: str, method: str = "GET"):
     try:
         async with httpx.AsyncClient() as client:
             response = await client.get(url)
             response.raise_for_status()
-            return response.json()
 
+            if method == "HEAD":
+                return response.status_code
+            
+            return response.json()  
+        
     except httpx.HTTPStatusError as e:
         error_details = e.response.json()
         status_code = error_details.get("status_code", e.response.status_code)

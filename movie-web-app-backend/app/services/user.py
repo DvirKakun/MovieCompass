@@ -5,11 +5,10 @@ from app.schemas.user import UserCreate, User
 from app.core.config import settings
 from fastapi import HTTPException, status
 from typing import List, Dict
+from app.services.tmdb import make_request
 
-# Initialize the password context
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# MongoDB client setup
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
 db = client.get_database(settings.MONGO_DATABASE_NAME)
 users_collection = db.get_collection(settings.MONGO_COLLECTION_NAME)
@@ -69,9 +68,16 @@ def update_user(user: User, update_fields: Dict) -> User:
 
     return User(**updated_user_data)
 
-def add_movie_to_favorites(user: User, movie_id: int):
+async def add_movie_to_favorites(user: User, movie_id: int):
     if movie_id in user.favorite_movies:
         raise HTTPException(status_code=400, detail="Movie already in favorites")
+
+    try:
+        url = f"{settings.BASE_URL}/movie/{movie_id}?api_key={settings.TMDB_API_KEY}"
+
+        await make_request(url, method="HEAD")
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Movie not found") 
     
     user.favorite_movies.append(movie_id)
     update_user(user, {"favorite_movies": user.favorite_movies})
