@@ -18,7 +18,7 @@ class User(BaseModel):
     hashed_password: str
     favorite_movies: List[int] = []
     watchlist: List[int] = []
-    ratings: Dict[int, float] = {}
+    ratings: Dict[int, int] = {}
     comments: Dict[int, List[str]] = {}
 
     class Config:

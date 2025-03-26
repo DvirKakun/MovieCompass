@@ -5,8 +5,8 @@ from app.schemas.user import User
 from app.schemas.movie import MovieResponse 
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
-from app.services.ollama import generate_movie_recommendations  
-from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist
+from app.services.ollama import generate_movie_recommendations
+from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist, add_movie_rating
 
 router = APIRouter()
 
@@ -50,3 +50,10 @@ async def remove_watchlist_movie(movie_id: int, current_user: User = Depends(get
     updated_watchlist = remove_movie_from_watchlist(current_user, movie_id)    
 
     return {"message": "Movie removed from watchlist", "watchlist": updated_watchlist}
+
+@router.put("/me/rating/{movie_id}")
+async def rate_movie(movie_id: int, rating: int, current_user: User = Depends(get_current_user)): 
+    updated_ratings = await add_movie_rating(current_user, movie_id, rating)
+
+    return {"message": "Movie rated", "ratings": updated_ratings}
+        
