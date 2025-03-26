@@ -2,9 +2,10 @@ from typing import Optional
 from passlib.context import CryptContext
 from pymongo import MongoClient
 from app.schemas.user import UserCreate, User
+from app.schemas.rating import RatingEntry
 from app.core.config import settings
 from fastapi import HTTPException, status
-from typing import List, Dict
+from typing import Dict
 from app.services.tmdb import make_request
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -118,38 +119,26 @@ async def add_movie_rating(user: User, movie_id: int, rating: int):
     except HTTPException:    
         raise HTTPException(status_code=404, detail="Movie not found")
     
-    user.ratings[movie_id] = rating
-    updated_user = update_user(user, {"ratings": user.ratings})
+    for entry in user.ratings:
+        if entry.movie_id == movie_id:
+            entry.rating = rating 
+            break
+    else:
+        newRatingEntry = RatingEntry(movie_id=movie_id, rating=rating)
+        user.ratings.append(newRatingEntry)
+
+    updated_user = update_user(user, {"ratings": [entry.model_dump() for entry in user.ratings]})
 
     return updated_user.ratings
 
-def convert_ratings_for_mongo(ratings: Dict[int, int]) -> Dict[str, int]:
-    return {str(key): value for key, value in ratings.items()}
-
-def convert_comments_for_mongo(comments: Dict[int, List[str]]) -> Dict[str, List[str]]:
-    return {str(key): value for key, value in comments.items()}
-
-def convert_ratings_from_mongo(ratings: Dict[str, int]) -> Dict[int, int]:
-    return {int(key): value for key, value in ratings.items()}
-
-def convert_comments_from_mongo(comments: Dict[str, List[str]]) -> Dict[int, List[str]]:
-    return {int(key): value for key, value in comments.items()}
-
 def update_user(user: User, update_fields: Dict) -> User:
-    if 'ratings' in update_fields:
-        update_fields['ratings'] = convert_ratings_for_mongo(update_fields['ratings'])
-    if 'comments' in update_fields:
-        update_fields['comments'] = convert_comments_for_mongo(update_fields['comments'])
-
     updated_user_data = users_collection.find_one_and_update(
         {"username": user.username},  
-        {"$set": update_fields} 
+        {"$set": update_fields},
+        return_document=True
     )
 
     if not updated_user_data:
         raise HTTPException(status_code=404, detail="User not found")
     
-    updated_user_data['ratings'] = convert_ratings_from_mongo(updated_user_data.get('ratings', {}))
-    updated_user_data['comments'] = convert_comments_from_mongo(updated_user_data.get('comments', {}))
-
     return User(**updated_user_data)

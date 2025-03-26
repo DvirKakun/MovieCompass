@@ -1,5 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List, Dict
+from app.schemas.comment import CommentEntry
+from app.schemas.rating import RatingEntry
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$") #Username must be alphanumeric and can contain underscores
@@ -18,8 +20,8 @@ class User(BaseModel):
     hashed_password: str
     favorite_movies: List[int] = []
     watchlist: List[int] = []
-    ratings: Dict[int, int] = {}
-    comments: Dict[int, List[str]] = {}
+    ratings: List[RatingEntry] = []
+    comments: List[CommentEntry] = []
 
     class Config:
         orm_mode: True
