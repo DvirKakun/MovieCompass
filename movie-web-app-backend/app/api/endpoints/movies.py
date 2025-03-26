@@ -5,39 +5,38 @@ from app.services.tmdb import fetch_movie_details, search_movies, fetch_movies_b
 
 router = APIRouter()
 
-
-@router.get("/movies/popular", response_model=MovieResponse)
+@router.get("/popular", response_model=MovieResponse)
 async def get_popular_movies():
     movies = await fetch_popular_movies()
 
     return MovieResponse(movies=movies)
 
-@router.get("/movies/search", response_model=MovieResponse)
+@router.get("/search", response_model=MovieResponse)
 async def search_movie(query: str):
     movies = await search_movies(query)
     print(movies)
 
     return MovieResponse(movies=movies)
 
-@router.get("/movies/genres", response_model=GenreResponse)
+@router.get("/genres", response_model=GenreResponse)
 async def get_movies_genres():
     genres = await fetch_movies_genres()
 
     return GenreResponse(genres=genres)
 
-@router.get("/movies/genre/{genre_id}", response_model=MovieResponse)
+@router.get("/genre/{genre_id}", response_model=MovieResponse)
 async def get_movies_by_genre(genre_id: int):
     movies = await fetch_movies_by_genre(genre_id)
 
     return MovieResponse(movies=movies)
 
-@router.get("/movies/{movie_id}/cast", response_model=MovieCastResponse)
+@router.get("/{movie_id}/cast", response_model=MovieCastResponse)
 async def get_movie_cast(movie_id: int):
     cast = await fetch_movie_cast(movie_id)
     
     return cast
 
-@router.get("/movies/{movie_id}", response_model=Movie)
+@router.get("/{movie_id}", response_model=Movie)
 async def get_movie(movie_id: int):
     movie = await fetch_movie_details(movie_id)
 

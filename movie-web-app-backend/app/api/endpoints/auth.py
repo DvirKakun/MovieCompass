@@ -1,18 +1,15 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from jose import JWTError, jwt
+from jose import jwt
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-from app.services.user import get_user, create_user, authenticate_user
-from app.schemas.user import UserCreate, User, Token, TokenData
+from app.services.user import create_user, authenticate_user
+from app.schemas.user import UserCreate, User, Token
 from app.core.config import settings
-from app.api.dependencies import get_current_user
 
 SECRET_KEY = settings.SECRET_KEY
 ALGORITHM = settings.ALGORITHM
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
-
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
 router = APIRouter()
 
@@ -37,14 +34,10 @@ async def signup(user: UserCreate):
 
 @router.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password)  # Now handled in service
-    
+    user = authenticate_user(form_data.username, form_data.password) 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
 
-@router.get("/users/me", response_model=User)
-async def read_users_me(current_user: User = Depends(get_current_user)):
-    return current_user
+    return {"access_token": access_token, "token_type": "bearer"}

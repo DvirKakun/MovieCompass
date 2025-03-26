@@ -6,11 +6,15 @@ from app.schemas.movie import MovieResponse
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
 from app.services.ollama import generate_movie_recommendations  
-from app.services.user import add_movie_to_favorites, remove_movie_from_favorites
+from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist
 
 router = APIRouter()
 
-@router.post("/users/me/recommendations", response_model=MovieResponse)
+@router.get("/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_user)):
+    return current_user
+
+@router.post("/me/recommendations", response_model=MovieResponse)
 async def recommend_movies(current_user: User = Depends(get_current_user)): 
     favorite_movies = current_user.favorite_movies 
 
@@ -23,14 +27,26 @@ async def recommend_movies(current_user: User = Depends(get_current_user)):
     return MovieResponse(movies=match_movies)
 
 
-@router.put("/users/me/favorite/{movie_id}")
+@router.put("/me/favorite/{movie_id}")
 async def add_favorite_movie(movie_id: int, current_user: User = Depends(get_current_user)): 
     updated_favorite_movies = await add_movie_to_favorites(current_user, movie_id)    
 
     return {"message": "Movie added to favorites", "favorite_movies": updated_favorite_movies}
 
-@router.delete("/users/me/favorite/{movie_id}")
+@router.delete("/me/favorite/{movie_id}")
 async def remove_favorite_movie(movie_id: int, current_user: User = Depends(get_current_user)): 
     updated_favorite_movies = remove_movie_from_favorites(current_user, movie_id)    
 
     return {"message": "Movie removed from favorites", "favorite_movies": updated_favorite_movies}
+
+@router.put("/me/watchlist/{movie_id}")
+async def add_watchlist_movie(movie_id: int, current_user: User = Depends(get_current_user)): 
+    updated_watchlist = await add_movie_to_watchlist(current_user, movie_id)    
+
+    return {"message": "Movie added to watchlist", "watchlist": updated_watchlist}
+
+@router.delete("/me/watchlist/{movie_id}")
+async def remove_watchlist_movie(movie_id: int, current_user: User = Depends(get_current_user)): 
+    updated_watchlist = remove_movie_from_watchlist(current_user, movie_id)    
+
+    return {"message": "Movie removed from watchlist", "watchlist": updated_watchlist}

@@ -5,7 +5,7 @@ from app.schemas.user import User
 from app.services.user import get_user  
 from app.core.config import settings 
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
 
 credentials_exception = HTTPException(
     status_code=status.HTTP_401_UNAUTHORIZED,

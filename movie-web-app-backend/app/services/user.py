@@ -92,3 +92,28 @@ def remove_movie_from_favorites(user: User, movie_id: int):
     update_user(user, {"favorite_movies": user.favorite_movies})
 
     return user.favorite_movies
+
+async def add_movie_to_watchlist(user: User, movie_id: int):
+    if movie_id in user.watchlist:
+        raise HTTPException(status_code=400, detail="Movie already in watchlist")
+
+    try:
+        url = f"{settings.BASE_URL}/movie/{movie_id}?api_key={settings.TMDB_API_KEY}"
+
+        await make_request(url, method="HEAD")
+    except HTTPException:
+        raise HTTPException(status_code=404, detail="Movie not found") 
+    
+    user.watchlist.append(movie_id)
+    update_user(user, {"watchlist": user.watchlist})
+
+    return user.watchlist
+
+def remove_movie_from_watchlist(user: User, movie_id: int):
+    if movie_id not in user.watchlist:
+        raise HTTPException(status_code=404, detail="Movie not found in watchlist")
+    
+    user.watchlist.remove(movie_id)
+    update_user(user, {"watchlist": user.watchlist})
+
+    return user.watchlist
