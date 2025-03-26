@@ -1,6 +1,6 @@
 from typing import Optional
 from passlib.context import CryptContext
-from pymongo import MongoClient
+from pymongo import MongoClient, ReturnDocument
 from app.schemas.user import UserCreate, User
 from app.schemas.rating import RatingEntry
 from app.core.config import settings
@@ -69,19 +69,30 @@ async def add_movie_to_favorites(user: User, movie_id: int):
     except HTTPException:
         raise HTTPException(status_code=404, detail="Movie not found") 
     
-    user.favorite_movies.append(movie_id)
-    updated_user = update_user(user, {"favorite_movies": user.favorite_movies})
+    updated_user = users_collection.find_one_and_update(
+    {"username": user.username},
+    {
+        "$addToSet": {"favorite_movies": movie_id}
+    },
+    return_document=ReturnDocument.AFTER
+    )
 
-    return updated_user.favorite_movies
+
+    return updated_user["favorite_movies"]
 
 def remove_movie_from_favorites(user: User, movie_id: int):
     if movie_id not in user.favorite_movies:
         raise HTTPException(status_code=404, detail="Movie not found in favorites")
     
-    user.favorite_movies.remove(movie_id)
-    updated_user = update_user(user, {"favorite_movies": user.favorite_movies})
+    updated_user = users_collection.find_one_and_update(
+    {"username": user.username},
+    {
+        "$pull": {"favorite_movies": movie_id}
+    },
+    return_document=ReturnDocument.AFTER
+    )  
 
-    return updated_user.favorite_movies
+    return updated_user["favorite_movies"]
 
 async def add_movie_to_watchlist(user: User, movie_id: int):
     if movie_id in user.watchlist:
@@ -94,19 +105,29 @@ async def add_movie_to_watchlist(user: User, movie_id: int):
     except HTTPException:
         raise HTTPException(status_code=404, detail="Movie not found") 
     
-    user.watchlist.append(movie_id)
-    updated_user =  update_user(user, {"watchlist": user.watchlist})
+    updated_user = users_collection.find_one_and_update(
+    {"username": user.username},
+    {
+        "$addToSet": {"watchlist": movie_id}
+    },
+    return_document=ReturnDocument.AFTER
+    )  
 
-    return updated_user.watchlist
+    return updated_user["watchlist"]
 
 def remove_movie_from_watchlist(user: User, movie_id: int):
     if movie_id not in user.watchlist:
         raise HTTPException(status_code=404, detail="Movie not found in watchlist")
     
-    user.watchlist.remove(movie_id)
-    updated_user = update_user(user, {"watchlist": user.watchlist})
+    updated_user = users_collection.find_one_and_update(
+    {"username": user.username},
+    {
+        "$pull": {"watchlist": movie_id}
+    },
+    return_document=ReturnDocument.AFTER
+    )  
 
-    return updated_user.watchlist
+    return updated_user["watchlist"]
 
 async def add_movie_rating(user: User, movie_id: int, rating: int):
     if rating < 1 or rating > 5:
@@ -118,27 +139,18 @@ async def add_movie_rating(user: User, movie_id: int, rating: int):
         await make_request(url, method="HEAD")
     except HTTPException:    
         raise HTTPException(status_code=404, detail="Movie not found")
-    
-    for entry in user.ratings:
-        if entry.movie_id == movie_id:
-            entry.rating = rating 
-            break
-    else:
-        newRatingEntry = RatingEntry(movie_id=movie_id, rating=rating)
-        user.ratings.append(newRatingEntry)
 
-    updated_user = update_user(user, {"ratings": [entry.model_dump() for entry in user.ratings]})
-
-    return updated_user.ratings
-
-def update_user(user: User, update_fields: Dict) -> User:
-    updated_user_data = users_collection.find_one_and_update(
-        {"username": user.username},  
-        {"$set": update_fields},
-        return_document=True
+    updated_user = users_collection.find_one_and_update(
+    {"username": user.username, "ratings.movie_id": movie_id},  # Find user with specific movie_id
+    {"$set": {"ratings.$.rating": rating}},  # Update the rating
+    return_document=ReturnDocument.AFTER  # Return the updated document
     )
 
-    if not updated_user_data:
-        raise HTTPException(status_code=404, detail="User not found")
-    
-    return User(**updated_user_data)
+    if updated_user is None:
+        updated_user = users_collection.find_one_and_update(
+        {"username": user.username},  # Find the user
+        {"$addToSet": {"ratings": {"movie_id": movie_id, "rating": rating}}},  # Add new movie to the ratings
+        return_document=ReturnDocument.AFTER  # Return the updated document
+    )
+
+    return updated_user["ratings"]
