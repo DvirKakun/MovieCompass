@@ -1,6 +1,5 @@
 from pydantic import BaseModel, EmailStr, Field
-from typing import Optional, List, Dict
-from app.schemas.comment import CommentEntry
+from typing import Optional, List
 from app.schemas.rating import RatingEntry
 
 class UserCreate(BaseModel):
@@ -21,7 +20,6 @@ class User(BaseModel):
     favorite_movies: List[int] = []
     watchlist: List[int] = []
     ratings: List[RatingEntry] = []
-    comments: List[CommentEntry] = []
 
     class Config:
         orm_mode: True

@@ -5,7 +5,6 @@ from app.schemas.user import UserCreate, User
 from app.schemas.rating import RatingEntry
 from app.core.config import settings
 from fastapi import HTTPException, status
-from typing import Dict
 from app.services.tmdb import make_request
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -140,17 +139,20 @@ async def add_movie_rating(user: User, movie_id: int, rating: int):
     except HTTPException:    
         raise HTTPException(status_code=404, detail="Movie not found")
 
-    updated_user = users_collection.find_one_and_update(
-    {"username": user.username, "ratings.movie_id": movie_id},  # Find user with specific movie_id
-    {"$set": {"ratings.$.rating": rating}},  # Update the rating
-    return_document=ReturnDocument.AFTER  # Return the updated document
-    )
+    new_rating_entry = RatingEntry(movie_id=movie_id, rating=rating).dict()
+    existing_rating = users_collection.find_one({"username": user.username, "ratings.movie_id": new_rating_entry["movie_id"]})
 
-    if updated_user is None:
+    if existing_rating:
         updated_user = users_collection.find_one_and_update(
-        {"username": user.username},  # Find the user
-        {"$addToSet": {"ratings": {"movie_id": movie_id, "rating": rating}}},  # Add new movie to the ratings
-        return_document=ReturnDocument.AFTER  # Return the updated document
-    )
+            {"username": user.username, "ratings.movie_id": new_rating_entry["movie_id"]},
+            {"$set": {"ratings.$.rating": new_rating_entry["rating"]}},
+            return_document=ReturnDocument.AFTER
+        )
+    else:
+        updated_user = users_collection.find_one_and_update(
+            {"username": user.username},
+            {"$addToSet": {"ratings": new_rating_entry}},
+            return_document=ReturnDocument.AFTER
+        )
 
     return updated_user["ratings"]

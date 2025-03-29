@@ -1,7 +1,7 @@
 from fastapi import APIRouter
-from app.schemas.movie import MovieResponse, Movie, MovieCastResponse
+from app.schemas.movie import MovieResponse, Movie, MovieCastResponse, MovieReviewsResponse
 from app.schemas.genre import GenreResponse
-from app.services.tmdb import fetch_movie_details, search_movies, fetch_movies_by_genre, fetch_popular_movies, fetch_movies_genres, fetch_movie_cast
+from app.services.tmdb import fetch_movie_details, search_movies, fetch_movies_by_genre, fetch_popular_movies, fetch_movies_genres, fetch_movie_cast, fetch_movie_reviews
 
 router = APIRouter()
 
@@ -35,6 +35,12 @@ async def get_movie_cast(movie_id: int):
     cast = await fetch_movie_cast(movie_id)
     
     return cast
+
+@router.get("/{movie_id}/reviews", response_model=MovieReviewsResponse)
+async def get_movie_reviews(movie_id: int):
+    reviews = await fetch_movie_reviews(movie_id)
+    
+    return reviews
 
 @router.get("/{movie_id}", response_model=Movie)
 async def get_movie(movie_id: int):

@@ -1,8 +1,10 @@
 from fastapi import HTTPException
 import httpx
 from app.core.config import settings
-from app.schemas.movie import Movie, MovieCast, MovieCastResponse
+from app.schemas.movie import Movie, MovieCast, MovieCastResponse, MovieReview, MovieReviewsResponse
 from app.schemas.genre import Genre
+import aiohttp
+import asyncio
 
 async def fetch_popular_movies():
     url = f"{settings.BASE_URL}/movie/popular?api_key={settings.TMDB_API_KEY}&language=en-US"
@@ -45,6 +47,30 @@ async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
     cast = [MovieCast(id=actor["id"], name=actor["name"], character=actor["character"], profile_path=actor.get("profile_path")) for actor in cast_data["cast"]]
     
     return MovieCastResponse(movie_id=movie_id, cast=cast)
+
+async def fetch_reviews(movie_id, page):
+    url = f"{settings.BASE_URL}/movie/{movie_id}/reviews?api_key={settings.TMDB_API_KEY}&language=en-US&page={page}"
+
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            return await response.json()
+
+async def fetch_movie_reviews(movie_id: int):
+    first_page_reviews = await fetch_reviews(movie_id, 1)    
+    total_pages = first_page_reviews.get("total_pages", 0)
+    total_results = first_page_reviews.get("total_results", 0)
+
+    tasks = [fetch_reviews(movie_id, page) for page in range(2, total_pages + 1)]
+    results = await asyncio.gather(*tasks)
+    reviews_data = [first_page_reviews] + results
+
+    reviews = [
+        MovieReview(author=review["author"], content=review["content"], created_at=review["created_at"])
+        for page in reviews_data  
+        for review in page.get("results", [])
+        ]
+
+    return MovieReviewsResponse(movie_id=movie_id, reviews=reviews, total_results=total_results)
         
 async def make_request(url: str, method: str = "GET"):
     try:

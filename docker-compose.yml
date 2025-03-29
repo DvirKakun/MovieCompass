@@ -1,20 +1,19 @@
-version: '3'
+version: "3"
 services:
   backend:
-    build: ./movie-web-app-backend  # Path to your backend directory
+    build: ./movie-web-app-backend # Path to your backend directory
     container_name: backend
     ports:
-      - "8000:8000"  # Expose FastAPI app on port 8000
+      - "8000:8000" # Expose FastAPI app on port 8000
     depends_on:
-      - ollama  # Ensures Ollama is started before backend starts
+      - ollama # Ensures Ollama is started before backend starts
     volumes:
-      - ./movie-web-app-backend:/app  # Mount the backend code into the container
-    working_dir: /app  # Set the working directory inside the container
-    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+      - ./movie-web-app-backend:/app # Mount the backend code into the container
+    working_dir: /app # Set the working directory inside the container
 
   ollama:
     build:
-      context: ./movie-web-app-backend  # Uses the Ollama.Dockerfile from the same directory
+      context: ./movie-web-app-backend # Uses the Ollama.Dockerfile from the same directory
       dockerfile: Ollama.Dockerfile
     container_name: ollama
     ports:

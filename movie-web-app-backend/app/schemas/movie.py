@@ -23,3 +23,13 @@ class MovieCast(BaseModel):
 class MovieCastResponse(BaseModel):
     movie_id: int
     cast: List[MovieCast]
+
+class MovieReview(BaseModel):
+    author: str
+    content: str
+    created_at: str
+
+class MovieReviewsResponse(BaseModel):
+    movie_id: int
+    reviews: List[MovieReview]
+    total_results: int

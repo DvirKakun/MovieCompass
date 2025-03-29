@@ -1,6 +1,7 @@
 FastAPI
 uvicorn
 httpx
+aiohttp
 pydantic
 pydantic-ai
 pydantic-settings
