@@ -48,19 +48,14 @@ async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
     
     return MovieCastResponse(movie_id=movie_id, cast=cast)
 
-async def fetch_reviews(movie_id, page):
-    url = f"{settings.BASE_URL}/movie/{movie_id}/reviews?api_key={settings.TMDB_API_KEY}&language=en-US&page={page}"
-
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url) as response:
-            return await response.json()
-
 async def fetch_movie_reviews(movie_id: int):
-    first_page_reviews = await fetch_reviews(movie_id, 1)    
+    url = f"{settings.BASE_URL}/movie/{movie_id}/reviews?api_key={settings.TMDB_API_KEY}&language=en-US"
+
+    first_page_reviews = await make_request(url, "GET", 1)    
     total_pages = first_page_reviews.get("total_pages", 0)
     total_results = first_page_reviews.get("total_results", 0)
 
-    tasks = [fetch_reviews(movie_id, page) for page in range(2, total_pages + 1)]
+    tasks = [make_request(url, "GET", page) for page in range(2, total_pages + 1)]
     results = await asyncio.gather(*tasks)
     reviews_data = [first_page_reviews] + results
 
@@ -72,21 +67,23 @@ async def fetch_movie_reviews(movie_id: int):
 
     return MovieReviewsResponse(movie_id=movie_id, reviews=reviews, total_results=total_results)
         
-async def make_request(url: str, method: str = "GET"):
-    try:
-        async with httpx.AsyncClient() as client:
-            response = await client.get(url)
-            response.raise_for_status()
+async def make_request(url: str, method: str = "GET", page: int = 1):
+    url += f"&page={page}"
 
-            if method == "HEAD":
-                return response.status_code
-            
-            return response.json()  
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url) as response:
+                response.raise_for_status()
+
+                if method == "HEAD":
+                    return response.status
+ 
+                return await response.json()  
         
-    except httpx.HTTPStatusError as e:
-        error_details = e.response.json()
-        status_code = error_details.get("status_code", e.response.status_code)
+    except aiohttp.ClientResponseError as e:
+        error_details = await e.response.json()
+        status_code = error_details.get("status_code", e.status)
         status_message = error_details.get("status_message", "Unknown error")
-        raise HTTPException(status_code=e.response.status_code, detail={"status_code": status_code, "status_message": status_message})
+        raise Exception(f"HTTP Error {status_code}: {status_message}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        raise Exception(f"Error: {str(e)}")
