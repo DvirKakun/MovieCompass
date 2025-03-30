@@ -1,38 +1,56 @@
 from typing import Optional
 from pymongo import MongoClient, ReturnDocument
-from app.schemas.user import UserCreate, User
+from app.schemas.user import UserCreate, User, GoogleUserCreate
 from app.schemas.rating import RatingEntry
 from app.core.config import settings
 from fastapi import HTTPException, status
 from app.services.tmdb import make_request
-from app.services.auth import get_password_hash
+from app.services.security import get_password_hash
 
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
 db = client.get_database(settings.MONGO_DATABASE_NAME)
 users_collection = db.get_collection(settings.MONGO_COLLECTION_NAME)
 
+def find_user_by_email(email: str) -> Optional[User]:
+    user_data = users_collection.find_one({"email": email})
 
-def get_user(username: str) -> Optional[User]:
-    query = {"$or": [{"username": username}, {"email": username}]}
-    user_data = users_collection.find_one(query)
-    
     if not user_data:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        return None
     
-    return User(**user_data)   
+    return User(**user_data)
 
+def find_user_by_username(username: str) -> Optional[User]:
+    user_data = users_collection.find_one({"username": username})
+
+    if not user_data:
+        return None
+    
+    return User(**user_data)
+
+def get_user(identifier: str) -> User:
+    if "@" in identifier:
+        user = find_user_by_email(identifier)
+    else:
+        user = find_user_by_username(identifier)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return user
 
 def create_user(user: UserCreate) -> User:
-    query = {"$or": [{"username": user.username}, {"email": user.username}]}
-    existing_user = users_collection.find_one(query)
+    existing_user = find_user_by_username(user.username) or find_user_by_email(user.email)
     
     if existing_user:
-        if existing_user.get("username") == user.username:
+        if existing_user.username == user.username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="Username already taken"
             )
-        if existing_user.get("email") == user.email:
+        if existing_user.email == user.email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
                 detail="Email already registered"
@@ -49,6 +67,32 @@ def create_user(user: UserCreate) -> User:
     
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"User creation failed: {str(e)}")
+    
+def create_google_user(google_data: GoogleUserCreate) -> User:
+    user_dict = google_data.dict()
+
+    user_dict["auth_provider"] = "google"
+    # Optionally set a default username
+    user_dict["username"] = user_dict["email"].split("@")[0]
+    
+    new_user = User(**user_dict)
+    users_collection.insert_one(new_user.dict())
+    
+    return new_user
+
+def update_user_by_google(user : User) -> User:
+    user_dict = user.dict()
+
+    updated_user = users_collection.find_one_and_update(
+        {"username": user.username},
+        {"$set": user_dict},
+        return_document=ReturnDocument.AFTER
+    )
+
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    return User(**updated_user)
 
 async def add_movie_to_favorites(user: User, movie_id: int):
     if movie_id in user.favorite_movies:

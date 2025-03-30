@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     GOOGLE_REDIRECT_URI: str
     GOOGLE_AUTHORIZATION_ENDPOINT: str
     GOOGLE_TOKEN_ENDPOINT: str
+    GOOGLE_USERINFO_ENDPOINT: str
 
     class Config:
         env_file = ".env"

@@ -10,14 +10,20 @@ class UserCreate(BaseModel):
     last_name: str = Field(..., min_length=2, max_length=30)
     phone_number: str = Field(..., pattern=r"^\+?\d{9,15}$")
 
-class User(BaseModel):
-    username: str
+class GoogleUserCreate(BaseModel):
     email: EmailStr
     first_name: str
     last_name: str
+    google_id: str
+
+class User(BaseModel):
+    username: str
+    email: EmailStr
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
     google_id: Optional[str] = None
     auth_provider: str = "local"
-    phone_number: str
     hashed_password: Optional[str] = None
     favorite_movies: List[int] = []
     watchlist: List[int] = []
