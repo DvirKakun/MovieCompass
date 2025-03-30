@@ -9,8 +9,6 @@ from app.services.security import get_password_hash, create_access_token
 from app.services.email import send_verification_email
 from datetime import timedelta
 
-
-
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
 db = client.get_database(settings.MONGO_DATABASE_NAME)
 users_collection = db.get_collection(settings.MONGO_COLLECTION_NAME)
@@ -40,7 +38,7 @@ def get_user(identifier: str) -> User:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail={"field": "username", "message" :"User not found"},
         )
     
     return user
@@ -52,12 +50,12 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
         if existing_user.username == user.username:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Username already taken"
+                detail={"field":"username", "message": "Username already taken"}
             )
         if existing_user.email == user.email:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST, 
-                detail="Email already registered"
+                detail={"field": "email", "message": "Email already registered"}
             )
     
     user_dict = user.dict()
@@ -101,7 +99,7 @@ def update_user(user : User) -> User:
     )
 
     if not updated_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"field": "username", "message": "User not found"})
 
     return User(**updated_user)
 
@@ -111,8 +109,9 @@ def verify_user_email(email: str) -> User:
         {"$set": {"is_verified": True}},
         return_document=ReturnDocument.AFTER
     )
+
     if not updated_user:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"field": "email", "message": "User not found"})
     
     return User(**updated_user)
 

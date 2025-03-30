@@ -53,14 +53,14 @@ def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
     if not verify_password(plain_password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
+            detail={"field":"username", "message": "Incorrect username or password"},
             headers={"WWW-Authenticate": "Bearer"},
         )
     
     if not user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Please verify your email before logging in."
+            detail={"field": "verification" ,"message": "Please verify your email before logging in."}
         )
     
     access_token = create_access_token(
@@ -74,7 +74,7 @@ def authenticate_email(token: str) -> User:
     user = get_user(email)
 
     if user is None:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(status_code=404, detail={"field": "username", "message" :"User not found"})
     
     return user
         
@@ -96,7 +96,7 @@ async def get_user_from_google(code: str):
     token_json = token_response.json()
 
     if "error" in token_json:
-        raise HTTPException(status_code=400, detail="Error retrieving access token")
+        raise HTTPException(status_code=400, detail={"field": "token", "message" :"Error retrieving access token"})
 
     access_token = token_json.get("access_token")
     
@@ -116,13 +116,13 @@ def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> 
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            detail={"field": "email", "message": "User not found"}
         )
 
     if user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Email already verified"
+            detail={"field": "email", "message": "Email already verified"}
         )
 
     token = create_access_token(

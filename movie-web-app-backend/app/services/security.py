@@ -32,8 +32,8 @@ def verify_token(token: str):
         data = payload.get("sub")
 
         if data is None:
-            raise HTTPException(status_code=400, detail="Invalid token")
+            raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid token"})
     except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
+        raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid or expired token"})
     
     return data
