@@ -1,5 +1,3 @@
-from fastapi import HTTPException
-import httpx
 from app.core.config import settings
 from app.schemas.movie import Movie, MovieCast, MovieCastResponse, MovieReview, MovieReviewsResponse
 from app.schemas.genre import Genre

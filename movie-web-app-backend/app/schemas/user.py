@@ -12,11 +12,13 @@ class UserCreate(BaseModel):
 
 class User(BaseModel):
     username: str
-    email : EmailStr
+    email: EmailStr
     first_name: str
-    last_name : str
+    last_name: str
+    google_id: Optional[str] = None
+    auth_provider: str = "local"
     phone_number: str
-    hashed_password: str
+    hashed_password: Optional[str] = None
     favorite_movies: List[int] = []
     watchlist: List[int] = []
     ratings: List[RatingEntry] = []

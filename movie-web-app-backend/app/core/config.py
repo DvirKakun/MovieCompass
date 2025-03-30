@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     MONGO_CONNECTION_STRING: str
     MONGO_DATABASE_NAME: str
     MONGO_COLLECTION_NAME: str
+    GOOGLE_CLIENT_ID: str
+    GOOGLE_CLIENT_SECRET: str
+    GOOGLE_REDIRECT_URI: str
+    GOOGLE_AUTHORIZATION_ENDPOINT: str
+    GOOGLE_TOKEN_ENDPOINT: str
 
     class Config:
         env_file = ".env"
