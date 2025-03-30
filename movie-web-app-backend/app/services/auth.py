@@ -3,7 +3,7 @@ from app.schemas.user import User
 from app.services.user import get_user
 from app.services.security import verify_password
 from app.core.config import settings
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 import httpx
@@ -33,8 +33,33 @@ def authenticate_user(username: str, plain_password: str) -> User:
             detail="Incorrect username or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Please verify your email before logging in."
+        )
 
     return user 
+
+def authenticate_email(token: str) -> User:
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+
+        if email is None:
+            raise HTTPException(status_code=400, detail="Invalid token")
+    except JWTError:
+        raise HTTPException(status_code=400, detail="Invalid or expired token")
+    
+    user = get_user(email)
+
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return user
+        
+
 
 async def get_user_from_google(code: str):
     # Prepare the payload to exchange code for an access token

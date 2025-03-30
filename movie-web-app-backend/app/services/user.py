@@ -80,7 +80,7 @@ def create_google_user(google_data: GoogleUserCreate) -> User:
     
     return new_user
 
-def update_user_by_google(user : User) -> User:
+def update_user(user : User) -> User:
     user_dict = user.dict()
 
     updated_user = users_collection.find_one_and_update(
@@ -92,6 +92,17 @@ def update_user_by_google(user : User) -> User:
     if not updated_user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
+    return User(**updated_user)
+
+def verify_user_email(email: str) -> User:
+    updated_user = users_collection.find_one_and_update(
+        {"email": email},
+        {"$set": {"is_verified": True}},
+        return_document=ReturnDocument.AFTER
+    )
+    if not updated_user:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    
     return User(**updated_user)
 
 async def add_movie_to_favorites(user: User, movie_id: int):

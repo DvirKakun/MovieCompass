@@ -1,15 +1,18 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from datetime import timedelta
-from app.services.user import create_user, find_user_by_email, create_google_user, update_user_by_google
-from app.services.auth import authenticate_user, create_access_token, get_user_from_google
-from app.schemas.user import UserCreate, User, Token, GoogleUserCreate
+from app.services.user import create_user, find_user_by_email, create_google_user, update_user, verify_user_email
+from app.services.auth import authenticate_user, authenticate_email ,create_access_token, get_user_from_google
+from app.services.email import send_verification_email
+from app.schemas.user import UserCreate, GoogleUserCreate
 from app.core.config import settings
+from fastapi.templating import Jinja2Templates
 
 ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 
 router = APIRouter()
+templates = Jinja2Templates(directory="app/templates")
 
 @router.get("/google/login")
 async def google_login():
@@ -51,8 +54,9 @@ async def google_callback(code: str):
             user.last_name = last_name
             user.google_id = google_id
             user.auth_provider = "both"
+            user.is_verified = True
             
-            user = update_user_by_google(user)
+            user = update_user(user)
         
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = create_access_token(
@@ -61,13 +65,20 @@ async def google_callback(code: str):
 
     return {"access_token": access_token, "token_type": "bearer", "user": user}
 
-@router.post("/signup", response_model=User)
-async def signup(user: UserCreate):
+@router.post("/signup")
+async def signup(user: UserCreate, background_tasks: BackgroundTasks):
     new_user = create_user(user)
 
-    return new_user
+    access_token_expires = timedelta(hours=1)
+    access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=access_token_expires
+    )
+    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={access_token}"
+    background_tasks.add_task(send_verification_email, user.email, verification_link)
 
-@router.post("/token", response_model=Token)
+    return {"message": "User created. Please verify your email.", "user": new_user}
+
+@router.post("/token")
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
     user = authenticate_user(form_data.username, form_data.password) 
     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -76,3 +87,10 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
     )
 
     return {"access_token": access_token, "token_type": "bearer", "user": user}
+
+@router.get("/verify-email")
+async def verify_email(request: Request, token: str):
+    user = authenticate_email(token)
+    user = verify_user_email(user.email)
+    
+    return templates.TemplateResponse("verify_success.html", {"request": request})

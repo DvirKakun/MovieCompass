@@ -15,6 +15,7 @@ class GoogleUserCreate(BaseModel):
     first_name: str
     last_name: str
     google_id: str
+    is_verified: bool = True
 
 class User(BaseModel):
     username: str
@@ -25,16 +26,10 @@ class User(BaseModel):
     google_id: Optional[str] = None
     auth_provider: str = "local"
     hashed_password: Optional[str] = None
+    is_verified: bool = False
     favorite_movies: List[int] = []
     watchlist: List[int] = []
     ratings: List[RatingEntry] = []
 
     class Config:
         orm_mode: True
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    username: Optional[str] = None
