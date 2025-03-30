@@ -1,11 +1,15 @@
 from typing import Optional
 from pymongo import MongoClient, ReturnDocument
-from app.schemas.user import UserCreate, User, GoogleUserCreate
+from app.schemas.user import UserCreate, User, GoogleUserCreate, UserTokenResponse
 from app.schemas.rating import RatingEntry
 from app.core.config import settings
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, BackgroundTasks
 from app.services.tmdb import make_request
-from app.services.security import get_password_hash
+from app.services.security import get_password_hash, create_access_token
+from app.services.email import send_verification_email
+from datetime import timedelta
+
+
 
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
 db = client.get_database(settings.MONGO_DATABASE_NAME)
@@ -41,7 +45,7 @@ def get_user(identifier: str) -> User:
     
     return user
 
-def create_user(user: UserCreate) -> User:
+def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
     existing_user = find_user_by_username(user.username) or find_user_by_email(user.email)
     
     if existing_user:
@@ -63,6 +67,13 @@ def create_user(user: UserCreate) -> User:
         new_user = User(**user_dict)
         users_collection.insert_one(new_user.dict())
 
+        access_token = create_access_token(
+        data={"sub": user.email}, expires_delta=timedelta(hours=1)
+            )
+        
+        verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={access_token}"
+        background_tasks.add_task(send_verification_email, user.email, verification_link)
+
         return new_user
     
     except Exception as e:
@@ -78,7 +89,7 @@ def create_google_user(google_data: GoogleUserCreate) -> User:
     new_user = User(**user_dict)
     users_collection.insert_one(new_user.dict())
     
-    return new_user
+    return new_user    
 
 def update_user(user : User) -> User:
     user_dict = user.dict()

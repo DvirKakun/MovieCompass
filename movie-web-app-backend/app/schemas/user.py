@@ -33,3 +33,12 @@ class User(BaseModel):
 
     class Config:
         orm_mode: True
+
+class UserTokenResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: User
+
+class UserResponse(BaseModel):
+    user: User
+    message: str = ""

@@ -1,30 +1,53 @@
-from fastapi import HTTPException, status
-from app.schemas.user import User
-from app.services.user import get_user
+from fastapi import HTTPException, status, BackgroundTasks
+from app.schemas.user import User, UserTokenResponse, GoogleUserCreate, UserResponse
+from app.services.user import get_user, find_user_by_email, create_google_user, update_user
 from app.services.security import verify_password
 from app.core.config import settings
-from jose import jwt, JWTError
-from datetime import datetime, timedelta, timezone
-from typing import Optional
+from datetime import timedelta
+from app.services.security import create_access_token, verify_token
+from app.services.email import send_verification_email
 import httpx
 
-SECRET_KEY = settings.SECRET_KEY
-ALGORITHM = settings.ALGORITHM
+async def authenticate_google_user(code: str) -> UserTokenResponse:
+    user_info = await get_user_from_google(code)
+    
+    # Extract relevant user details (e.g., email, name, sub is the Google unique user ID)
+    email = user_info.get("email")
+    google_id = user_info.get("sub")
+    first_name = user_info.get("given_name")
+    last_name = user_info.get("family_name")
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
-    to_encode = data.copy()
-
-    if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+    user = find_user_by_email(email)
+    
+    if not user:
+        user = create_google_user(GoogleUserCreate(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            google_id=google_id,
+        ))
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        # Update user information if necessary
+        if not user.google_id:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.google_id = google_id
+            user.auth_provider = "both"
+            user.is_verified = True
+            
+            user = update_user(user)
+        
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
 
-    to_encode.update({"exp": expire})
-    encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return UserTokenResponse(
+        access_token=access_token,
+        token_type="bearer",
+        user=user
+    )
 
-    return encoded_jwt
-
-def authenticate_user(username: str, plain_password: str) -> User:
+def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
     user = get_user(username)
 
     if not verify_password(plain_password, user.hashed_password):
@@ -39,19 +62,15 @@ def authenticate_user(username: str, plain_password: str) -> User:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Please verify your email before logging in."
         )
+    
+    access_token = create_access_token(
+        data={"sub": user.username}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
 
-    return user 
+    return UserTokenResponse(user=user, access_token=access_token, token_type="bearer")
 
 def authenticate_email(token: str) -> User:
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email = payload.get("sub")
-
-        if email is None:
-            raise HTTPException(status_code=400, detail="Invalid token")
-    except JWTError:
-        raise HTTPException(status_code=400, detail="Invalid or expired token")
-    
+    email = verify_token(token)
     user = get_user(email)
 
     if user is None:
@@ -90,3 +109,29 @@ async def get_user_from_google(code: str):
     user_info = userinfo_response.json()
 
     return user_info
+
+def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> UserResponse:
+    user = find_user_by_email(email)
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+
+    if user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Email already verified"
+        )
+
+    token = create_access_token(
+        data={"sub": user.email},
+        expires_delta=timedelta(hours=1)
+    )
+
+    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
+
+    background_tasks.add_task(send_verification_email, user.email, verification_link)
+
+    return UserResponse(message="Verification email has been resent.", user=user)

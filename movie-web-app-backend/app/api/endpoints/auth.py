@@ -2,10 +2,9 @@ from fastapi import APIRouter, Depends, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from datetime import timedelta
-from app.services.user import create_user, find_user_by_email, create_google_user, update_user, verify_user_email
-from app.services.auth import authenticate_user, authenticate_email ,create_access_token, get_user_from_google
-from app.services.email import send_verification_email
-from app.schemas.user import UserCreate, GoogleUserCreate
+from app.services.user import create_user, verify_user_email
+from app.services.auth import authenticate_user, authenticate_email ,resend_verification_email, authenticate_google_user
+from app.schemas.user import UserCreate, UserTokenResponse, UserResponse
 from app.core.config import settings
 from fastapi.templating import Jinja2Templates
 
@@ -14,7 +13,7 @@ ACCESS_TOKEN_EXPIRE_MINUTES = settings.ACCESS_TOKEN_EXPIRE_MINUTES
 router = APIRouter()
 templates = Jinja2Templates(directory="app/templates")
 
-@router.get("/google/login")
+@router.get("/google/login", response_class=RedirectResponse)
 async def google_login():
     scope = "openid email profile"
     # Construct the URL with required query parameters
@@ -28,65 +27,23 @@ async def google_login():
 
     return RedirectResponse(url)
 
-@router.get("/google/callback")
+@router.get("/google/callback", response_model=UserTokenResponse)
 async def google_callback(code: str):
-    user_info = await get_user_from_google(code)
-    
-    # Extract relevant user details (e.g., email, name, sub is the Google unique user ID)
-    email = user_info.get("email")
-    google_id = user_info.get("sub")
-    first_name = user_info.get("given_name")
-    last_name = user_info.get("family_name")
+    user_token_response = await authenticate_google_user(code)
 
-    user = find_user_by_email(email)
-    
-    if not user:
-        user = create_google_user(GoogleUserCreate(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            google_id=google_id,
-        ))
-    else:
-        # Update user information if necessary
-        if not user.google_id:
-            user.first_name = first_name
-            user.last_name = last_name
-            user.google_id = google_id
-            user.auth_provider = "both"
-            user.is_verified = True
-            
-            user = update_user(user)
-        
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    return user_token_response
 
-    return {"access_token": access_token, "token_type": "bearer", "user": user}
-
-@router.post("/signup")
+@router.post("/signup", response_model=UserResponse)
 async def signup(user: UserCreate, background_tasks: BackgroundTasks):
-    new_user = create_user(user)
+    new_user = create_user(user, background_tasks)
 
-    access_token_expires = timedelta(hours=1)
-    access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=access_token_expires
-    )
-    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={access_token}"
-    background_tasks.add_task(send_verification_email, user.email, verification_link)
+    return UserResponse(message="User created. Please verify your email.", user=new_user)
 
-    return {"message": "User created. Please verify your email.", "user": new_user}
-
-@router.post("/token")
+@router.post("/token", response_model=UserTokenResponse)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(form_data.username, form_data.password) 
-    access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=access_token_expires
-    )
+    user_token_response = authenticate_user(form_data.username, form_data.password) 
 
-    return {"access_token": access_token, "token_type": "bearer", "user": user}
+    return user_token_response
 
 @router.get("/verify-email")
 async def verify_email(request: Request, token: str):
@@ -94,3 +51,10 @@ async def verify_email(request: Request, token: str):
     user = verify_user_email(user.email)
     
     return templates.TemplateResponse("verify_success.html", {"request": request})
+
+@router.post("/resend-verification", response_model=UserResponse)
+async def resend_verification(email: str, background_tasks: BackgroundTasks):
+    user_response = resend_verification_email(email, background_tasks)
+
+    return user_response
+    
