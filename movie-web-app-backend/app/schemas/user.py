@@ -29,6 +29,7 @@ class UpdateUserProfile(BaseModel):
     new_email: Optional[EmailStr] = None
 
 class User(BaseModel):
+    id: Optional[str] = Field(None, alias="_id")
     username: str
     email: EmailStr
     first_name: Optional[str] = None
@@ -45,6 +46,8 @@ class User(BaseModel):
 
     class Config:
         orm_mode: True
+        validate_by_name = True
+
 
 class UserTokenResponse(BaseModel):
     access_token: str

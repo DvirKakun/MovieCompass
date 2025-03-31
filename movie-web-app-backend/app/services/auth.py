@@ -2,10 +2,10 @@ from fastapi import HTTPException, status, BackgroundTasks
 from app.schemas.user import User, UserTokenResponse, UserResponse
 from app.services.user import get_user, find_user_by_email, create_or_update_google_user
 from app.services.security import verify_password
+from app.services.email import create_token_and_send_email
 from app.core.config import settings
 from datetime import timedelta
 from app.services.security import create_access_token, verify_user_email_token
-from app.services.email import send_verification_email
 import httpx
 
 async def authenticate_google_user(code: str) -> UserTokenResponse:
@@ -105,13 +105,13 @@ def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> 
             detail={"field": "email", "message": "Email already verified"}
         )
 
-    token = create_access_token(
-        data={"sub": user.email},
-        expires_delta=timedelta(hours=1)
-    )
+    create_token_and_send_email(user.username, user.email, background_tasks)
+    # token = create_access_token(
+    #     data={"sub": user.username, "new_email": user.email}, expires_delta=timedelta(hours=1)
+    #         )
 
-    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
+    # verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
 
-    background_tasks.add_task(send_verification_email, user.email, verification_link)
+    # background_tasks.add_task(send_verification_email, user.email, verification_link)
 
     return UserResponse(message="Verification email has been resent.", user=user)

@@ -1,8 +1,20 @@
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-from fastapi import HTTPException
+from fastapi import HTTPException, BackgroundTasks
 from app.core.config import settings
+from app.schemas.user import User
+from app.services.security import create_access_token
+from datetime import timedelta
+
+def create_token_and_send_email(username: str, email: str, background_tasks: BackgroundTasks):
+    token = create_access_token(
+        data={"sub": username, "new_email": email}, expires_delta=timedelta(hours=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS)
+            )
+
+    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
+
+    background_tasks.add_task(send_verification_email, email, verification_link)
 
 def send_verification_email(recipient: str, verification_link: str):
     """

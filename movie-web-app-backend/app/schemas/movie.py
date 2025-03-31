@@ -5,11 +5,11 @@ from typing import List, Optional
 class Movie(BaseModel):
     id: int
     title: str
-    overview: str
-    popularity: float
+    overview: Optional[str] = None
+    popularity: Optional[float] = None
     poster_path: Optional[str] = None
-    vote_average: float
-    vote_count: int
+    vote_average: Optional[float] = None
+    vote_count: Optional[int] = None
 
 class MovieResponse(BaseModel):
     movies: List[Movie]

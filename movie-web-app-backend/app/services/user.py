@@ -1,13 +1,13 @@
 from typing import Optional
 from pymongo import MongoClient, ReturnDocument
-from app.schemas.user import UserCreate, User, GoogleUserCreate, UserTokenResponse
+from app.schemas.user import UserCreate, User, GoogleUserCreate, UpdateUserProfile, UserResponse
 from app.schemas.rating import RatingEntry
 from app.core.config import settings
 from fastapi import HTTPException, status, BackgroundTasks
 from app.services.tmdb import make_request
-from app.services.security import get_password_hash, create_access_token
-from app.services.email import send_verification_email
-from datetime import timedelta
+from app.services.security import get_password_hash, verify_password, get_password_hash
+from app.services.email import create_token_and_send_email
+from app.services.scheduler import logger
 
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
 db = client.get_database(settings.MONGO_DATABASE_NAME)
@@ -62,32 +62,16 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
     user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
 
     try:
-        new_user = User(**user_dict)
-        users_collection.insert_one(new_user.dict())
+        updated_user = users_collection.insert_one(user_dict)
+        user_id = updated_user.inserted_id
+        updated_user["id"] = str(user_id)
 
-        access_token = create_access_token(
-        data={"sub": user.username, "new_email": user.email}, expires_delta=timedelta(hours=1)
-            )
-        
-        verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={access_token}"
-        background_tasks.add_task(send_verification_email, user.email, verification_link)
+        create_token_and_send_email(updated_user.username, updated_user.email, background_tasks)
 
-        return new_user
+        return User(**updated_user)
     
     except Exception as e:
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"User creation failed: {str(e)}")
-    
-# def create_google_user(google_data: GoogleUserCreate) -> User:
-#     user_dict = google_data.dict()
-
-#     user_dict["auth_provider"] = "google"
-#     # Optionally set a default username
-#     user_dict["username"] = user_dict["email"].split("@")[0]
-    
-#     new_user = User(**user_dict)
-#     users_collection.insert_one(new_user.dict())
-    
-#     return new_user    
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"User creation failed: {str(e)}")  
     
 def create_or_update_google_user(user_info) -> User:
     email = user_info.get("email")
@@ -135,6 +119,119 @@ def update_user(user : User) -> User:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"field": "username", "message": "User not found"})
 
     return User(**updated_user)
+
+def _handle_username(current_user: User, update_data: dict) -> dict:
+    if "username" not in update_data:
+        return {}
+    
+    new_username = update_data["username"]
+    existing_user = users_collection.find_one({"username": new_username})
+
+    if existing_user and existing_user["username"] != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "username", "message": "Username already taken"}
+        )
+    
+    return {"username": new_username}
+
+def _handle_password_change(current_user: User, update_data: dict) -> dict:
+    if not any(k in update_data for k in ("old_password", "new_password", "new_password_confirm")):
+        return {}
+
+    old_pass = update_data.get("old_password")
+    new_pass = update_data.get("new_password")
+    new_pass_confirm = update_data.get("new_password_confirm")
+
+    logger.info(old_pass, new_pass, new_pass_confirm)
+    if not (new_pass and new_pass_confirm):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "password", "message": "Must provide new password and confirm it."}
+        )
+
+    if new_pass != new_pass_confirm:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "password", "message": "New passwords do not match"}
+        )
+    if current_user.hashed_password:
+        if not old_pass:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"field": "password", "message": "Must provide old password to change an existing password."}
+            )
+        
+        if not verify_password(old_pass, current_user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"field": "password", "message": "Old password is incorrect"}
+            )
+
+    return {"hashed_password": get_password_hash(new_pass)}
+
+def _handle_email_change(current_user: User, update_data: dict, background_tasks: BackgroundTasks) -> dict:
+    if "new_email" not in update_data:
+        return {}
+
+    new_email = update_data["new_email"]
+    existing_email_user = users_collection.find_one({"email": new_email})
+
+    if existing_email_user and existing_email_user["username"] != current_user.username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "email", "message": "Email already in use"}
+        )
+    
+    create_token_and_send_email(current_user.username, current_user.email, background_tasks)
+
+    return UserResponse(message="Verification email has been resent.", user=current_user)
+
+def _handle_other_profile_fields(update_data: dict) -> dict:
+    db_updates = {}
+
+    for field in ("first_name", "last_name", "phone_number"):
+        if field in update_data:
+            db_updates[field] = update_data[field]
+
+    return db_updates
+
+def update_user_profile(current_user: User, updates: UpdateUserProfile, background_tasks: BackgroundTasks) -> dict:
+    update_data = updates.dict(exclude_unset=True)
+    
+    db_updates_username = _handle_username(current_user, update_data)
+    db_updates_password = _handle_password_change(current_user, update_data)
+    db_updates_profile = _handle_other_profile_fields(update_data)
+    user_email_response = _handle_email_change(current_user, update_data, background_tasks)
+    
+    db_updates = {
+        **db_updates_username,
+        **db_updates_password,
+        **db_updates_profile
+    }
+
+    if not db_updates and not user_email_response:
+        return {"updated_user": current_user, "detail": "No changes"}
+    
+    elif not db_updates and user_email_response:
+        return {"updated_user": current_user, "detail": user_email_response.message}
+    
+    updated_user = users_collection.find_one_and_update(
+        {"username": current_user.username},
+        {"$set": db_updates},
+        return_document=ReturnDocument.AFTER
+    )
+
+    if not updated_user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found"
+        )
+    
+    return {"updated_user": User(**updated_user), "detail": "Profile updated"}
+
+
+
 
 def verify_user_email(username:str, email: str) -> User:
     updated_user = users_collection.find_one_and_update(

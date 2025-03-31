@@ -1,7 +1,6 @@
 from fastapi import APIRouter, Depends, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
-from datetime import timedelta
 from app.services.user import create_user, verify_user_email
 from app.services.auth import authenticate_user, authenticate_email ,resend_verification_email, authenticate_google_user
 from app.schemas.user import UserCreate, UserTokenResponse, UserResponse
