@@ -1,6 +1,7 @@
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional, List
 from app.schemas.rating import RatingEntry
+from datetime import datetime, timezone
 
 class UserCreate(BaseModel):
     username: str = Field(..., min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$") #Username must be alphanumeric and can contain underscores
@@ -27,6 +28,7 @@ class User(BaseModel):
     auth_provider: str = "local"
     hashed_password: Optional[str] = None
     is_verified: bool = False
+    created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
     favorite_movies: List[int] = []
     watchlist: List[int] = []
     ratings: List[RatingEntry] = []

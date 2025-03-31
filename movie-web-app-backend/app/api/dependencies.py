@@ -26,4 +26,10 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
     
     user = get_user(username)  # Fetch user from database
 
+    if not user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"field": "verification" ,"message": "Please verify your email before logging in."}
+        )
+
     return user  # Return user object
