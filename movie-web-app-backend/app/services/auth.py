@@ -1,41 +1,17 @@
 from fastapi import HTTPException, status, BackgroundTasks
-from app.schemas.user import User, UserTokenResponse, GoogleUserCreate, UserResponse
-from app.services.user import get_user, find_user_by_email, create_google_user, update_user
+from app.schemas.user import User, UserTokenResponse, UserResponse
+from app.services.user import get_user, find_user_by_email, create_or_update_google_user
 from app.services.security import verify_password
 from app.core.config import settings
 from datetime import timedelta
-from app.services.security import create_access_token, verify_token
+from app.services.security import create_access_token, verify_user_email_token
 from app.services.email import send_verification_email
 import httpx
 
 async def authenticate_google_user(code: str) -> UserTokenResponse:
     user_info = await get_user_from_google(code)
     
-    # Extract relevant user details (e.g., email, name, sub is the Google unique user ID)
-    email = user_info.get("email")
-    google_id = user_info.get("sub")
-    first_name = user_info.get("given_name")
-    last_name = user_info.get("family_name")
-
-    user = find_user_by_email(email)
-    
-    if not user:
-        user = create_google_user(GoogleUserCreate(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            google_id=google_id,
-        ))
-    else:
-        # Update user information if necessary
-        if not user.google_id:
-            user.first_name = first_name
-            user.last_name = last_name
-            user.google_id = google_id
-            user.auth_provider = "both"
-            user.is_verified = True
-            
-            user = update_user(user)
+    user = create_or_update_google_user(user_info)
         
     access_token = create_access_token(
         data={"sub": user.username}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -70,15 +46,19 @@ def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
     return UserTokenResponse(user=user, access_token=access_token, token_type="bearer")
 
 def authenticate_email(token: str) -> User:
-    email = verify_token(token)
-    user = get_user(email)
+    data = verify_user_email_token(token)
+    username = data["username"]
+    verified_email = data["new_email"]
+
+    user = get_user(username)
 
     if user is None:
         raise HTTPException(status_code=404, detail={"field": "username", "message" :"User not found"})
     
+    user.email = verified_email
+    
     return user
         
-
 
 async def get_user_from_google(code: str):
     # Prepare the payload to exchange code for an access token

@@ -66,7 +66,7 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
         users_collection.insert_one(new_user.dict())
 
         access_token = create_access_token(
-        data={"sub": user.email}, expires_delta=timedelta(hours=1)
+        data={"sub": user.username, "new_email": user.email}, expires_delta=timedelta(hours=1)
             )
         
         verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={access_token}"
@@ -77,17 +77,50 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"User creation failed: {str(e)}")
     
-def create_google_user(google_data: GoogleUserCreate) -> User:
-    user_dict = google_data.dict()
+# def create_google_user(google_data: GoogleUserCreate) -> User:
+#     user_dict = google_data.dict()
 
-    user_dict["auth_provider"] = "google"
-    # Optionally set a default username
-    user_dict["username"] = user_dict["email"].split("@")[0]
+#     user_dict["auth_provider"] = "google"
+#     # Optionally set a default username
+#     user_dict["username"] = user_dict["email"].split("@")[0]
     
-    new_user = User(**user_dict)
-    users_collection.insert_one(new_user.dict())
+#     new_user = User(**user_dict)
+#     users_collection.insert_one(new_user.dict())
     
-    return new_user    
+#     return new_user    
+    
+def create_or_update_google_user(user_info) -> User:
+    email = user_info.get("email")
+    google_id = user_info.get("sub")
+    first_name = user_info.get("given_name")
+    last_name = user_info.get("family_name")
+
+    user = find_user_by_email(email)
+
+    if not user:
+        user_dict = GoogleUserCreate(
+            email=email,
+            first_name=first_name,
+            last_name=last_name,
+            google_id=google_id,).dict()
+
+        user_dict["auth_provider"] = "google"
+            # Optionally set a default username
+        user_dict["username"] = user_dict["email"].split("@")[0]
+    
+        user = User(**user_dict)
+        users_collection.insert_one(user.dict())
+    else:
+        if not user.google_id:
+            user.first_name = first_name
+            user.last_name = last_name
+            user.google_id = google_id
+            user.auth_provider = "both"
+            user.is_verified = True
+            
+            user = update_user(user)
+
+    return user  
 
 def update_user(user : User) -> User:
     user_dict = user.dict()
@@ -103,10 +136,10 @@ def update_user(user : User) -> User:
 
     return User(**updated_user)
 
-def verify_user_email(email: str) -> User:
+def verify_user_email(username:str, email: str) -> User:
     updated_user = users_collection.find_one_and_update(
-        {"email": email},
-        {"$set": {"is_verified": True}},
+        {"username": username},
+        {"$set": {"email": email, "is_verified": True}},
         return_document=ReturnDocument.AFTER
     )
 

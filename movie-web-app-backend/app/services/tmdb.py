@@ -3,6 +3,8 @@ from app.schemas.movie import Movie, MovieCast, MovieCastResponse, MovieReview, 
 from app.schemas.genre import Genre
 import aiohttp
 import asyncio
+from fastapi import HTTPException
+from .tmdb_constants import tmdb_to_http_map
 
 async def fetch_popular_movies():
     url = f"{settings.BASE_URL}/movie/popular?api_key={settings.TMDB_API_KEY}&language=en-US"
@@ -68,20 +70,25 @@ async def fetch_movie_reviews(movie_id: int):
 async def make_request(url: str, method: str = "GET", page: int = 1):
     url += f"&page={page}"
 
-    try:
-        async with aiohttp.ClientSession() as session:
+    async with aiohttp.ClientSession() as session:
+        try:
             async with session.get(url) as response:
-                response.raise_for_status()
+                if response.status >= 400:
+                    try:
+                        error_data = await response.json()
+                        tmdb_code = error_data.get("status_code", response.status)
+                        status_message = error_data.get("status_message", "Unknown error")
 
+                        http_status = tmdb_to_http_map.get(tmdb_code, response.status)
+
+                        raise HTTPException(status_code=http_status, detail=status_message)
+                    except aiohttp.ContentTypeError:
+                        raise HTTPException(status_code=response.status, detail="Unknown error")
+                    
                 if method == "HEAD":
                     return response.status
- 
-                return await response.json()  
-        
-    except aiohttp.ClientResponseError as e:
-        error_details = await e.response.json()
-        status_code = error_details.get("status_code", e.status)
-        status_message = error_details.get("status_message", "Unknown error")
-        raise Exception(f"HTTP Error {status_code}: {status_message}")
-    except Exception as e:
-        raise Exception(f"Error: {str(e)}")
+                
+                return await response.json()
+
+        except aiohttp.ClientConnectionError as e:
+            raise HTTPException(status_code=503, detail=f"Connection error: {e}")

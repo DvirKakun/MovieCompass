@@ -18,6 +18,16 @@ class GoogleUserCreate(BaseModel):
     google_id: str
     is_verified: bool = True
 
+class UpdateUserProfile(BaseModel):
+    username: Optional[str] = None
+    old_password: Optional[str] = None
+    new_password: Optional[str] = None
+    new_password_confirm: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
+    new_email: Optional[EmailStr] = None
+
 class User(BaseModel):
     username: str
     email: EmailStr
