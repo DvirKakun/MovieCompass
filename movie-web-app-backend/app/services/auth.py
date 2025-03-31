@@ -1,6 +1,6 @@
 from fastapi import HTTPException, status, BackgroundTasks
 from app.schemas.user import User, UserTokenResponse, UserResponse
-from app.services.user import get_user, find_user_by_email, create_or_update_google_user
+from app.services.user import get_user, find_user_by_email, create_or_update_google_user, find_user_by_id
 from app.services.security import verify_password
 from app.services.email import create_token_and_send_email
 from app.core.config import settings
@@ -14,7 +14,7 @@ async def authenticate_google_user(code: str) -> UserTokenResponse:
     user = create_or_update_google_user(user_info)
         
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        data={"sub": user.id}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     return UserTokenResponse(
@@ -40,17 +40,17 @@ def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
         )
     
     access_token = create_access_token(
-        data={"sub": user.username}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        data={"sub": user.id}, expires_delta=timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
     return UserTokenResponse(user=user, access_token=access_token, token_type="bearer")
 
 def authenticate_email(token: str) -> User:
     data = verify_user_email_token(token)
-    username = data["username"]
+    user_id = data["id"]
     verified_email = data["new_email"]
 
-    user = get_user(username)
+    user = find_user_by_id(user_id)
 
     if user is None:
         raise HTTPException(status_code=404, detail={"field": "username", "message" :"User not found"})

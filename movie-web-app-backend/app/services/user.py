@@ -29,6 +29,14 @@ def find_user_by_username(username: str) -> Optional[User]:
     
     return User(**user_data)
 
+def find_user_by_id(user_id: str) -> Optional[User]:
+    user_data = users_collection.find_one({"id": user_id})
+
+    if not user_data:
+        return None
+    
+    return User(**user_data)
+
 def get_user(identifier: str) -> User:
     if "@" in identifier:
         user = find_user_by_email(identifier)
@@ -62,13 +70,12 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
     user_dict["hashed_password"] = get_password_hash(user_dict.pop("password"))
 
     try:
-        updated_user = users_collection.insert_one(user_dict)
-        user_id = updated_user.inserted_id
-        updated_user["id"] = str(user_id)
+        new_user = User(**user_dict)
+        users_collection.insert_one(new_user.dict())
 
-        create_token_and_send_email(updated_user.username, updated_user.email, background_tasks)
+        create_token_and_send_email(new_user.id, new_user.email, background_tasks)
 
-        return User(**updated_user)
+        return new_user
     
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"User creation failed: {str(e)}")  
@@ -91,9 +98,10 @@ def create_or_update_google_user(user_info) -> User:
         user_dict["auth_provider"] = "google"
             # Optionally set a default username
         user_dict["username"] = user_dict["email"].split("@")[0]
-    
+
         user = User(**user_dict)
         users_collection.insert_one(user.dict())
+
     else:
         if not user.google_id:
             user.first_name = first_name
@@ -110,7 +118,7 @@ def update_user(user : User) -> User:
     user_dict = user.dict()
 
     updated_user = users_collection.find_one_and_update(
-        {"username": user.username},
+        {"id": user.id},
         {"$set": user_dict},
         return_document=ReturnDocument.AFTER
     )
@@ -125,7 +133,7 @@ def _handle_username(current_user: User, update_data: dict) -> dict:
         return {}
     
     new_username = update_data["username"]
-    existing_user = users_collection.find_one({"username": new_username})
+    existing_user = find_user_by_username(new_username)
 
     if existing_user and existing_user["username"] != current_user.username:
         raise HTTPException(
@@ -143,7 +151,6 @@ def _handle_password_change(current_user: User, update_data: dict) -> dict:
     new_pass = update_data.get("new_password")
     new_pass_confirm = update_data.get("new_password_confirm")
 
-    logger.info(old_pass, new_pass, new_pass_confirm)
     if not (new_pass and new_pass_confirm):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -175,7 +182,7 @@ def _handle_email_change(current_user: User, update_data: dict, background_tasks
         return {}
 
     new_email = update_data["new_email"]
-    existing_email_user = users_collection.find_one({"email": new_email})
+    existing_email_user = find_user_by_email(new_email)
 
     if existing_email_user and existing_email_user["username"] != current_user.username:
         raise HTTPException(
@@ -183,7 +190,7 @@ def _handle_email_change(current_user: User, update_data: dict, background_tasks
             detail={"field": "email", "message": "Email already in use"}
         )
     
-    create_token_and_send_email(current_user.username, current_user.email, background_tasks)
+    create_token_and_send_email(current_user.id, new_email, background_tasks)
 
     return UserResponse(message="Verification email has been resent.", user=current_user)
 
@@ -217,7 +224,7 @@ def update_user_profile(current_user: User, updates: UpdateUserProfile, backgrou
         return {"updated_user": current_user, "detail": user_email_response.message}
     
     updated_user = users_collection.find_one_and_update(
-        {"username": current_user.username},
+        {"id": current_user.id},
         {"$set": db_updates},
         return_document=ReturnDocument.AFTER
     )
@@ -231,11 +238,9 @@ def update_user_profile(current_user: User, updates: UpdateUserProfile, backgrou
     return {"updated_user": User(**updated_user), "detail": "Profile updated"}
 
 
-
-
-def verify_user_email(username:str, email: str) -> User:
+def verify_user_email(user_id:str, email: str) -> User:
     updated_user = users_collection.find_one_and_update(
-        {"username": username},
+        {"id": user_id},
         {"$set": {"email": email, "is_verified": True}},
         return_document=ReturnDocument.AFTER
     )
@@ -257,7 +262,7 @@ async def add_movie_to_favorites(user: User, movie_id: int):
         raise HTTPException(status_code=404, detail="Movie not found") 
     
     updated_user = users_collection.find_one_and_update(
-    {"username": user.username},
+    {"id": user.id},
     {
         "$addToSet": {"favorite_movies": movie_id}
     },
@@ -272,7 +277,7 @@ def remove_movie_from_favorites(user: User, movie_id: int):
         raise HTTPException(status_code=404, detail="Movie not found in favorites")
     
     updated_user = users_collection.find_one_and_update(
-    {"username": user.username},
+    {"id": user.id},
     {
         "$pull": {"favorite_movies": movie_id}
     },
@@ -293,7 +298,7 @@ async def add_movie_to_watchlist(user: User, movie_id: int):
         raise HTTPException(status_code=404, detail="Movie not found") 
     
     updated_user = users_collection.find_one_and_update(
-    {"username": user.username},
+    {"id": user.id},
     {
         "$addToSet": {"watchlist": movie_id}
     },
@@ -307,7 +312,7 @@ def remove_movie_from_watchlist(user: User, movie_id: int):
         raise HTTPException(status_code=404, detail="Movie not found in watchlist")
     
     updated_user = users_collection.find_one_and_update(
-    {"username": user.username},
+    {"id": user.id},
     {
         "$pull": {"watchlist": movie_id}
     },
@@ -328,17 +333,17 @@ async def add_movie_rating(user: User, movie_id: int, rating: int):
         raise HTTPException(status_code=404, detail="Movie not found")
 
     new_rating_entry = RatingEntry(movie_id=movie_id, rating=rating).dict()
-    existing_rating = users_collection.find_one({"username": user.username, "ratings.movie_id": new_rating_entry["movie_id"]})
+    existing_rating = users_collection.find_one({"id": user.id, "ratings.movie_id": new_rating_entry["movie_id"]})
 
     if existing_rating:
         updated_user = users_collection.find_one_and_update(
-            {"username": user.username, "ratings.movie_id": new_rating_entry["movie_id"]},
+            {"id": user.id, "ratings.movie_id": new_rating_entry["movie_id"]},
             {"$set": {"ratings.$.rating": new_rating_entry["rating"]}},
             return_document=ReturnDocument.AFTER
         )
     else:
         updated_user = users_collection.find_one_and_update(
-            {"username": user.username},
+            {"id": user.id},
             {"$addToSet": {"ratings": new_rating_entry}},
             return_document=ReturnDocument.AFTER
         )

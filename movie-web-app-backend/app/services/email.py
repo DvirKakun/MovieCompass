@@ -7,9 +7,9 @@ from app.schemas.user import User
 from app.services.security import create_access_token
 from datetime import timedelta
 
-def create_token_and_send_email(username: str, email: str, background_tasks: BackgroundTasks):
+def create_token_and_send_email(user_id: str, email: str, background_tasks: BackgroundTasks):
     token = create_access_token(
-        data={"sub": username, "new_email": email}, expires_delta=timedelta(hours=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS)
+        data={"sub": user_id, "new_email": email}, expires_delta=timedelta(hours=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS)
             )
 
     verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"

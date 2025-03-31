@@ -29,27 +29,26 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 def verify_user_login_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username = payload.get("sub")
+        user_id = payload.get("sub")
 
-        if not username:
+        if not user_id:
             raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid token payload"})
     except JWTError:
         raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid or expired token"})
     
-    return username
+    return user_id
 
 
 def verify_user_email_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
-        username = payload.get("sub")
+        user_id = payload.get("sub")
         new_email = payload.get("new_email")
-        
 
-        if not username or not new_email:
+        if not user_id or not new_email:
             raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid token payload"})
         
-        data = {"username": username, "new_email" : new_email}
+        data = {"id": user_id, "new_email" : new_email}
 
     except JWTError:
         raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid or expired token"})

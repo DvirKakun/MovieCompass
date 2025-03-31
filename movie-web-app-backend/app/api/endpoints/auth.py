@@ -47,7 +47,7 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 @router.get("/verify-email")
 async def verify_email(request: Request, token: str):
     user = authenticate_email(token)
-    user = verify_user_email(user.username, user.email)
+    user = verify_user_email(user.id, user.email)
     
     return templates.TemplateResponse("verify_success.html", {"request": request})
 

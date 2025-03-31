@@ -1,5 +1,8 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 
 class RatingEntry(BaseModel):
     movie_id: int
     rating: int
+
+    class Config:
+        extra = Extra.forbid 
