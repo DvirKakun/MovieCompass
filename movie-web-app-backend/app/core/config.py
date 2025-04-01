@@ -27,6 +27,6 @@ class Settings(BaseSettings):
     SMTP_PORT: int
 
     class Config:
-        env_file = os.path.join(os.path.dirname(__file__), "..", ".env")
+        env_file = os.path.join(os.path.dirname(__file__), "../../.env")
 
 settings = Settings()
