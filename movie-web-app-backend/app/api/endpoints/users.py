@@ -5,7 +5,8 @@ from app.schemas.user import User, UpdateUserProfile
 from app.schemas.movie import MovieResponse 
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
-from app.services.ollama import generate_movie_recommendations
+# from app.services.ollama import generate_movie_recommendations
+from ollama_recommender import generate_movie_recommendations 
 from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist, add_movie_rating, update_user_profile
 
 router = APIRouter()

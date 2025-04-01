@@ -14,5 +14,8 @@ COPY . .
 # Expose FastAPI on port 8000
 EXPOSE 8000
 
+# Set PYTHONPATH so it can import from /ollama
+ENV PYTHONPATH="${PYTHONPATH}:/ollama"
+
 # Command to run FastAPI
 CMD ["uvicorn", "app.main:application", "--host", "0.0.0.0", "--port", "8000"]

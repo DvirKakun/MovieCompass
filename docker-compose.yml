@@ -2,9 +2,7 @@ version: "3.8"
 
 services:
   ollama:
-    build:
-      context: ./movie-web-app-backend
-      dockerfile: Ollama.Dockerfile
+    build: ./ollama
     container_name: ollama
     ports:
       - "11434:11434"
@@ -14,6 +12,9 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+    working_dir: /ollama
+    volumes:
+      - ollama-models:/root/.ollama
 
   backend:
     build: ./movie-web-app-backend
@@ -25,4 +26,10 @@ services:
         condition: service_healthy
     volumes:
       - ./movie-web-app-backend:/app
+      - ./ollama:/ollama
     working_dir: /app
+    environment:
+      - PYTHONPATH=/ollama
+
+volumes:
+  ollama-models:

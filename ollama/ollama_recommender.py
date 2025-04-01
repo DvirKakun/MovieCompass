@@ -3,7 +3,7 @@ from typing import List
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.agent import Agent
-from app.core.config import settings
+from core.config import settings
 import json
 
 async def generate_movie_recommendations(favorite_movies: List[str]):
