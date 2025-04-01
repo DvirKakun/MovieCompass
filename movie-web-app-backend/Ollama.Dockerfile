@@ -7,4 +7,4 @@ RUN apt-get update && \
       
 RUN ollama serve & \
     curl --retry 10 --retry-connrefused --retry-delay 1 http://localhost:11434/ && \
-    curl -X POST -d '{"name": "mistral"}' http://localhost:11434/api/pull
+    curl -X POST -d '{"name": "nous-hermes"}' http://localhost:11434/api/pull

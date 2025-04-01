@@ -16,7 +16,7 @@ async def generate_movie_recommendations(favorite_movies: List[str]):
 
     agent = Agent(
         model=model_ollama,
-        system_prompt = ['Return a JSON array of movie names. Do not add any extra text.']
+        system_prompt = ["You're a helpful movie assistant. Reply ONLY with a valid JSON array of movie titles, no explanation, no formatting."]
         )   
 
     response = await agent.run(f"Based on the following movies: {", ".join(favorite_movies)} recommend me 20 movies I might like.")
