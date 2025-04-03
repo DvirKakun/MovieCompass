@@ -2,8 +2,8 @@ from fastapi import APIRouter, Depends, BackgroundTasks, Request
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from app.services.user import create_user, verify_user_email
-from app.services.auth import authenticate_user, authenticate_email ,resend_verification_email, authenticate_google_user
-from app.schemas.user import UserCreate, UserTokenResponse, UserResponse
+from app.services.auth import authenticate_user, authenticate_email ,resend_verification_email, authenticate_google_user, forgot_password_handler
+from app.schemas.user import UserCreate, UserTokenResponse, UserResponse, ForgotPasswordRequest
 from app.core.config import settings
 from fastapi.templating import Jinja2Templates
 
@@ -57,3 +57,6 @@ async def resend_verification(email: str, background_tasks: BackgroundTasks):
 
     return user_response
     
+@router.post("/forgot-password")
+def forgot_password(request: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+    forgot_password_handler(request, background_tasks)

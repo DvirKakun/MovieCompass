@@ -1,5 +1,5 @@
 from fastapi import HTTPException, status, BackgroundTasks
-from app.schemas.user import User, UserTokenResponse, UserResponse
+from app.schemas.user import User, UserTokenResponse, UserResponse, ForgotPasswordRequest
 from app.services.user import get_user, find_user_by_email, create_or_update_google_user, find_user_by_id
 from app.services.security import verify_password
 from app.services.email import create_token_and_send_email
@@ -115,3 +115,12 @@ def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> 
     # background_tasks.add_task(send_verification_email, user.email, verification_link)
 
     return UserResponse(message="Verification email has been resent.", user=user)
+
+def forgot_password_handler(request: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+    email = request.email
+    existing_user = find_user_by_email(email)
+
+    if not existing_user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    

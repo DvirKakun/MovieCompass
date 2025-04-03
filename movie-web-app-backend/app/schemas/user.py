@@ -66,3 +66,6 @@ class UserTokenResponse(BaseModel):
 class UserResponse(BaseModel):
     user: User
     message: str = ""
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
