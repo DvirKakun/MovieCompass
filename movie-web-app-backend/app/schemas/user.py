@@ -27,13 +27,13 @@ class GoogleUserCreate(SharedValidators):
         extra = Extra.forbid  
 
 class UpdateUserProfile(SharedValidators):
-    username: Optional[str]
-    old_password: Optional[str]
-    new_password: Optional[str]
-    new_password_confirm: Optional[str]
-    first_name: Optional[str]
-    last_name: Optional[str]
-    phone_number: Optional[str]
+    username: Optional[str] = None
+    old_password: Optional[str] = None
+    new_password: Optional[str] = None
+    new_password_confirm: Optional[str] = None
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    phone_number: Optional[str] = None
     new_email: Optional[EmailStr] = None
 
     class Config:
@@ -59,7 +59,7 @@ class User(SharedValidators):
         orm_mode: True
         validate_by_name = True
 
-class UserTokenResponse(SharedValidators):
+class UserTokenResponse(BaseModel):
     access_token: str
     token_type: str
     user: User
@@ -67,14 +67,14 @@ class UserTokenResponse(SharedValidators):
     class Config:
         extra = Extra.forbid 
 
-class UserResponse(SharedValidators):
+class UserResponse(BaseModel):
     user: User
     message: str = ""
 
     class Config:
         extra = Extra.forbid 
 
-class ForgotPasswordRequest(SharedValidators):
+class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
     class Config:
@@ -82,8 +82,8 @@ class ForgotPasswordRequest(SharedValidators):
 
 class ResetPasswordRequest(SharedValidators):
     token: str
-    new_password: Optional[str]
-    new_password_confirm: Optional[str]
+    new_password: str
+    new_password_confirm: str
 
     class Config:
         extra = Extra.forbid 

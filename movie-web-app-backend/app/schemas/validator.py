@@ -1,20 +1,8 @@
 import re
-from pydantic import BaseModel, validator, model_validator
+from pydantic import BaseModel, validator
+
 
 class SharedValidators(BaseModel):
-    
-    @model_validator(mode="after")
-    def check_password_confirmation(cls, values):
-        pw = getattr(values, "new_password", None)
-        confirm = getattr(values, "new_password_confirm", None)
-
-        if pw:
-            if not confirm:
-                raise ValueError("Confirm password is required when setting a new password")
-            if pw != confirm:
-                raise ValueError("New password and confirmation do not match")
-            
-        return values
 
     @validator("username", check_fields=False)
     def validate_username(cls, value: str):

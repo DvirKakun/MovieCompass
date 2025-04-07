@@ -128,6 +128,25 @@ def update_user(user : User) -> User:
 
     return User(**updated_user)
 
+def validate_password_confirmation(new_pass: str, new_pass_confirm: str):
+    if not (new_pass and new_pass_confirm):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "password", "message": "Must provide new password and confirm it."}
+        )
+
+    if new_pass:
+        if not new_pass_confirm:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"field": "new_password_confirm", "message": "Confirm password is required"}
+            )
+        if new_pass != new_pass_confirm:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail={"field": "new_password_confirm", "message": "New password and confirmation do not match"}
+            )
+
 def _handle_username(current_user: User, update_data: dict) -> dict:
     if "username" not in update_data:
         return {}
@@ -135,7 +154,7 @@ def _handle_username(current_user: User, update_data: dict) -> dict:
     new_username = update_data["username"]
     existing_user = find_user_by_username(new_username)
 
-    if existing_user and existing_user["username"] != current_user.username:
+    if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"field": "username", "message": "Username already taken"}
@@ -151,12 +170,8 @@ def _handle_password_change(current_user: User, update_data: dict) -> dict:
     new_pass = update_data.get("new_password")
     new_pass_confirm = update_data.get("new_password_confirm")
 
-    if not (new_pass and new_pass_confirm):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"field": "password", "message": "Must provide new password and confirm it."}
-        )
-
+    validate_password_confirmation(new_pass, new_pass_confirm)
+        
     if current_user.hashed_password:
         if not old_pass:
             raise HTTPException(
@@ -179,7 +194,7 @@ def _handle_email_change(current_user: User, update_data: dict, background_tasks
     new_email = update_data["new_email"]
     existing_email_user = find_user_by_email(new_email)
 
-    if existing_email_user and existing_email_user["username"] != current_user.username:
+    if existing_email_user and existing_email_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail={"field": "email", "message": "Email already in use"}
@@ -246,11 +261,7 @@ def verify_user_email(user_id:str, email: str) -> User:
     return User(**updated_user)
 
 def reset_user_password(current_user: User, new_password: str, confirm_new_password: str) -> UserResponse:
-    if not (new_password and confirm_new_password):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"field": "password", "message": "Must provide new password and confirm it."}
-        )
+    validate_password_confirmation(new_password, confirm_new_password)
     
     updated_user = users_collection.find_one_and_update(
         {"id": current_user.id},
