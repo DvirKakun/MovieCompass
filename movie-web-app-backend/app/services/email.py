@@ -7,12 +7,21 @@ from app.schemas.user import User
 from app.services.security import create_access_token
 from datetime import timedelta
 
-def create_token_and_send_email(user_id: str, email: str, background_tasks: BackgroundTasks):
+def auth_email_create_token_and_send_email(user_id: str, email: str, background_tasks: BackgroundTasks):
     token = create_access_token(
         data={"sub": user_id, "new_email": email}, expires_delta=timedelta(hours=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS)
             )
 
     verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
+
+    background_tasks.add_task(send_verification_email, email, verification_link)
+
+def forgot_password_create_token_and_send_email(user_id: str, email: str, background_tasks: BackgroundTasks):
+    token = create_access_token(
+        data={"sub": user_id}, expires_delta=timedelta(hours=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+            )
+
+    verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}" #TODO: Create a new endpoint for forgot password
 
     background_tasks.add_task(send_verification_email, email, verification_link)
 

@@ -1,9 +1,15 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Extra
 from typing import List
 
 class Genre(BaseModel):
     id: int
     name: str
 
+    class Config:
+        extra = Extra.forbid 
+
 class GenreResponse(BaseModel):
     genres: List[Genre]
+
+    class Config:
+        extra = Extra.forbid 

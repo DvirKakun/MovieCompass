@@ -26,7 +26,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     return encoded_jwt
 
-def verify_user_login_token(token: str):
+def verify_user_token(token: str):
     try:
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
         user_id = payload.get("sub")
@@ -37,7 +37,6 @@ def verify_user_login_token(token: str):
         raise HTTPException(status_code=400, detail={"field": "token", "message": "Invalid or expired token"})
     
     return user_id
-
 
 def verify_user_email_token(token: str):
     try:

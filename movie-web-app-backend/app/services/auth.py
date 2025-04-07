@@ -1,11 +1,10 @@
 from fastapi import HTTPException, status, BackgroundTasks
 from app.schemas.user import User, UserTokenResponse, UserResponse, ForgotPasswordRequest
 from app.services.user import get_user, find_user_by_email, create_or_update_google_user, find_user_by_id
-from app.services.security import verify_password
-from app.services.email import create_token_and_send_email
+from app.services.email import auth_email_create_token_and_send_email, forgot_password_create_token_and_send_email
 from app.core.config import settings
 from datetime import timedelta
-from app.services.security import create_access_token, verify_user_email_token
+from app.services.security import create_access_token, verify_user_email_token, verify_password, verify_user_token
 import httpx
 
 async def authenticate_google_user(code: str) -> UserTokenResponse:
@@ -58,6 +57,15 @@ def authenticate_email(token: str) -> User:
     user.email = verified_email
     
     return user
+
+def authenticate_user_reset_password(token: str) -> User:
+    user_id = verify_user_token(token)
+    user = find_user_by_id(user_id)
+
+    if user is None:
+        raise HTTPException(status_code=404, detail={"field": "username", "message" :"User not found"})
+    
+    return user
         
 
 async def get_user_from_google(code: str):
@@ -105,22 +113,21 @@ def resend_verification_email(email: str, background_tasks: BackgroundTasks) -> 
             detail={"field": "email", "message": "Email already verified"}
         )
 
-    create_token_and_send_email(user.username, user.email, background_tasks)
-    # token = create_access_token(
-    #     data={"sub": user.username, "new_email": user.email}, expires_delta=timedelta(hours=1)
-    #         )
-
-    # verification_link = f"{settings.DEPLOYMENT_URL}/auth/verify-email?token={token}"
-
-    # background_tasks.add_task(send_verification_email, user.email, verification_link)
+    auth_email_create_token_and_send_email(user.username, user.email, background_tasks)
 
     return UserResponse(message="Verification email has been resent.", user=user)
 
-def forgot_password_handler(request: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+def forgot_password_handler(request: ForgotPasswordRequest, background_tasks: BackgroundTasks) -> UserResponse:
     email = request.email
     existing_user = find_user_by_email(email)
 
     if not existing_user:
         raise HTTPException(status_code=404, detail="User not found")
+    
+    forgot_password_create_token_and_send_email(existing_user.id, existing_user.email, background_tasks)
+
+    return UserResponse(message="Password reset email has been sent", user=existing_user)
+    
+
     
     

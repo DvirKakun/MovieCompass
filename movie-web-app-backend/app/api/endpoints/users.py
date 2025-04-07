@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
 import asyncio
 import itertools
-from app.schemas.user import User, UpdateUserProfile
+from app.schemas.user import User, UpdateUserProfile, UserResponse
 from app.schemas.movie import MovieResponse 
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
-# from app.services.ollama import generate_movie_recommendations
 from ollama_recommender import generate_movie_recommendations 
 from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist, add_movie_rating, update_user_profile
 
@@ -15,11 +14,11 @@ router = APIRouter()
 async def read_users_me(current_user: User = Depends(get_current_user)):
     return current_user
 
-@router.patch("/me")
+@router.patch("/me", response_model = UserResponse)
 def patch_me(background_tasks: BackgroundTasks, payload: UpdateUserProfile, current_user: User = Depends(get_current_user)):
-    updating_data = update_user_profile(current_user, payload, background_tasks)
+    user_response = update_user_profile(current_user, payload, background_tasks)
 
-    return updating_data
+    return user_response
 
 @router.post("/me/recommendations", response_model=MovieResponse)
 async def recommend_movies(current_user: User = Depends(get_current_user)): 

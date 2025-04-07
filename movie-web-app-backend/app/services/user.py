@@ -6,7 +6,7 @@ from app.core.config import settings
 from fastapi import HTTPException, status, BackgroundTasks
 from app.services.tmdb import make_request
 from app.services.security import get_password_hash, verify_password, get_password_hash
-from app.services.email import create_token_and_send_email
+from app.services.email import auth_email_create_token_and_send_email
 from app.services.scheduler import logger
 
 client = MongoClient(settings.MONGO_CONNECTION_STRING)
@@ -73,7 +73,7 @@ def create_user(user: UserCreate, background_tasks: BackgroundTasks) -> User:
         new_user = User(**user_dict)
         users_collection.insert_one(new_user.dict())
 
-        create_token_and_send_email(new_user.id, new_user.email, background_tasks)
+        auth_email_create_token_and_send_email(new_user.id, new_user.email, background_tasks)
 
         return new_user
     
@@ -157,11 +157,6 @@ def _handle_password_change(current_user: User, update_data: dict) -> dict:
             detail={"field": "password", "message": "Must provide new password and confirm it."}
         )
 
-    if new_pass != new_pass_confirm:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={"field": "password", "message": "New passwords do not match"}
-        )
     if current_user.hashed_password:
         if not old_pass:
             raise HTTPException(
@@ -190,7 +185,7 @@ def _handle_email_change(current_user: User, update_data: dict, background_tasks
             detail={"field": "email", "message": "Email already in use"}
         )
     
-    create_token_and_send_email(current_user.id, new_email, background_tasks)
+    auth_email_create_token_and_send_email(current_user.id, new_email, background_tasks)
 
     return UserResponse(message="Verification email has been resent.", user=current_user)
 
@@ -203,7 +198,7 @@ def _handle_other_profile_fields(update_data: dict) -> dict:
 
     return db_updates
 
-def update_user_profile(current_user: User, updates: UpdateUserProfile, background_tasks: BackgroundTasks) -> dict:
+def update_user_profile(current_user: User, updates: UpdateUserProfile, background_tasks: BackgroundTasks) -> UserResponse:
     update_data = updates.dict(exclude_unset=True)
     
     db_updates_username = _handle_username(current_user, update_data)
@@ -235,7 +230,7 @@ def update_user_profile(current_user: User, updates: UpdateUserProfile, backgrou
             detail="User not found"
         )
     
-    return {"updated_user": User(**updated_user), "detail": "Profile updated"}
+    return UserResponse(user = User(**updated_user), message="Profile updated")
 
 
 def verify_user_email(user_id:str, email: str) -> User:
@@ -249,6 +244,21 @@ def verify_user_email(user_id:str, email: str) -> User:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail={"field": "email", "message": "User not found"})
     
     return User(**updated_user)
+
+def reset_user_password(current_user: User, new_password: str, confirm_new_password: str) -> UserResponse:
+    if not (new_password and confirm_new_password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail={"field": "password", "message": "Must provide new password and confirm it."}
+        )
+    
+    updated_user = users_collection.find_one_and_update(
+        {"id": current_user.id},
+        {"$set": {"hashed_password" : get_password_hash(new_password)}},
+        return_document=ReturnDocument.AFTER
+    )
+
+    return UserResponse(user=User(**updated_user), message="Password has been reset successfully")
 
 async def add_movie_to_favorites(user: User, movie_id: int):
     if movie_id in user.favorite_movies:

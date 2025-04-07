@@ -1,21 +1,22 @@
 from pydantic import BaseModel, EmailStr, Field, Extra
 from typing import Optional, List
 from app.schemas.rating import RatingEntry
+from app.schemas.validator import SharedValidators
 from datetime import datetime, timezone
 from uuid import uuid4
 
-class UserCreate(BaseModel):
-    username: str = Field(..., min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$") #Username must be alphanumeric and can contain underscores
-    password: str = Field(..., min_length=8, max_length=100, pattern="[A-Z]")
+class UserCreate(SharedValidators):
+    username: str 
+    password: str 
     email: EmailStr
-    first_name: str = Field(..., min_length=2, max_length=30)
-    last_name: str = Field(..., min_length=2, max_length=30)
-    phone_number: str = Field(..., pattern=r"^\+?\d{9,15}$")
+    first_name: str
+    last_name: str
+    phone_number: str
     
     class Config:
         extra = Extra.forbid  
 
-class GoogleUserCreate(BaseModel):
+class GoogleUserCreate(SharedValidators):
     email: EmailStr
     first_name: str
     last_name: str
@@ -25,20 +26,20 @@ class GoogleUserCreate(BaseModel):
     class Config:
         extra = Extra.forbid  
 
-class UpdateUserProfile(BaseModel):
-    username: Optional[str] = Field(None, min_length=3, max_length=20, pattern="^[a-zA-Z0-9_]+$")
-    old_password: Optional[str] = Field(None, min_length=8, max_length=100)
-    new_password: Optional[str] = Field(None, min_length=8, max_length=100, pattern="[A-Z]")
-    new_password_confirm: Optional[str] = Field(None, min_length=8, max_length=100)
-    first_name: Optional[str] = Field(None, min_length=2, max_length=30)
-    last_name: Optional[str] = Field(None, min_length=2, max_length=30)
-    phone_number: Optional[str] = Field(None, pattern=r"^\+?\d{9,15}$")
+class UpdateUserProfile(SharedValidators):
+    username: Optional[str]
+    old_password: Optional[str]
+    new_password: Optional[str]
+    new_password_confirm: Optional[str]
+    first_name: Optional[str]
+    last_name: Optional[str]
+    phone_number: Optional[str]
     new_email: Optional[EmailStr] = None
 
     class Config:
         extra = Extra.forbid  
 
-class User(BaseModel):
+class User(SharedValidators):
     id: str = Field(default_factory=lambda: str(uuid4()))
     username: str
     email: EmailStr
@@ -58,14 +59,31 @@ class User(BaseModel):
         orm_mode: True
         validate_by_name = True
 
-class UserTokenResponse(BaseModel):
+class UserTokenResponse(SharedValidators):
     access_token: str
     token_type: str
     user: User
 
-class UserResponse(BaseModel):
+    class Config:
+        extra = Extra.forbid 
+
+class UserResponse(SharedValidators):
     user: User
     message: str = ""
 
-class ForgotPasswordRequest(BaseModel):
+    class Config:
+        extra = Extra.forbid 
+
+class ForgotPasswordRequest(SharedValidators):
     email: EmailStr
+
+    class Config:
+        extra = Extra.forbid 
+
+class ResetPasswordRequest(SharedValidators):
+    token: str
+    new_password: Optional[str]
+    new_password_confirm: Optional[str]
+
+    class Config:
+        extra = Extra.forbid 
