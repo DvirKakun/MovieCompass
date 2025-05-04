@@ -17,7 +17,7 @@ services:
       - ollama-models:/root/.ollama
 
   backend:
-    build: ./movie-web-app-backend
+    build: ./backend
     container_name: backend
     ports:
       - "8000:8000"
@@ -25,7 +25,7 @@ services:
       ollama:
         condition: service_healthy
     volumes:
-      - ./movie-web-app-backend:/app
+      - ./backend:/app
       - ./ollama:/ollama
     working_dir: /app
     environment:

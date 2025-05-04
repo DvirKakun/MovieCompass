@@ -2,30 +2,54 @@
 from typing import List
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
+from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.agent import Agent
 from core.config import settings
-import json
+import json, re
 
-async def generate_movie_recommendations(favorite_movies: List[str]):
-    model_ollama = OpenAIModel(
+_SYSTEM_PROMPT = (
+        "You are a movie recommendation assistant. "
+        "Given a list of favorite movies, recommend exactly 20 other movies. "
+        "Respond ONLY with a valid JSON array of movie titles, e.g., "
+        "[\"Movie 1\", \"Movie 2\", ..., \"Movie 20\"]. "
+        "No extra text or explanation."
+    )
+
+_MODEL_SETTINGS = {"temperature": 0.15, "max_tokens": 512}
+
+_MODEL = OpenAIModel(
         model_name = settings.MODEL_ID,
         provider=OpenAIProvider(
             base_url = settings.OLLAMA_SERVER_ENDPOINT
-        )
+        ),
+)
+
+def parse_json_array(raw: str):
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        match = re.search(r'\[[^\]]*\]', raw, re.DOTALL)
+
+        if match:
+            try:
+                return json.loads(match.group(0))
+            except json.JSONDecodeError:
+                pass
+    return []  
+
+async def generate_movie_recommendations(favorite_movies: List[str]):
+    user_prompt = (
+        f"Based on these movies: {', '.join(favorite_movies)}, "
+        "recommend exactly 20 other movies."
+    )
+    
+    agent = Agent(
+        model=_MODEL,
+        system_prompt = [_SYSTEM_PROMPT], 
+        model_settings = _MODEL_SETTINGS,
     )
 
-    agent = Agent(
-        model=model_ollama,
-        system_prompt = ["You're a helpful movie assistant. Return the result as a valid JSON array of movie titles. No extra text or punctuation."]
-        )   
+    response = await agent.run(user_prompt)
+    movies = parse_json_array(response.data)
 
-    response = await agent.run(f"Based on the following movies: {", ".join(favorite_movies)} recommend me 20 movies I might like.")
-    print(response.data)
-    try:
-        movie_list = json.loads(response.data)
-        
-        return movie_list
-    except json.JSONDecodeError:
-        print("Failed to parse the response as JSON")
-
-        return []      
+    return movies;

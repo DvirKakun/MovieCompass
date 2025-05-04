@@ -5,11 +5,5 @@ class Genre(BaseModel):
     id: int
     name: str
 
-    class Config:
-        extra = Extra.forbid 
-
 class GenreResponse(BaseModel):
     genres: List[Genre]
-
-    class Config:
-        extra = Extra.forbid 
