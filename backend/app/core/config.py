@@ -27,6 +27,7 @@ class Settings(BaseSettings):
     OLLAMA_SERVER_ENDPOINT: str
 
     class Config:
-        env_file = os.path.join(os.path.dirname(__file__), "../../.env")
+        env_file = None
+        # env_file = os.path.join(os.path.dirname(__file__), "../../.env")
 
 settings = Settings()

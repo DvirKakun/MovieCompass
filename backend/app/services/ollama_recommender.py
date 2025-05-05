@@ -3,7 +3,7 @@ from typing import List
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
 from pydantic_ai.agent import Agent
-from core.config import settings
+from app.core.config import settings
 import json, re
 
 SYSTEM_PROMPT = (
