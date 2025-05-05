@@ -2,12 +2,11 @@
 from typing import List
 from pydantic_ai.models.openai import OpenAIModel
 from pydantic_ai.providers.openai import OpenAIProvider
-from pydantic_ai.messages import SystemPromptPart
 from pydantic_ai.agent import Agent
 from core.config import settings
 import json, re
 
-_SYSTEM_PROMPT = (
+SYSTEM_PROMPT = (
         "You are a movie recommendation assistant. "
         "Given a list of favorite movies, recommend exactly 20 other movies. "
         "Respond ONLY with a valid JSON array of movie titles, e.g., "
@@ -15,9 +14,9 @@ _SYSTEM_PROMPT = (
         "No extra text or explanation."
     )
 
-_MODEL_SETTINGS = {"temperature": 0.15, "max_tokens": 512}
+MODEL_SETTINGS = {"temperature": 0.15, "max_tokens": 512}
 
-_MODEL = OpenAIModel(
+MODEL = OpenAIModel(
         model_name = settings.MODEL_ID,
         provider=OpenAIProvider(
             base_url = settings.OLLAMA_SERVER_ENDPOINT
@@ -44,9 +43,9 @@ async def generate_movie_recommendations(favorite_movies: List[str]):
     )
     
     agent = Agent(
-        model=_MODEL,
-        system_prompt = [_SYSTEM_PROMPT], 
-        model_settings = _MODEL_SETTINGS,
+        model=MODEL,
+        system_prompt = [SYSTEM_PROMPT], 
+        model_settings = MODEL_SETTINGS,
     )
 
     response = await agent.run(user_prompt)

@@ -4,8 +4,6 @@ import os
 class Settings(BaseSettings):
     TMDB_API_KEY: str
     BASE_URL: str
-    OLLAMA_SERVER_ENDPOINT: str
-    MODEL_ID: str
     SECRET_KEY: str
     ALGORITHM: str
     ACCESS_TOKEN_EXPIRE_MINUTES: int
@@ -25,6 +23,8 @@ class Settings(BaseSettings):
     EMAIL_PASSWORD: str
     SMTP_SERVER: str
     SMTP_PORT: int
+    MODEL_ID: str
+    OLLAMA_SERVER_ENDPOINT: str
 
     class Config:
         env_file = os.path.join(os.path.dirname(__file__), "../../.env")

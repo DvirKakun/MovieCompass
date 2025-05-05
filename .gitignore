@@ -3,3 +3,6 @@
 
 # Ignore Python cache folders
 __pycache__/
+
+# Ignore the virtual development environment
+venv/

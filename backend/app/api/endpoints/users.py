@@ -1,11 +1,10 @@
 from fastapi import APIRouter, Depends, BackgroundTasks
 import asyncio
-import itertools
 from app.schemas.user import User, UpdateUserProfile, UserResponse
 from app.schemas.movie import MovieResponse 
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
-from ollama_recommender import generate_movie_recommendations 
+from app.services.ollama_recommender import generate_movie_recommendations
 from app.services.user import add_movie_to_favorites, remove_movie_from_favorites, add_movie_to_watchlist, remove_movie_from_watchlist, add_movie_rating, update_user_profile
 
 router = APIRouter()
@@ -28,7 +27,6 @@ async def recommend_movies(current_user: User = Depends(get_current_user)):
     favorite_movies_names = [movie.title for movie in favorite_movies_names]
 
     recommendations = await generate_movie_recommendations(favorite_movies_names)
-    # match_movies = list(itertools.chain(*await asyncio.gather(*(search_movies(movie) for movie in recommendations))))
     match_movies = [res[0] for res in await asyncio.gather(*(search_movies(movie) for movie in recommendations)) if res]
     
     return MovieResponse(movies=match_movies)
