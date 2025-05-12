@@ -1,7 +1,7 @@
 # filepath: /home/dvir_kakun/EASS-Part-A/MovieCompass/movie-web-app-backend/.dockerignore
 __pycache__/
 *.pyc
-.env
+# .env
 .git
 .gitignore
 venv/

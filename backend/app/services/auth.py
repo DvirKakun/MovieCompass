@@ -46,8 +46,8 @@ def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
 
 def authenticate_email(token: str) -> User:
     data = verify_user_email_token(token)
-    user_id = data["id"]
-    verified_email = data["new_email"]
+    user_id = data.get("id")
+    verified_email = data.get("new_email")
 
     user = find_user_by_id(user_id)
 
@@ -127,7 +127,3 @@ def forgot_password_handler(request: ForgotPasswordRequest, background_tasks: Ba
     forgot_password_create_token_and_send_email(existing_user.id, existing_user.email, background_tasks)
 
     return UserResponse(message="Password reset email has been sent", user=existing_user)
-    
-
-    
-    

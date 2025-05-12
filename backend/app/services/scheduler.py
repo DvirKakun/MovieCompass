@@ -34,7 +34,8 @@ scheduler = BackgroundScheduler()
 @application.on_event("startup")
 def startup_event():
     # Schedule the job to run daily at 2:00 AM
-    scheduler.add_job(delete_unverified_users, 'cron', hour=2)
+    scheduler.add_job(delete_unverified_users, 'cron', hour=3)
+
     scheduler.start()
 
 @application.on_event("shutdown")

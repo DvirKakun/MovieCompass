@@ -44,7 +44,7 @@ async def fetch_movie_details(movie_id: int):
 async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
     url = f"{settings.BASE_URL}/movie/{movie_id}/credits?api_key={settings.TMDB_API_KEY}"
     cast_data = await make_request(url)
-    cast = [MovieCast(id=actor["id"], name=actor["name"], character=actor["character"], profile_path=actor.get("profile_path")) for actor in cast_data["cast"]]
+    cast = [MovieCast(id=actor.get("id"), name=actor.get("name"), character=actor.get("character"), profile_path=actor.get("profile_path")) for actor in cast_data["cast"]]
     
     return MovieCastResponse(movie_id=movie_id, cast=cast)
 
