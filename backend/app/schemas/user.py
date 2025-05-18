@@ -1,20 +1,22 @@
-from pydantic import BaseModel, EmailStr, Field, Extra
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List
 from app.schemas.rating import RatingEntry
 from app.schemas.validator import SharedValidators
 from datetime import datetime, timezone
 from uuid import uuid4
 
+
 class UserCreate(SharedValidators):
-    username: str 
-    password: str 
+    username: str
+    password: str
+    confirm_password: str
     email: EmailStr
     first_name: str
     last_name: str
     phone_number: str
-    
-    class Config:
-        extra = Extra.forbid  
+
+    model_config = ConfigDict(extra="forbid")
+
 
 class GoogleUserCreate(SharedValidators):
     email: EmailStr
@@ -23,8 +25,8 @@ class GoogleUserCreate(SharedValidators):
     google_id: str
     is_verified: bool = True
 
-    class Config:
-        extra = Extra.forbid  
+    model_config = ConfigDict(extra="forbid")
+
 
 class UpdateUserProfile(SharedValidators):
     username: Optional[str] = None
@@ -36,8 +38,8 @@ class UpdateUserProfile(SharedValidators):
     phone_number: Optional[str] = None
     new_email: Optional[EmailStr] = None
 
-    class Config:
-        extra = Extra.forbid  
+    model_config = ConfigDict(extra="forbid")
+
 
 class User(SharedValidators):
     id: str = Field(default_factory=lambda: str(uuid4()))
@@ -55,35 +57,33 @@ class User(SharedValidators):
     watchlist: List[int] = []
     ratings: List[RatingEntry] = []
 
-    class Config:
-        orm_mode: True
-        validate_by_name = True
+    model_config = ConfigDict(from_attributes=True, validate_by_name=True)
+
 
 class UserTokenResponse(BaseModel):
     access_token: str
     token_type: str
     user: User
 
-    class Config:
-        extra = Extra.forbid 
+    model_config = ConfigDict(extra="forbid")
+
 
 class UserResponse(BaseModel):
     user: User
     message: str = ""
 
-    class Config:
-        extra = Extra.forbid 
+    model_config = ConfigDict(extra="forbid")
+
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr
 
-    class Config:
-        extra = Extra.forbid 
+    model_config = ConfigDict(extra="forbid")
+
 
 class ResetPasswordRequest(SharedValidators):
     token: str
     new_password: str
     new_password_confirm: str
 
-    class Config:
-        extra = Extra.forbid 
+    model_config = ConfigDict(extra="forbid")

@@ -9,7 +9,6 @@ import httpx
 
 async def authenticate_google_user(code: str) -> UserTokenResponse:
     user_info = await get_user_from_google(code)
-    
     user = create_or_update_google_user(user_info)
         
     access_token = create_access_token(
