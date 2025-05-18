@@ -4,8 +4,10 @@ import { useState } from "react";
 import { Menu, X } from "lucide-react";
 import { cn } from "../../lib/utils";
 import SignUpButton from "../common/SignUpButton";
+import { useNavigate } from "react-router-dom";
 
 export function Navbar() {
+  const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("hero");
 
@@ -17,6 +19,14 @@ export function Navbar() {
     { to: "about", label: "About" },
     { to: "contact", label: "Contact" },
   ];
+
+  const handleLoginClick = () => {
+    navigate("/auth?mode=login");
+  };
+
+  const handleSignupClick = () => {
+    navigate("/auth?mode=signup");
+  };
 
   return (
     <header className="fixed top-0 z-50 w-full backdrop-blur-md border-b border-border">
@@ -61,12 +71,13 @@ export function Navbar() {
         {/* Desktop CTA Button */}
         <div className="hidden md:flex items-center gap-4">
           <Button
+            onClick={handleLoginClick}
             variant="ghost"
             className="text-primary hover:text-brand hover:bg-transparent"
           >
             Login
           </Button>
-          <SignUpButton />
+          <SignUpButton onClick={handleSignupClick} />
         </div>
 
         {/* Mobile Menu Button */}
@@ -100,10 +111,11 @@ export function Navbar() {
               <Button
                 variant="ghost"
                 className="w-full text-primary hover:text-cta_hover hover:bg-transparent justify-start"
+                onClick={handleLoginClick}
               >
                 Login
               </Button>
-              <SignUpButton className="w-full" />
+              <SignUpButton className="w-full" onClick={handleSignupClick} />
             </div>
           </nav>
         </div>

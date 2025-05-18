@@ -1,25 +1,19 @@
+// Add this to your main App.tsx or router configuration
+
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
 
 function App() {
-  // Future: Add React Router here
-  // For now, just render HomePage
-  return <HomePage />;
-
-  // Future routing structure:
-  /*
   return (
     <Router>
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route path="/signup" element={<SignUpPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/movies" element={<MoviesPage />} />
-        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/auth" element={<AuthPage />} />
+        {/* Add other routes as needed */}
       </Routes>
     </Router>
   );
-  */
 }
 
 export default App;

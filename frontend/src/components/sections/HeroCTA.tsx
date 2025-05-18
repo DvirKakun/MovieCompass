@@ -1,9 +1,11 @@
 import SignUpButton from "../common/SignUpButton";
+import { useNavigate } from "react-router-dom";
 
 export default function HeroCTA() {
-  const handleGetStarted = () => {
-    // Future: Navigate to signup route
-    console.log("Navigate to signup");
+  const navigate = useNavigate();
+
+  const handleSignupClick = () => {
+    navigate("/auth?mode=signup");
   };
 
   return (
@@ -25,7 +27,7 @@ export default function HeroCTA() {
       <div className="text-sans flex flex-col sm:flex-row gap-4">
         <SignUpButton
           className="w-full sm:w-auto text-lg px-8 py-3"
-          onClick={handleGetStarted}
+          onClick={handleSignupClick}
         >
           Get Started Free
         </SignUpButton>
