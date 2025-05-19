@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import type { AuthFormData, FormErrors } from "../types/auth";
+import { useAuthMode } from "./useAuthMode";
 
 function transformBackendErrors(
   backendErrors: Array<{ field: string; message: string }>
@@ -28,6 +29,7 @@ function transformBackendErrors(
 export function useAuthSubmit() {
   const navigate = useNavigate();
   const { state, dispatch } = useAuth();
+  const { handleModeChange } = useAuthMode();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -91,11 +93,21 @@ export function useAuthSubmit() {
       } else {
         const message = state.isLogin
           ? "Login successful!"
-          : "Account created successfully!";
+          : "Account created successfully! Please check your email to verify your account.";
+
         dispatch({ type: "SET_SUCCESS_MESSAGE", payload: message });
-        setTimeout(() => {
-          navigate("/dashboard");
-        }, 1500);
+
+        if (state.isLogin) {
+          // Login successful - go to dashboard
+          setTimeout(() => {
+            navigate("/dashboard");
+          }, 1500);
+        } else {
+          // Signup successful - switch to login mode with verification prompt
+          setTimeout(() => {
+            handleModeChange("login");
+          }, 2000); // Give user time to read success message
+        }
       }
     } catch (error) {
       dispatch({
