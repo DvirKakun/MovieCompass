@@ -4,6 +4,7 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useAuthSubmit } from "../../hooks/useAuthSubmit";
 import { AuthFormFields } from "./AuthFormFields";
 import { AuthSubmitButton } from "./AuthSubmitButton";
+import { AuthVerificationAlert } from "./AuthVerificationAlert";
 
 export function AuthForm() {
   const navigate = useNavigate();
@@ -12,6 +13,7 @@ export function AuthForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
+      <AuthVerificationAlert />
       <AuthFormFields />
       <AuthSubmitButton />
 

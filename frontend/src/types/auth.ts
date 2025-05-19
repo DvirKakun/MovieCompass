@@ -3,13 +3,13 @@ export interface FormErrors {
 }
 
 export interface AuthFormData {
-  firstName?: string;
-  lastName?: string;
+  first_name?: string;
+  last_name?: string;
   email: string;
   password: string;
-  confirmPassword?: string;
+  confirm_password?: string;
   username?: string;
-  phoneNumber?: string;
+  phone_number?: string;
 }
 
 export interface AuthState {

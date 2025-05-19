@@ -1,25 +1,23 @@
 import { useAuth } from "../../contexts/AuthContext";
 
-interface AuthFormTitleProps {
-  isMobile?: boolean;
-}
-
-export function AuthFormTitle({ isMobile = false }: AuthFormTitleProps) {
+export function AuthFormTitle() {
   const { state } = useAuth();
 
-  const className = isMobile
-    ? "lg:hidden text-center mb-2"
-    : "hidden lg:block text-center mb-4";
-
-  const headingClassName = isMobile
-    ? "text-lg font-heading font-bold text-foreground"
-    : "text-xl font-heading font-bold text-foreground";
-
   return (
-    <div className={className}>
-      <h2 className={headingClassName}>
-        {state.isLogin ? "Login" : "Create Account"}
-      </h2>
-    </div>
+    <>
+      {/* Mobile Title */}
+      <div className="lg:hidden text-center mb-2">
+        <h2 className="text-lg font-heading font-bold text-foreground">
+          {state.isLogin ? "Login" : "Create Account"}
+        </h2>
+      </div>
+
+      {/* Desktop Title */}
+      <div className="hidden lg:block text-center mb-4">
+        <h2 className="text-xl font-heading font-bold text-foreground">
+          {state.isLogin ? "Login" : "Create Account"}
+        </h2>
+      </div>
+    </>
   );
 }

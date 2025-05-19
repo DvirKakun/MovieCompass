@@ -1,6 +1,5 @@
 import { AuthMobileHeader } from "../auth/AuthMobileHeader";
 import { AuthModeToggle } from "../auth/AuthModeToggle";
-import { AuthFormTitle } from "../auth/AuthFormTitle";
 import { AuthFormCard } from "../auth/AuthFormCard";
 import { AuthFooter } from "../auth/AuthFooter";
 import { AuthMobileModeSwitch } from "../auth/AuthMobileModeSwitch";
@@ -14,7 +13,6 @@ export function AuthFormSection() {
       {/* Form Container - Scrollable */}
       <div className="flex-1 flex flex-col items-center justify-start lg:justify-center p-2 lg:p-4 overflow-y-auto">
         <div className="w-full max-w-md">
-          <AuthFormTitle isMobile />
           <AuthFormCard />
           <AuthFooter />
           <AuthMobileModeSwitch />

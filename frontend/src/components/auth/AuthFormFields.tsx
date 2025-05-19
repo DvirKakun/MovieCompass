@@ -127,12 +127,17 @@ export function AuthFormFields() {
             required
             placeholder="john@example.com"
             className={`pl-7 h-7 text-xs ${
-              state.errors.email ? "border-destructive" : ""
+              state.errors.email || (state.isLogin && state.errors.username)
+                ? "border-destructive"
+                : ""
             }`}
           />
         </div>
         {state.errors.email && (
           <p className="text-xs text-destructive">{state.errors.email}</p>
+        )}
+        {state.isLogin && state.errors.username && (
+          <p className="text-xs text-destructive">{state.errors.username}</p>
         )}
       </div>
 

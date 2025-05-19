@@ -1,6 +1,29 @@
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
-import type { AuthFormData } from "../types/auth";
+import type { AuthFormData, FormErrors } from "../types/auth";
+
+function transformBackendErrors(
+  backendErrors: Array<{ field: string; message: string }>
+): FormErrors {
+  const fieldMapping: { [key: string]: string } = {
+    first_name: "firstName",
+    last_name: "lastName",
+    confirm_password: "confirmPassword",
+    phone_number: "phoneNumber",
+    email: "email",
+    password: "password",
+    username: "username",
+  };
+
+  const transformedErrors: FormErrors = {};
+
+  backendErrors.forEach((error) => {
+    const frontendField = fieldMapping[error.field] || error.field;
+    transformedErrors[frontendField] = error.message;
+  });
+
+  return transformedErrors;
+}
 
 export function useAuthSubmit() {
   const navigate = useNavigate();
@@ -11,39 +34,54 @@ export function useAuthSubmit() {
     dispatch({ type: "SET_LOADING", payload: true });
     dispatch({ type: "CLEAR_MESSAGES" });
 
+    const isLogin = state.isLogin;
     const formData = new FormData(e.currentTarget);
     const data: AuthFormData = {
       email: formData.get("email") as string,
       password: formData.get("password") as string,
     };
 
-    if (!state.isLogin) {
-      data.firstName = formData.get("firstName") as string;
-      data.lastName = formData.get("lastName") as string;
-      data.confirmPassword = formData.get("confirmPassword") as string;
+    if (!isLogin) {
+      data.first_name = formData.get("firstName") as string;
+      data.last_name = formData.get("lastName") as string;
+      data.confirm_password = formData.get("confirmPassword") as string;
       data.username = formData.get("username") as string;
-      data.phoneNumber = formData.get("phoneNumber") as string;
+      data.phone_number = formData.get("phoneNumber") as string;
     } else {
       data.username = formData.get("email") as string;
     }
 
+    const url = `http://localhost:8000/auth/${isLogin ? "token" : "signup"}`;
+    const headers = {
+      "Content-Type": isLogin
+        ? "application/x-www-form-urlencoded"
+        : "application/json",
+    };
+    const body = isLogin
+      ? new URLSearchParams({
+          grant_type: "password",
+          username: data.username,
+          password: data.password,
+          scope: "",
+          client_id: "",
+          client_secret: "",
+        })
+      : JSON.stringify(data);
+
     try {
-      const response = await fetch(
-        `/api/auth/${state.isLogin ? "login" : "signup"}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(data),
-        }
-      );
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body,
+      });
 
       const result = await response.json();
 
       if (!response.ok) {
         if (result.errors) {
-          dispatch({ type: "SET_ERRORS", payload: result.errors });
+          const transformedErrors = transformBackendErrors(result.errors);
+
+          dispatch({ type: "SET_ERRORS", payload: transformedErrors });
         } else {
           dispatch({
             type: "SET_ERRORS",

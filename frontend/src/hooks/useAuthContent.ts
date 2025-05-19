@@ -26,7 +26,7 @@ export function useAuthContent(isLogin: boolean) {
         { icon: Zap, text: "Instant movie discovery" },
       ],
       cta: "Already have an account?",
-      ctaButton: "Sign In",
+      ctaButton: "Login",
     },
   };
 

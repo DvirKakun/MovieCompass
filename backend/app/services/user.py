@@ -55,7 +55,7 @@ def get_user(identifier: str) -> User:
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail={"field": "username", "message": "User not found"},
+            detail={"field": "username", "message": "Incorrect username or password"},
         )
 
     return user
