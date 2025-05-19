@@ -1,4 +1,4 @@
-import { motion } from "framer-motion";
+import { motion, scale } from "framer-motion";
 import { Mail, ArrowRight, Send } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
@@ -43,9 +43,10 @@ export default function ContactCTA({
           <div className="space-y-6">
             {/* Animated Mail Icon */}
             <motion.div
+              initial={{ scale: 1, rotate: 0 }}
               whileHover={{ scale: 1.1, rotate: [0, -10, 10, 0] }}
               transition={{ duration: 0.6 }}
-              className="w-16 h-16 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto group"
+              className="w-16 h-16 bg-brand-primary/20 rounded-2xl flex items-center justify-center mx-auto group"
             >
               <Mail className="w-8 h-8 text-primary group-hover:text-primary" />
             </motion.div>

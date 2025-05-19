@@ -1,5 +1,5 @@
-import CinemaVideo from "./CinemaVideo";
-import HeroCTA from "./HeroCTA";
+import CinemaVideo from "../hero/CinemaVideo";
+import HeroCTA from "../hero/HeroCTA";
 
 export default function HeroSection() {
   return (

@@ -11,7 +11,7 @@ export function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState("hero");
 
-  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
+  const toggleMenu = () => setIsMenuOpen((prevIsMenuOpen) => !prevIsMenuOpen);
 
   const navItems = [
     { to: "hero", label: "Home" },
@@ -49,7 +49,7 @@ export function Navbar() {
               activeClass="text-brand"
               onSetActive={() => setActiveSection(item.to)}
               className={cn(
-                "cursor-pointer text-sm font-mediud  transition-colors duration-200 relative group",
+                "cursor-pointer text-sm font-sans transition-colors duration-200 relative group",
                 activeSection === item.to
                   ? "text-brand"
                   : " text-primary hover:text-brand"

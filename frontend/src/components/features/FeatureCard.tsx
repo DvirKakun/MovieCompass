@@ -129,7 +129,7 @@ export default function FeatureCard({
             <motion.div
               animate={{ rotate: [0, 360] }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-              className="w-16 h-16 bg-brand/20 rounded-2xl flex items-center justify-center mb-6 mx-auto"
+              className="w-16 h-16 bg-brand-primary/20 rounded-2xl flex items-center justify-center mb-6 mx-auto"
             >
               <IconComponent className="w-8 h-8 text-brand" />
             </motion.div>
@@ -288,22 +288,7 @@ export default function FeatureCard({
                 </div>
               )}
             </div>
-
-            {/* Floating Elements */}
-            <motion.div
-              animate={{ y: [0, -5, 0] }}
-              transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              className="absolute -top-4 -right-4 bg-brand rounded-full p-2 shadow-lg"
-            >
-              <IconComponent className="w-4 h-4 text-background" />
-            </motion.div>
           </motion.div>
-
-          {/* Side Glow Effects */}
-          <div className="absolute inset-0 -z-10">
-            <div className="absolute top-1/4 -left-8 w-16 h-32 bg-gradient-to-r from-transparent via-brand/20 to-transparent blur-xl"></div>
-            <div className="absolute bottom-1/4 -right-8 w-16 h-32 bg-gradient-to-l from-transparent via-rating/20 to-transparent blur-xl"></div>
-          </div>
         </div>
       </motion.div>
     </div>

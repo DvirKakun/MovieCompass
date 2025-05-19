@@ -23,15 +23,13 @@ export default function HeroCTA() {
         </p>
       </div>
 
-      {/* CTA Buttons */}
-      <div className="text-sans flex flex-col sm:flex-row gap-4">
-        <SignUpButton
-          className="w-full sm:w-auto text-lg px-8 py-3"
-          onClick={handleSignupClick}
-        >
-          Get Started Free
-        </SignUpButton>
-      </div>
+      {/* CTA Button */}
+      <SignUpButton
+        className="w-full sm:w-auto text-lg px-8 py-3"
+        onClick={handleSignupClick}
+      >
+        Get Started Free
+      </SignUpButton>
     </div>
   );
 }
