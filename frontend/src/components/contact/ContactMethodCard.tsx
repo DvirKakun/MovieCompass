@@ -8,12 +8,12 @@ interface ContactMethodCardProps {
     description: string;
     details: string;
   };
-  key: number;
+  index?: number;
 }
 
 export default function ContactMethodCard({
   contact,
-  key,
+  index = 0,
 }: ContactMethodCardProps) {
   const IconComponent = contact.icon;
 
@@ -25,6 +25,7 @@ export default function ContactMethodCard({
       transition: {
         duration: 0.6,
         ease: "easeOut",
+        delay: index * 0.1,
       },
     },
   };
@@ -32,7 +33,6 @@ export default function ContactMethodCard({
   // Option with more hover effects
   return (
     <motion.div
-      key={key}
       variants={itemVariants}
       whileHover={{ y: -5, scale: 1.02 }}
       className="group"

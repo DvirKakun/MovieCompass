@@ -1,5 +1,5 @@
 from pydantic_settings import BaseSettings
-import os
+
 
 class Settings(BaseSettings):
     TMDB_API_KEY: str
@@ -19,14 +19,16 @@ class Settings(BaseSettings):
     GOOGLE_USERINFO_ENDPOINT: str
     DEPLOYMENT_URL: str
     EMAIL_FROM: str
-    EMAIL_USERNAME  : str
+    EMAIL_USERNAME: str
     EMAIL_PASSWORD: str
     SMTP_SERVER: str
     SMTP_PORT: int
     MODEL_ID: str
     OLLAMA_SERVER_ENDPOINT: str
+    FRONTEND_URL: str
 
     class Config:
-        env_file = '.env'
+        env_file = ".env"
+
 
 settings = Settings()

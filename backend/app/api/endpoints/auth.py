@@ -42,11 +42,15 @@ async def google_login():
     return RedirectResponse(url)
 
 
-@router.get("/google/callback", response_model=UserTokenResponse)
+@router.get("/google/callback")
 async def google_callback(code: str):
     user_token_response = await authenticate_google_user(code)
+    frontend_url = settings.FRONTEND_URL
+    redirect_url = (
+        f"{frontend_url}/auth/callback#access_token={user_token_response.access_token}"
+    )
 
-    return user_token_response
+    return RedirectResponse(url=redirect_url)
 
 
 @router.post("/signup", response_model=UserResponse)

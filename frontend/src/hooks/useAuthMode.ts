@@ -9,10 +9,24 @@ export function useAuthMode() {
   // Initialize form mode based on URL params
   useEffect(() => {
     const mode = searchParams.get("mode");
+
     if (mode === "signup") {
       dispatch({ type: "SET_MODE", payload: false });
     } else {
       dispatch({ type: "SET_MODE", payload: true });
+    }
+
+    const errorCode = searchParams.get("error");
+
+    if (errorCode) {
+      dispatch({
+        type: "SET_ERRORS",
+        payload: { general: "An error occurred. Please try again." },
+      });
+
+      // Remove the error parameter from URL to prevent showing the error again on refresh
+      searchParams.delete("error");
+      setSearchParams(searchParams);
     }
   }, [searchParams, dispatch]);
 

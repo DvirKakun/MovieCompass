@@ -5,6 +5,7 @@ import { useAuthSubmit } from "../../hooks/useAuthSubmit";
 import { AuthFormFields } from "./AuthFormFields";
 import { AuthSubmitButton } from "./AuthSubmitButton";
 import { AuthVerificationAlert } from "./AuthVerificationAlert";
+import { GoogleAuthButton } from "./GoogleAuthButton";
 
 export function AuthForm() {
   const navigate = useNavigate();
@@ -29,6 +30,8 @@ export function AuthForm() {
           </Button>
         </div>
       )}
+
+      <GoogleAuthButton isLogin={state.isLogin} className="mt-4" />
     </form>
   );
 }

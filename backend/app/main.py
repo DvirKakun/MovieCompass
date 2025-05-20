@@ -13,7 +13,7 @@ application.add_exception_handler(RequestValidationError, validation_exception_h
 application.add_exception_handler(HTTPException, http_exception_handler)
 application.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:5173"],
+    allow_origins=["http://localhost:5173"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

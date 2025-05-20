@@ -2,7 +2,6 @@ import { AuthMobileHeader } from "../auth/AuthMobileHeader";
 import { AuthModeToggle } from "../auth/AuthModeToggle";
 import { AuthFormCard } from "../auth/AuthFormCard";
 import { AuthFooter } from "../auth/AuthFooter";
-import { AuthMobileModeSwitch } from "../auth/AuthMobileModeSwitch";
 
 export function AuthFormSection() {
   return (
@@ -15,7 +14,6 @@ export function AuthFormSection() {
         <div className="w-full max-w-md">
           <AuthFormCard />
           <AuthFooter />
-          <AuthMobileModeSwitch />
         </div>
       </div>
     </div>

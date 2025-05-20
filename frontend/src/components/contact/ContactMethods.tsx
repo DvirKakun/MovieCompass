@@ -23,7 +23,7 @@ export default function ContactMethods() {
       className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20"
     >
       {contact.map((item, index) => (
-        <ContactMethodCard key={index} contact={item} />
+        <ContactMethodCard key={index} index={index} contact={item} />
       ))}
     </motion.div>
   );

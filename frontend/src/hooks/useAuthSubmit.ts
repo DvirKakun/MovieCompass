@@ -2,6 +2,8 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../contexts/AuthContext";
 import type { AuthFormData, FormErrors } from "../types/auth";
 import { useAuthMode } from "./useAuthMode";
+import { BACKEND_URL } from "../data/constants";
+import { useUser } from "../contexts/UserContext";
 
 function transformBackendErrors(
   backendErrors: Array<{ field: string; message: string }>
@@ -30,6 +32,7 @@ export function useAuthSubmit() {
   const navigate = useNavigate();
   const { state, dispatch } = useAuth();
   const { handleModeChange } = useAuthMode();
+  const { dispatch: userDispatch } = useUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -53,7 +56,7 @@ export function useAuthSubmit() {
       data.username = formData.get("email") as string;
     }
 
-    const url = `http://localhost:8000/auth/${isLogin ? "token" : "signup"}`;
+    const url = `${BACKEND_URL}/auth/${isLogin ? "token" : "signup"}`;
     const headers = {
       "Content-Type": isLogin
         ? "application/x-www-form-urlencoded"
@@ -98,6 +101,14 @@ export function useAuthSubmit() {
         dispatch({ type: "SET_SUCCESS_MESSAGE", payload: message });
 
         if (state.isLogin) {
+          const { access_token, user } = result;
+
+          localStorage.setItem("access_token", access_token);
+
+          if (user) {
+            userDispatch({ type: "SET_USER", payload: user });
+          }
+
           // Login successful - go to dashboard
           setTimeout(() => {
             navigate("/dashboard");
