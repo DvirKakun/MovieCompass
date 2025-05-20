@@ -8,10 +8,14 @@ import { AuthSidebar } from "../components/auth/AuthSidebar";
 import { AuthFormSection } from "../components/sections/AuthFormSection";
 
 export default function AuthPage() {
-  const { state } = useUser();
+  const { state, fetchUserProfile } = useUser();
   const navigate = useNavigate();
 
   // If user is already authenticated, redirect to dashboard
+  useEffect(() => {
+    fetchUserProfile();
+  }, []);
+
   useEffect(() => {
     if (state.isAuthenticated) {
       navigate("/dashboard", { replace: true });

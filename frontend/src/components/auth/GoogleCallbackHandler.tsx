@@ -1,8 +1,10 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useUser } from "../../contexts/UserContext";
 
 export function GoogleCallbackHandler() {
   const navigate = useNavigate();
+  const { fetchUserProfile, dispatch } = useUser();
 
   useEffect(() => {
     // Extract token from URL hash fragment
@@ -12,15 +14,17 @@ export function GoogleCallbackHandler() {
     if (token) {
       // Store the token in localStorage
       localStorage.setItem("access_token", token);
+      fetchUserProfile();
 
       // Redirect to dashboard
       setTimeout(() => navigate("/dashboard"), 0);
     } else {
       // Handle error case - no token found
-      setTimeout(
-        () => navigate("/auth?mode=login&error=authentication_failed"),
-        0
-      );
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Something went wrong",
+      });
+      setTimeout(() => navigate("/auth?mode=login"), 0);
     }
   }, [navigate]);
 

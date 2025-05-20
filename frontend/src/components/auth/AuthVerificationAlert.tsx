@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { AlertTriangle, Mail, Speaker } from "lucide-react";
+import { AlertTriangle, Mail } from "lucide-react";
 import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";

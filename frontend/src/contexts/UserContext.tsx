@@ -1,5 +1,4 @@
 // src/contexts/UserContext.tsx
-import { api, registerLogoutHandler } from "../utils/authFetch";
 import {
   createContext,
   useContext,
@@ -9,6 +8,8 @@ import {
 } from "react";
 import type { ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
+import { BACKEND_URL } from "../data/constants";
+import { Speaker } from "lucide-react";
 
 interface UserApiResponse {
   id: string;
@@ -16,6 +17,9 @@ interface UserApiResponse {
   first_name: string;
   last_name: string;
   email: string;
+  favorite_movies: [];
+  watchlist: [];
+  ratings: [];
 }
 
 interface UserProfile {
@@ -24,6 +28,9 @@ interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
+  favoriteMovies: [];
+  watchlist: [];
+  ratings: [];
 }
 
 interface UserState {
@@ -94,10 +101,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
   const navigate = useNavigate();
 
+  // Logout user
+  const logout = useCallback(() => {
+    localStorage.removeItem("access_token");
+    dispatch({ type: "CLEAR_USER" });
+
+    const url = "/auth?mode=login";
+
+    navigate(url);
+  }, [navigate]);
+
   // Fetch user profile with token
   const fetchUserProfile = useCallback(async () => {
     const token = localStorage.getItem("access_token");
-
     if (!token) {
       dispatch({ type: "CLEAR_USER" });
 
@@ -107,7 +123,34 @@ export function UserProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const rawData = await api.get<UserApiResponse>("/users/me");
+      const response = await fetch(`${BACKEND_URL}/users/me`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const rawData = await response.json();
+
+      if (!response.ok) {
+        const tokenError = rawData.errors[0].field === "token";
+
+        if (tokenError) {
+          logout();
+          dispatch({
+            type: "SET_ERROR",
+            payload: "Your session has expired. Please log in again.",
+          });
+        } else {
+          dispatch({
+            type: "SET_ERROR",
+            payload: "An unknown error occurred",
+          });
+        }
+
+        return;
+      }
 
       const userData: UserProfile = {
         id: rawData.id,
@@ -115,48 +158,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
         firstName: rawData.first_name,
         lastName: rawData.last_name,
         email: rawData.email,
+        favoriteMovies: rawData.favorite_movies,
+        watchlist: rawData.watchlist,
+        ratings: rawData.ratings,
       };
 
       dispatch({ type: "SET_USER", payload: userData });
     } catch (error) {
       dispatch({
         type: "SET_ERROR",
-        payload:
-          error instanceof Error ? error.message : "An unknown error occurred",
+        payload: "Network error. Please try again.",
       });
     }
   }, [navigate]);
-
-  // Check token and fetch user data on mount
-  useEffect(() => {
-    const token = localStorage.getItem("access_token");
-
-    if (token) {
-      fetchUserProfile();
-    } else {
-      // No token, so we're not loading anymore
-      dispatch({ type: "SET_LOADING", payload: false });
-    }
-  }, [fetchUserProfile]);
-
-  // Logout user
-  const logout = useCallback(
-    (error: string | null = null) => {
-      localStorage.removeItem("access_token");
-      dispatch({ type: "CLEAR_USER" });
-
-      const url = error
-        ? `/auth?mode=login&error=${encodeURIComponent(error)}`
-        : `/auth?mode=login`;
-
-      navigate(url);
-    },
-    [navigate]
-  );
-
-  useEffect(() => {
-    registerLogoutHandler(logout);
-  }, [logout]);
 
   return (
     <UserContext.Provider value={{ state, dispatch, fetchUserProfile, logout }}>
