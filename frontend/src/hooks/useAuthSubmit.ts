@@ -32,7 +32,7 @@ export function useAuthSubmit() {
   const navigate = useNavigate();
   const { state, dispatch } = useAuth();
   const { handleModeChange } = useAuthMode();
-  const { dispatch: userDispatch } = useUser();
+  const { fetchUserProfile } = useUser();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -106,7 +106,7 @@ export function useAuthSubmit() {
           localStorage.setItem("access_token", access_token);
 
           if (user) {
-            userDispatch({ type: "SET_USER", payload: user });
+            fetchUserProfile();
           }
 
           // Login successful - go to dashboard

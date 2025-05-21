@@ -157,7 +157,10 @@ def forgot_password_handler(
     existing_user = find_user_by_email(email)
 
     if not existing_user:
-        raise HTTPException(status_code=404, detail="User not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={"field": "email", "message": "User not found"},
+        )
 
     forgot_password_create_token_and_send_email(
         existing_user.id, existing_user.email, background_tasks

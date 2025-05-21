@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, BackgroundTasks, Request
+from fastapi import APIRouter, Depends, BackgroundTasks, Request, status
+from fastapi.responses import JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.responses import RedirectResponse
 from app.services.user import create_user, verify_user_email, reset_user_password
@@ -45,10 +46,7 @@ async def google_login():
 @router.get("/google/callback")
 async def google_callback(code: str):
     user_token_response = await authenticate_google_user(code)
-    frontend_url = settings.FRONTEND_URL
-    redirect_url = (
-        f"{frontend_url}/auth/callback#access_token={user_token_response.access_token}"
-    )
+    redirect_url = f"{settings.FRONTEND_URL}/auth/callback#access_token={user_token_response.access_token}"
 
     return RedirectResponse(url=redirect_url)
 
@@ -70,11 +68,14 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 @router.get("/verify-email")
-async def verify_email(request: Request, token: str):
+async def verify_email(token: str):
     user = authenticate_email(token)
     user = verify_user_email(user.id, user.email)
 
-    return templates.TemplateResponse("verify_success.html", {"request": request})
+    return JSONResponse(
+        status_code=status.HTTP_200_OK,
+        content={"message": "Email verified successfully"},
+    )
 
 
 @router.post("/resend-verification", response_model=UserResponse)
@@ -99,3 +100,10 @@ def reset_password(request: ResetPasswordRequest):
     )
 
     return user_response
+
+
+@router.get("/verify-reset-token", response_model=dict)
+def verify_reset_token(token: str):
+    authenticate_user_reset_password(token)
+
+    return {"valid": True, "message": "Token is valid"}

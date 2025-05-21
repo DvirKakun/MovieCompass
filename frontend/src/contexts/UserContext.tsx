@@ -114,6 +114,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   // Fetch user profile with token
   const fetchUserProfile = useCallback(async () => {
     const token = localStorage.getItem("access_token");
+
     if (!token) {
       dispatch({ type: "CLEAR_USER" });
 

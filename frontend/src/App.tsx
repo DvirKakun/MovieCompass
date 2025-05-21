@@ -1,53 +1,51 @@
 // src/App.tsx
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
 // import Dashboard from "./pages/Dashboard";
 import { GoogleCallbackHandler } from "./components/auth/GoogleCallbackHandler";
 import { UserProvider } from "./contexts/UserContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
+import EmailVerificationPage from "./pages/EmailVerificationPage";
 
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Public routes - no auth required */}
-        <Route path="/" element={<HomePage />} />
+      <UserProvider>
+        <Routes>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/auth" element={<AuthPage />} />
+          <Route path="/auth/callback" element={<GoogleCallbackHandler />} />
+          <Route
+            path="/auth/forgot-password"
+            element={<ForgotPasswordPage />}
+          />
+          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/auth/verify-email"
+            element={<EmailVerificationPage />}
+          />
 
-        {/* Auth-related routes - need UserProvider for login/redirect logic */}
-        <Route
-          path="/auth"
-          element={
-            <UserProvider>
-              <AuthPage />
-            </UserProvider>
-          }
-        />
-
-        <Route
-          path="/auth/callback"
-          element={
-            <UserProvider>
-              <GoogleCallbackHandler />
-            </UserProvider>
-          }
-        />
-
-        {/* Protected routes - need UserProvider for auth checks */}
-        <Route
-          path="/dashboard/"
-          element={
-            <UserProvider>
+          <Route
+            path="/dashboard"
+            element={
               <ProtectedRoute>
                 <></>
                 {/* <Dashboard /> */}
               </ProtectedRoute>
-            </UserProvider>
-          }
-        />
+            }
+          />
 
-        {/* Add other protected routes here */}
-      </Routes>
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </UserProvider>
     </Router>
   );
 }

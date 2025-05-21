@@ -4,18 +4,18 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
-import { useAuth } from "../../contexts/AuthContext";
 
-export function AuthVerificationAlert() {
-  const { state } = useAuth();
+interface AuthVerificationAlertProps {
+  show: boolean;
+}
+
+export function AuthVerificationAlert({ show }: AuthVerificationAlertProps) {
+  if (!show) return null;
+
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
-
-  const verificationError = state.errors.verification;
-
-  if (!verificationError) return null;
 
   const validateEmail = (email: string): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

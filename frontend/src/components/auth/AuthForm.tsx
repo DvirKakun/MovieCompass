@@ -14,17 +14,16 @@ export function AuthForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-2">
-      <AuthVerificationAlert />
+      <AuthVerificationAlert show={!!state.errors.verification} />
       <AuthFormFields />
       <AuthSubmitButton />
 
-      {/* Forgot Password (Login only) */}
       {state.isLogin && (
         <div className="text-center pt-1">
           <Button
             variant="link"
             className="text-primary hover:text-primary/80 text-xs h-auto p-0"
-            onClick={() => navigate("/forgot-password")}
+            onClick={() => navigate("/auth/forgot-password")}
           >
             Forgot your password?
           </Button>
