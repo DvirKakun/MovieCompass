@@ -14,6 +14,7 @@ import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
@@ -37,8 +38,7 @@ function App() {
             path="/dashboard"
             element={
               <ProtectedRoute>
-                <></>
-                {/* <Dashboard /> */}
+                <DashboardPage />
               </ProtectedRoute>
             }
           />

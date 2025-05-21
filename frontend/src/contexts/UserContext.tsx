@@ -49,7 +49,7 @@ type UserAction =
 // Initial state
 const initialState: UserState = {
   user: null,
-  isLoading: true, // Start with loading to show spinner initially
+  isLoading: false, // Start with loading to show spinner initially
   error: null,
   isAuthenticated: false,
 };
@@ -106,16 +106,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem("access_token");
     dispatch({ type: "CLEAR_USER" });
 
-    const url = "/auth?mode=login";
+    // const url = "/auth?mode=login";
 
-    navigate(url);
-  }, [navigate]);
+    // navigate(url);
+  }, []); //, [navigate])
 
   // Fetch user profile with token
   const fetchUserProfile = useCallback(async () => {
     const token = localStorage.getItem("access_token");
 
     if (!token) {
+      dispatch({ type: "SET_LOADING", payload: false });
       dispatch({ type: "CLEAR_USER" });
 
       return;
@@ -135,10 +136,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       const rawData = await response.json();
 
       if (!response.ok) {
+        logout();
+
         const tokenError = rawData.errors[0].field === "token";
 
         if (tokenError) {
-          logout();
           dispatch({
             type: "SET_ERROR",
             payload: "Your session has expired. Please log in again.",
@@ -171,7 +173,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         payload: "Network error. Please try again.",
       });
     }
-  }, [navigate]);
+  }, [logout]);
 
   return (
     <UserContext.Provider value={{ state, dispatch, fetchUserProfile, logout }}>

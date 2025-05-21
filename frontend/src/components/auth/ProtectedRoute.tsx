@@ -1,6 +1,6 @@
 // src/components/auth/ProtectedRoute.tsx
 import { useEffect, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "../../contexts/UserContext";
 
 interface ProtectedRouteProps {
@@ -10,14 +10,45 @@ interface ProtectedRouteProps {
 export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { state, fetchUserProfile } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
+
   console.log(state);
   // Show loading spinner while checking authentication
 
   useEffect(() => {
-    if (!state.isAuthenticated) {
-      fetchUserProfile();
+    if (!state.isAuthenticated && !state.isLoading) {
+      const token = localStorage.getItem("access_token");
+
+      if (token) {
+        // A token exists but user not in memory → try to restore
+        fetchUserProfile();
+      } else {
+        // No token at all → redirect right away
+        navigate("/auth?mode=login", {
+          replace: true,
+          state: { from: location },
+        });
+      }
     }
-  }, [state.isAuthenticated, fetchUserProfile]);
+  }, [
+    state.isAuthenticated,
+    state.isLoading,
+    fetchUserProfile,
+    navigate,
+    location,
+  ]);
+
+  useEffect(() => {
+    if (!state.isAuthenticated && !state.isLoading) {
+      const token = localStorage.getItem("access_token");
+      if (!token) {
+        navigate("/auth?mode=login", {
+          replace: true,
+          state: { from: location },
+        });
+      }
+    }
+  }, [state.isAuthenticated, state.isLoading, navigate, location]);
 
   if (state.isLoading) {
     return (
@@ -27,11 +58,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     );
   }
 
-  if (!state.isAuthenticated) {
-    navigate("/auth?mode=login");
-
-    return null;
-  }
+  if (!state.isAuthenticated)
+    return (
+      <Navigate to="/auth?mode=login" replace state={{ from: location }} />
+    );
   // Render the protected content if authenticated
   return <>{children}</>;
 }
