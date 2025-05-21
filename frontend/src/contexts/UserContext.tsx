@@ -1,26 +1,7 @@
 // src/contexts/UserContext.tsx
-import {
-  createContext,
-  useContext,
-  useReducer,
-  useEffect,
-  useCallback,
-} from "react";
+import { createContext, useContext, useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
 import { BACKEND_URL } from "../data/constants";
-import { Speaker } from "lucide-react";
-
-interface UserApiResponse {
-  id: string;
-  username: string;
-  first_name: string;
-  last_name: string;
-  email: string;
-  favorite_movies: [];
-  watchlist: [];
-  ratings: [];
-}
 
 interface UserProfile {
   id: string;
@@ -99,7 +80,6 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // Provider component
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
-  const navigate = useNavigate();
 
   // Logout user
   const logout = useCallback(() => {

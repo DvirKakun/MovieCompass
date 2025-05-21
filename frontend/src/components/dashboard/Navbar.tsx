@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { motion } from "framer-motion";
 import { Search, ChevronDown } from "lucide-react";
 import { Input } from "../ui/input";
@@ -8,7 +8,8 @@ import LogoComponent from "./LogoComponent";
 
 export default function Navbar() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuBtnRef = useRef<HTMLButtonElement>(null!);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -18,6 +19,8 @@ export default function Navbar() {
       // navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
+
+  const toggleMenu = () => setIsMenuOpen((prev) => !prev);
 
   return (
     <header className="bg-card border-b border-border">
@@ -44,21 +47,29 @@ export default function Navbar() {
 
           {/* User Avatar & Menu */}
           <div className="relative">
-            <motion.div
-              className="flex items-center cursor-pointer"
-              onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+            <motion.button
+              ref={menuBtnRef}
+              className="flex items-center focus:outline-none"
+              onClick={toggleMenu}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
+              aria-expanded={isMenuOpen}
+              aria-haspopup="menu"
+              aria-label="User menu"
             >
               <UserAvatar />
               <ChevronDown
                 className={`ml-1 h-4 w-4 text-muted-foreground transition-transform duration-200 ${
-                  isUserMenuOpen ? "rotate-180" : ""
+                  isMenuOpen ? "rotate-180" : ""
                 }`}
               />
-            </motion.div>
+            </motion.button>
 
-            <UserMenu isOpen={isUserMenuOpen} setIsOpen={setIsUserMenuOpen} />
+            <UserMenu
+              isOpen={isMenuOpen}
+              setIsOpen={setIsMenuOpen}
+              buttonRef={menuBtnRef}
+            />
           </div>
         </div>
       </div>
