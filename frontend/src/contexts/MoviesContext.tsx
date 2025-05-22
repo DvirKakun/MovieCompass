@@ -143,6 +143,29 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         searchError: null,
         filteredResults: applyFilters(action.payload, state.filters),
       };
+    case "FETCH_MORE_MOVIES_SUCCESS":
+      const newMoviesByGenreMore = new Map(state.moviesByGenre);
+      const existingMoviesMore =
+        newMoviesByGenreMore.get(action.payload.genreId) || [];
+
+      // Get existing movie IDs for duplicate checking
+      const existingIds = new Set(existingMoviesMore.map((movie) => movie.id));
+
+      // Filter out duplicate movies
+      const uniqueNewMovies = action.payload.movies.filter(
+        (movie) => !existingIds.has(movie.id)
+      );
+
+      // Append only unique new movies to existing ones
+      const updatedMoviesMore = [...existingMoviesMore, ...uniqueNewMovies];
+      newMoviesByGenreMore.set(action.payload.genreId, updatedMoviesMore);
+
+      return {
+        ...state,
+        moviesByGenre: newMoviesByGenreMore,
+        rollersLoading: false,
+        rollersError: null,
+      };
 
     case "FETCH_SEARCH_ERROR":
       return {
@@ -251,10 +274,11 @@ interface MoviesContextType {
   fetchGenres: () => Promise<void>;
 
   // Movie roller actions
-  fetchMoviesByGenre: (genreId: number) => Promise<void>;
+  fetchMoviesByGenre: (genreId: number, page?: number) => Promise<void>;
 
   // Popluar movies action
   fetchPopularMovies: () => Promise<void>;
+  fetchMoreMoviesByGenre: (genreId: number, page: number) => Promise<void>;
 
   // Search actions
   setSearchQuery: (query: string) => void;
@@ -305,11 +329,13 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   };
 
   // Movie roller actions
-  const fetchMoviesByGenre = async (genreId: number) => {
+  const fetchMoviesByGenre = async (genreId: number, page: number = 1) => {
     dispatch({ type: "FETCH_ROLLERS_START" });
 
     try {
-      const response = await fetch(`${BACKEND_URL}/movies/genre/${genreId}`);
+      const response = await fetch(
+        `${BACKEND_URL}/movies/genre/${genreId}?page=${page}`
+      );
 
       if (!response.ok) {
         throw new Error(`Failed to fetch movies for genre ${genreId}`);
@@ -355,6 +381,34 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
 
       dispatch({
         type: "FETCH_POPULAR_ERROR",
+        payload: message,
+      });
+    }
+  };
+
+  const fetchMoreMoviesByGenre = async (genreId: number, page: number) => {
+    dispatch({ type: "FETCH_ROLLERS_START" });
+
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/movies/genre/${genreId}?page=${page}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch movies for genre ${genreId}`);
+      }
+
+      const movies_data: MoviesResponse = await response.json();
+      const movies = movies_data.movies;
+
+      dispatch({
+        type: "FETCH_MORE_MOVIES_SUCCESS", // Different action type
+        payload: { genreId, movies },
+      });
+    } catch (error) {
+      let message = await getErrorMessage(error);
+      dispatch({
+        type: "FETCH_ROLLERS_ERROR",
         payload: message,
       });
     }
@@ -424,6 +478,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     state,
     fetchGenres,
     fetchMoviesByGenre,
+    fetchMoreMoviesByGenre,
     fetchPopularMovies,
     setSearchQuery,
     searchMovies,

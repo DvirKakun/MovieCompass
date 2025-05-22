@@ -18,12 +18,10 @@ export default function Navbar({ onSearchModeChange }: NavbarProps) {
   const menuBtnRef = useRef<HTMLButtonElement>(null!);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const {
-    state,
     searchMovies,
     clearSearch,
     setSearchQuery: setSearchQueryContext,
   } = useMovies();
-  const isSearchActive = state.searchQuery.length > 0;
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);

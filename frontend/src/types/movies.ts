@@ -69,6 +69,12 @@ export type MoviesAction =
   | { type: "FETCH_POPULAR_SUCCESS"; payload: Movie[] }
   | { type: "FETCH_POPULAR_ERROR"; payload: string }
 
+  // Fetch more movies for infinit scroll
+  | {
+      type: "FETCH_MORE_MOVIES_SUCCESS";
+      payload: { genreId: number; movies: Movie[] };
+    }
+
   // Movie rollers actions
   | { type: "FETCH_ROLLERS_START" }
   | {

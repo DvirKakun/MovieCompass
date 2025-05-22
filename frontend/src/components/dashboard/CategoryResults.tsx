@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useMovies } from "../../contexts/MoviesContext";
 import MovieCard from "./MovieCard";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 interface CategoryResultsProps {
   categoryName: string;
@@ -18,12 +19,36 @@ export default function CategoryResults({
   onBack,
   isAIRecommendations = false,
 }: CategoryResultsProps) {
-  const { state, getMoviesByGenre, getPopularMovies } = useMovies();
+  const { state, getMoviesByGenre, getPopularMovies, fetchMoreMoviesByGenre } =
+    useMovies();
 
   // Get movies based on category type
   const movies = genreId ? getMoviesByGenre(genreId) : getPopularMovies();
   const isLoading = state.rollersLoading || state.popularLoading;
   const hasError = state.rollersError || state.popularError;
+
+  const pageRef = useRef(1); // last page that *succeeded*
+  const fetchedPagesRef = useRef<Set<number>>(new Set([1])); // pages we already have
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const loadNextPage = useCallback(async () => {
+    if (!genreId || isFetching) return;
+
+    const nextPage = pageRef.current + 1;
+
+    // ⛔ already have this page → skip
+    if (fetchedPagesRef.current.has(nextPage)) return;
+
+    setIsFetching(true);
+    try {
+      await fetchMoreMoviesByGenre(genreId, nextPage);
+      fetchedPagesRef.current.add(nextPage); // remember we fetched it
+      pageRef.current = nextPage; // advance pointer
+    } finally {
+      setIsFetching(false);
+    }
+  }, [genreId, isFetching]);
 
   if (isLoading && movies.length === 0) {
     return (
@@ -77,6 +102,19 @@ export default function CategoryResults({
       </div>
     );
   }
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => entries[0].isIntersecting && loadNextPage(),
+      { rootMargin: "600px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadNextPage]);
 
   return (
     <div className="space-y-6">
@@ -146,6 +184,15 @@ export default function CategoryResults({
             ))}
           </motion.div>
         )}
+        {isFetching && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-secondary">Loading more movies...</p>
+            </div>
+          </div>
+        )}
+        <div ref={sentinelRef} className="h-1" />
       </div>
     </div>
   );

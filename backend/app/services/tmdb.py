@@ -37,8 +37,8 @@ async def fetch_movies_genres():
     return genres
 
 
-async def fetch_movies_by_genre(genre_id: int):
-    url = f"{settings.BASE_URL}/discover/movie?api_key={settings.TMDB_API_KEY}&with_genres={genre_id}"
+async def fetch_movies_by_genre(genre_id: int, page: int = 1):
+    url = f"{settings.BASE_URL}/discover/movie?api_key={settings.TMDB_API_KEY}&with_genres={genre_id}&page={page}"
     movies_data = await make_request(url)
     movies = [Movie(**movie) for movie in movies_data.get("results", [])]
 
@@ -96,8 +96,8 @@ async def fetch_movie_reviews(movie_id: int):
     )
 
 
-async def make_request(url: str, method: str = "GET", page: int = 1):
-    url += f"&page={page}"
+async def make_request(url: str, method: str = "GET"):  # , page: int = 1
+    # url += f"&page={page}"
 
     async with aiohttp.ClientSession() as session:
         try:
