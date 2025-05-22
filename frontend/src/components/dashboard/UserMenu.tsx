@@ -1,7 +1,7 @@
 import { useEffect, useRef, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { User, Bookmark, Star, LogOut } from "lucide-react";
+import { User, Bookmark, Star, LogOut, Heart } from "lucide-react";
 import { useUser } from "../../contexts/UserContext";
 
 interface UserMenuProps {
@@ -14,6 +14,7 @@ interface MenuItem {
   label: string;
   icon: JSX.Element;
   onClick: (e: React.MouseEvent) => void;
+  count?: number; // Add count property for list items
 }
 
 export default function UserMenu({
@@ -22,8 +23,9 @@ export default function UserMenu({
   buttonRef,
 }: UserMenuProps) {
   const navigate = useNavigate();
-  const { logout } = useUser();
+  const { state, logout } = useUser();
   const menuRef = useRef<HTMLDivElement>(null);
+  const user = state.user;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -75,7 +77,8 @@ export default function UserMenu({
     },
     {
       label: "Your Watchlist",
-      icon: <Bookmark className="h-4 w-4 mr-2" />,
+      icon: <Heart className="h-4 w-4 mr-2" />,
+      count: user?.watchlist?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
@@ -83,8 +86,19 @@ export default function UserMenu({
       },
     },
     {
+      label: "Your Favorites",
+      icon: <Bookmark className="h-4 w-4 mr-2" />,
+      count: user?.favoriteMovies?.length || 0,
+      onClick: (e: React.MouseEvent) => {
+        e.stopPropagation();
+        setIsOpen(false);
+        navigate("/favorites");
+      },
+    },
+    {
       label: "Your Ratings",
       icon: <Star className="h-4 w-4 mr-2" />,
+      count: user?.ratings?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
@@ -114,13 +128,20 @@ export default function UserMenu({
             {menuItems.map((item, index) => (
               <motion.button
                 key={index}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 flex items-center"
+                className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 flex items-center justify-between"
                 onClick={item.onClick}
                 whileHover={{ x: 5 }}
                 transition={{ duration: 0.2 }}
               >
-                {item.icon}
-                {item.label}
+                <div className="flex items-center">
+                  {item.icon}
+                  {item.label}
+                </div>
+                {typeof item.count === "number" && (
+                  <span className="bg-primary text-background text-xs px-2 py-1 rounded-full font-medium min-w-[20px] text-center">
+                    {item.count}
+                  </span>
+                )}
               </motion.button>
             ))}
           </div>

@@ -15,36 +15,42 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import DashboardPage from "./pages/DashboardPage";
+import { MoviesProvider } from "./contexts/MoviesContext";
 
 function App() {
   return (
     <Router>
       <UserProvider>
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/auth" element={<AuthPage />} />
-          <Route path="/auth/callback" element={<GoogleCallbackHandler />} />
-          <Route
-            path="/auth/forgot-password"
-            element={<ForgotPasswordPage />}
-          />
-          <Route path="/auth/reset-password" element={<ResetPasswordPage />} />
-          <Route
-            path="/auth/verify-email"
-            element={<EmailVerificationPage />}
-          />
+        <MoviesProvider>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/auth/callback" element={<GoogleCallbackHandler />} />
+            <Route
+              path="/auth/forgot-password"
+              element={<ForgotPasswordPage />}
+            />
+            <Route
+              path="/auth/reset-password"
+              element={<ResetPasswordPage />}
+            />
+            <Route
+              path="/auth/verify-email"
+              element={<EmailVerificationPage />}
+            />
 
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <DashboardPage />
-              </ProtectedRoute>
-            }
-          />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
 
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </MoviesProvider>
       </UserProvider>
     </Router>
   );

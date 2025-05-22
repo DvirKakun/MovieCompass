@@ -12,7 +12,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log(state);
   // Show loading spinner while checking authentication
 
   useEffect(() => {

@@ -1,0 +1,140 @@
+import { Star, Calendar, Clock } from "lucide-react";
+import type { Movie } from "../../types/movies";
+
+interface MovieCardProps {
+  movie: Movie | { id: string; title: string; placeholder?: boolean };
+}
+
+export default function MovieCard({ movie }: MovieCardProps) {
+  // Check if this is a placeholder card
+  const isPlaceholder = "placeholder" in movie && movie.placeholder;
+
+  if (isPlaceholder) {
+    return (
+      <div className="w-48 flex-none">
+        {/* Placeholder Poster */}
+        <div className="relative group cursor-pointer">
+          <div className="w-48 h-72 bg-muted rounded-lg border border-border flex items-center justify-center">
+            <div className="text-center space-y-2">
+              <div className="w-16 h-16 bg-border rounded-full mx-auto flex items-center justify-center">
+                <Clock className="w-8 h-8 text-muted-foreground" />
+              </div>
+              <p className="text-muted-foreground text-sm">Loading...</p>
+            </div>
+          </div>
+
+          {/* Hover overlay */}
+          <div
+            className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 
+                        transition-opacity duration-300 rounded-lg flex items-center justify-center"
+          >
+            <div className="text-center">
+              <p className="text-white text-sm">Movie Poster</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Placeholder Movie Info */}
+        <div className="mt-3 space-y-2">
+          <div className="h-4 bg-muted rounded animate-pulse"></div>
+          <div className="flex items-center space-x-2">
+            <div className="h-3 bg-muted rounded w-12 animate-pulse"></div>
+            <div className="h-3 bg-muted rounded w-16 animate-pulse"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Real movie card (when movie data is available)
+  const realMovie = movie as Movie;
+  const releaseYear = realMovie.release_date
+    ? new Date(realMovie.release_date).getFullYear()
+    : "";
+  const rating = realMovie.vote_average
+    ? realMovie.vote_average.toFixed(1)
+    : "N/A";
+
+  return (
+    <div className="w-48 flex-none">
+      {/* Movie Poster */}
+      <div className="relative group cursor-pointer">
+        <div className="w-48 h-72 bg-muted rounded-lg border border-border overflow-hidden">
+          {realMovie.poster_path ? (
+            <img
+              src={`https://image.tmdb.org/t/p/w500${realMovie.poster_path}`}
+              alt={realMovie.title}
+              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <div className="w-16 h-16 bg-border rounded-full mx-auto flex items-center justify-center">
+                  <Star className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <p className="text-muted-foreground text-sm">No Image</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Hover overlay */}
+        <div
+          className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 
+                      transition-opacity duration-300 rounded-lg flex items-center justify-center"
+        >
+          <div className="text-center space-y-2">
+            <button className="px-4 py-2 bg-primary text-background rounded-lg hover:bg-cta_hover transition-colors">
+              View Details
+            </button>
+            <div className="flex space-x-2">
+              <button className="px-3 py-1 bg-card text-foreground rounded text-sm hover:bg-muted transition-colors">
+                + Watchlist
+              </button>
+              <button className="px-3 py-1 bg-card text-foreground rounded text-sm hover:bg-muted transition-colors">
+                ♡ Like
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Rating Badge */}
+        {realMovie.vote_average > 0 && (
+          <div className="absolute top-2 right-2 bg-black/80 text-rating px-2 py-1 rounded-lg text-xs font-bold flex items-center space-x-1">
+            <Star className="w-3 h-3 fill-current" />
+            <span>{rating}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Movie Info */}
+      <div className="mt-3 space-y-1">
+        <h3
+          className="text-foreground font-medium text-sm leading-tight line-clamp-2"
+          title={realMovie.title}
+        >
+          {realMovie.title}
+        </h3>
+        <div className="flex items-center space-x-3 text-secondary text-xs">
+          {releaseYear && (
+            <div className="flex items-center space-x-1">
+              <Calendar className="w-3 h-3" />
+              <span>{releaseYear}</span>
+            </div>
+          )}
+          {realMovie.vote_average > 0 && (
+            <div className="flex items-center space-x-1">
+              <Star className="w-3 h-3" />
+              <span>{rating}</span>
+            </div>
+          )}
+          {realMovie.vote_count > 0 && (
+            <div className="flex items-center space-x-1">
+              <span>({realMovie.vote_count})</span>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

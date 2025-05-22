@@ -1,23 +1,63 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Search, ChevronDown } from "lucide-react";
+import { Search, ChevronDown, X } from "lucide-react";
 import { Input } from "../ui/input";
 import UserAvatar from "./UserAvatar";
 import UserMenu from "./UserMenu";
 import LogoComponent from "./LogoComponent";
+import { useMovies } from "../../contexts/MoviesContext";
+import { Button } from "../ui/button";
 
-export default function Navbar() {
+interface NavbarProps {
+  onSearchModeChange?: (isSearching: boolean) => void;
+}
+
+export default function Navbar({ onSearchModeChange }: NavbarProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null!);
+  const debounceRef = useRef<NodeJS.Timeout | null>(null);
+  const {
+    state,
+    searchMovies,
+    clearSearch,
+    setSearchQuery: setSearchQueryContext,
+  } = useMovies();
+  const isSearchActive = state.searchQuery.length > 0;
 
-  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    // If empty, clear immediately
+    if (searchQuery.trim() === "") {
+      clearSearch();
+      onSearchModeChange?.(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setSearchQueryContext(searchQuery.trim());
+      await searchMovies(searchQuery.trim());
+      onSearchModeChange?.(true);
+    }, 500); // debounce delay
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchQuery]);
+
+  const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // This will be implemented later
-      console.log(`Searching for: ${searchQuery}`);
-      // navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      await searchMovies(searchQuery.trim());
+      onSearchModeChange?.(true);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    clearSearch();
+    onSearchModeChange?.(false);
   };
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);
@@ -35,12 +75,24 @@ export default function Navbar() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  type="search"
+                  type="text"
                   placeholder="Search movies, actors, genres..."
-                  className="pl-10 bg-background/50 border-border focus:border-primary"
+                  className="pl-10 pr-8 bg-background/50 border-border focus:border-primary"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
+                {searchQuery && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleClearSearch}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 p-0 hover:bg-muted"
+                    aria-label="Clear search"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </form>
           </div>
