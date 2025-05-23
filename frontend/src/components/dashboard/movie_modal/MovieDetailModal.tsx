@@ -4,7 +4,6 @@ import {
   Calendar,
   Film,
   Plus,
-  Heart,
   Check,
   Loader2,
   AlertTriangle,
@@ -33,18 +32,24 @@ export default memo(function MovieDetailModal({
     useMovies();
   const movieId = movie.id;
 
-  const { state: userState } = useUser();
-  const user = userState.user;
+  const { state: userState, addToFavorite, addToWatchlist } = useUser();
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isInFavorites, setIsInFavorites] = useState(false);
   const trailer = movieId ? getTrailer(movieId) : undefined;
   const isLoadingTrailer = movieId ? isTrailerLoading(movieId) : false;
   const trailerErr = movieId ? trailerError(movieId) : null;
 
+  const user = userState.user;
+  const {
+    listLoading: { watchlist: wlLoad, favoriteMovies: favLoad },
+  } = userState;
+
+  const isWLBusy = wlLoad.has(movieId);
+  const isFavBusy = favLoad.has(movieId);
   // Fetch trailer when movie changes
   useEffect(() => {
     if (isOpen) fetchMovieTrailer(movieId);
-  }, [isOpen, movieId, fetchMovieTrailer]);
+  }, [isOpen, movieId]);
 
   // Check if movie is in watchlist/favorites (would connect to your user context)
   useEffect(() => {
@@ -61,15 +66,8 @@ export default memo(function MovieDetailModal({
     setIsInFavorites(inFavorites);
   }, [movieId, user]);
 
-  const handleAddToWatchlist = () => {
-    setIsInWatchlist((prevIsInWatchList) => !prevIsInWatchList);
-    // You would add logic here to update the user's watchlist in context/backend
-  };
-
-  const handleAddToFavorites = () => {
-    setIsInFavorites((prevIsInFavorites) => !prevIsInFavorites);
-    // You would add logic here to update the user's favorites in context/backend
-  };
+  const handleAddToWatchlist = () => addToWatchlist(movieId);
+  const handleAddToFavorites = () => addToFavorite(movieId);
 
   // If we don't have a movie yet, show a loading state
   if (!movie && isOpen) {
@@ -173,15 +171,18 @@ export default memo(function MovieDetailModal({
                   <div className="flex space-x-2">
                     <Button
                       variant="outline"
+                      size="sm"
+                      disabled={isWLBusy}
                       className={`flex items-center ${
                         isInWatchlist
                           ? "border-primary text-primary"
                           : "border-border text-secondary"
                       }`}
-                      size="sm"
                       onClick={handleAddToWatchlist}
                     >
-                      {isInWatchlist ? (
+                      {isWLBusy ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : isInWatchlist ? (
                         <Check className="w-4 h-4 mr-1" />
                       ) : (
                         <Plus className="w-4 h-4 mr-1" />
@@ -191,19 +192,22 @@ export default memo(function MovieDetailModal({
 
                     <Button
                       variant="outline"
+                      size="sm"
+                      disabled={isFavBusy}
                       className={`flex items-center ${
                         isInFavorites
                           ? "border-primary text-primary"
                           : "border-border text-secondary"
                       }`}
-                      size="sm"
                       onClick={handleAddToFavorites}
                     >
-                      <Heart
-                        className={`w-4 h-4 mr-1 ${
-                          isInFavorites ? "fill-primary" : ""
-                        }`}
-                      />
+                      {isFavBusy ? (
+                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
+                      ) : isInFavorites ? (
+                        <Check className="w-4 h-4 mr-1" />
+                      ) : (
+                        <Plus className="w-4 h-4 mr-1" />
+                      )}
                       Favorite
                     </Button>
                   </div>

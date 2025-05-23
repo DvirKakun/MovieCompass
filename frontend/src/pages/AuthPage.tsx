@@ -1,5 +1,6 @@
+// src/pages/AuthPage.tsx
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useUser } from "../contexts/UserContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { AuthHeader } from "../components/auth/AuthHeader";
@@ -10,19 +11,29 @@ import { AuthFormSection } from "../components/sections/AuthFormSection";
 export default function AuthPage() {
   const { state, fetchUserProfile } = useUser();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // If user is already authenticated, redirect to dashboard
+  /* ①  Fetch the profile **once** but only when a token is present.  */
   useEffect(() => {
-    fetchUserProfile();
-  }, []);
+    const token = localStorage.getItem("access_token");
+    if (token) fetchUserProfile(); // ← no token ⇒ no network call
+  }, [fetchUserProfile]);
 
+  /* ②  When the user becomes authenticated, go to the dashboard.     */
   useEffect(() => {
-    if (state.isAuthenticated) {
-      navigate("/dashboard", { replace: true });
-    }
+    if (state.isAuthenticated) navigate("/dashboard", { replace: true });
   }, [state.isAuthenticated, navigate]);
 
-  // If still checking authentication, show loading
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const msg = params.get("msg");
+    if (msg) {
+      // Optional: Dispatch an error to UserContext or use a flash context
+      state.error = msg; // Direct assignment if you want fast feedback
+    }
+  }, [location.search]);
+
+  /* ③  Loading spinner while we *might* still be restoring a session. */
   if (state.isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
@@ -31,14 +42,12 @@ export default function AuthPage() {
     );
   }
 
-  // Otherwise show login/signup form
+  /* ④  No token or token failed → show login / signup UI. */
   return (
     <AuthProvider>
       <div className="h-screen bg-background overflow-hidden">
         <AuthHeader />
-        <AuthMessages />
-
-        {/* Main Content */}
+        <AuthMessages /> {/* shows state.error like “session expired” */}
         <div className="h-full flex">
           <AuthSidebar />
           <AuthFormSection />

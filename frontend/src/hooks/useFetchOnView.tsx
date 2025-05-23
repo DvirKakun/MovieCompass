@@ -14,7 +14,6 @@ export function useFetchOnView(fetchFn: () => void, rootMargin = "400px") {
     const obs = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting && !fetchedRef.current) {
-          console.log("FETCHED");
           fetchedRef.current = true; // mark as done
           fetchFn(); // run only once
           obs.disconnect();

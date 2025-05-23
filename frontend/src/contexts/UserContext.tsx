@@ -2,35 +2,14 @@
 import { createContext, useContext, useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
 import { BACKEND_URL } from "../data/constants";
-
-export interface Rating {
-  movie_id: number;
-  rating: number;
-}
-
-interface UserProfile {
-  id: string;
-  username: string;
-  firstName: string;
-  lastName: string;
-  email: string;
-  favoriteMovies: number[];
-  watchlist: number[];
-  ratings: Rating[];
-}
-
-interface UserState {
-  user: UserProfile | null;
-  isLoading: boolean;
-  error: string | null;
-  isAuthenticated: boolean;
-}
-
-type UserAction =
-  | { type: "SET_USER"; payload: UserProfile }
-  | { type: "CLEAR_USER" }
-  | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null };
+import type {
+  ListKind,
+  UserAction,
+  UserProfile,
+  UserState,
+} from "../types/user";
+import { registerLogout } from "../api/logoutRegistry";
+import { authFetch } from "../api/authFetch";
 
 // Initial state
 const initialState: UserState = {
@@ -38,6 +17,7 @@ const initialState: UserState = {
   isLoading: false, // Start with loading to show spinner initially
   error: null,
   isAuthenticated: false,
+  listLoading: { watchlist: new Set(), favoriteMovies: new Set() },
 };
 
 // Reducer
@@ -67,6 +47,29 @@ function userReducer(state: UserState, action: UserAction): UserState {
         error: action.payload,
         isLoading: false,
       };
+
+    case "SET_LIST_LOADING": {
+      const set = new Set(state.listLoading[action.list]);
+      action.value ? set.add(action.movieId) : set.delete(action.movieId);
+      return {
+        ...state,
+        listLoading: { ...state.listLoading, [action.list]: set },
+      };
+    }
+    case "TOGGLE_MOVIE_IN_LIST": {
+      if (!state.user) return state;
+
+      const list = state.user[action.list];
+      const exists = list.includes(action.movieId);
+      const newList = exists
+        ? list.filter((id) => id !== action.movieId)
+        : [...list, action.movieId];
+
+      return {
+        ...state,
+        user: { ...state.user, [action.list]: newList },
+      };
+    }
     default:
       return state;
   }
@@ -78,6 +81,8 @@ interface UserContextType {
   dispatch: React.Dispatch<UserAction>;
   fetchUserProfile: () => Promise<void>;
   logout: () => void;
+  addToWatchlist: (id: number) => void;
+  addToFavorite: (id: number) => void;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -90,78 +95,84 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     dispatch({ type: "CLEAR_USER" });
+  }, []);
 
-    // const url = "/auth?mode=login";
-
-    // navigate(url);
-  }, []); //, [navigate])
+  registerLogout(logout);
 
   // Fetch user profile with token
   const fetchUserProfile = useCallback(async () => {
-    const token = localStorage.getItem("access_token");
-
-    if (!token) {
-      dispatch({ type: "SET_LOADING", payload: false });
-      dispatch({ type: "CLEAR_USER" });
-
-      return;
-    }
-
     dispatch({ type: "SET_LOADING", payload: true });
 
     try {
-      const response = await fetch(`${BACKEND_URL}/users/me`, {
-        method: "GET",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      });
+      /* authFetch throws + redirects if the token is bad */
+      const res = await authFetch("/users/me");
+      const raw = await res.json();
 
-      const rawData = await response.json();
-
-      if (!response.ok) {
-        logout();
-
-        const tokenError = rawData.errors[0].field === "token";
-
-        if (tokenError) {
-          dispatch({
-            type: "SET_ERROR",
-            payload: "Your session has expired. Please log in again.",
-          });
-        } else {
-          dispatch({
-            type: "SET_ERROR",
-            payload: "An unknown error occurred",
-          });
-        }
-
-        return;
-      }
-
-      const userData: UserProfile = {
-        id: rawData.id,
-        username: rawData.username,
-        firstName: rawData.first_name,
-        lastName: rawData.last_name,
-        email: rawData.email,
-        favoriteMovies: rawData.favorite_movies,
-        watchlist: rawData.watchlist,
-        ratings: rawData.ratings,
+      const user: UserProfile = {
+        id: raw.id,
+        username: raw.username,
+        firstName: raw.first_name,
+        lastName: raw.last_name,
+        email: raw.email,
+        favoriteMovies: raw.favorite_movies,
+        watchlist: raw.watchlist,
+        ratings: raw.ratings,
       };
 
-      dispatch({ type: "SET_USER", payload: userData });
-    } catch (error) {
+      dispatch({ type: "SET_USER", payload: user });
+    } catch (err: any) {
+      // authFetch already handled token logout/redirect — only network errors reach here
       dispatch({
         type: "SET_ERROR",
-        payload: "Network error. Please try again.",
+        payload: err.message ?? "Network error. Please try again.",
       });
     }
-  }, [logout]);
+  }, []);
+
+  async function toggleMovieOnServer(movieId: number, list: ListKind) {
+    // optimistic UI
+    dispatch({ type: "SET_LIST_LOADING", list, movieId, value: true });
+    dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });
+
+    /* decide HTTP verb AFTER the optimistic flip (that’s the new state) */
+    const listAfter =
+      list === "watchlist" ? state.user!.watchlist : state.user!.favoriteMovies;
+    const verb = listAfter.includes(movieId) ? "DELETE" : "PUT";
+
+    try {
+      await authFetch(
+        `/users/me/${
+          list === "watchlist" ? "watchlist" : "favorite"
+        }/${movieId}`,
+        { method: verb }
+      );
+    } catch (err: any) {
+      // authFetch has already logged-out on token failure; revert UI only if other error
+      dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });
+      dispatch({
+        type: "SET_ERROR",
+        payload: err.message ?? "Could not update list",
+      });
+    } finally {
+      dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
+    }
+  }
+
+  const addToWatchlist = (id: number) => toggleMovieOnServer(id, "watchlist");
+  const addToFavorite = (id: number) =>
+    toggleMovieOnServer(id, "favoriteMovies");
 
   return (
-    <UserContext.Provider value={{ state, dispatch, fetchUserProfile, logout }}>
+    <UserContext.Provider
+      value={{
+        state,
+        dispatch,
+        fetchUserProfile,
+        logout,
+        addToWatchlist,
+        addToFavorite,
+      }}
+    >
       {children}
     </UserContext.Provider>
   );

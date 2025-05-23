@@ -23,7 +23,6 @@ export const MovieModalProvider = ({ children }: { children: ReactNode }) => {
 
   const closeModal = () => {
     setIsOpen(false);
-    // Optional: add delay before clearing movie to allow modal animation to close
     setTimeout(() => setSelectedMovie(null), 300);
   };
 

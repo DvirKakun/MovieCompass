@@ -33,22 +33,34 @@ export default function CategoryResults({
   const [isFetching, setIsFetching] = useState(false);
 
   const loadNextPage = useCallback(async () => {
-    if (!genreId || isFetching) return;
+    if (genreId && !isFetching) {
+      const nextPage = pageRef.current + 1;
 
-    const nextPage = pageRef.current + 1;
+      if (fetchedPagesRef.current.has(nextPage)) return;
 
-    // ⛔ already have this page → skip
-    if (fetchedPagesRef.current.has(nextPage)) return;
-
-    setIsFetching(true);
-    try {
-      await fetchMoreMoviesByGenre(genreId, nextPage);
-      fetchedPagesRef.current.add(nextPage); // remember we fetched it
-      pageRef.current = nextPage; // advance pointer
-    } finally {
-      setIsFetching(false);
+      setIsFetching(true);
+      try {
+        await fetchMoreMoviesByGenre(genreId, nextPage);
+        fetchedPagesRef.current.add(nextPage);
+        pageRef.current = nextPage;
+      } finally {
+        setIsFetching(false);
+      }
     }
-  }, [genreId, isFetching]);
+  }, [genreId, isFetching, fetchMoreMoviesByGenre]);
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => entries[0].isIntersecting && loadNextPage(),
+      { rootMargin: "600px" }
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadNextPage]);
 
   if (isLoading && movies.length === 0) {
     return (
@@ -102,19 +114,6 @@ export default function CategoryResults({
       </div>
     );
   }
-
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => entries[0].isIntersecting && loadNextPage(),
-      { rootMargin: "600px" }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadNextPage]);
 
   return (
     <div className="space-y-6">

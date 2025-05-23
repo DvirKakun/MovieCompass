@@ -12,22 +12,16 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Show loading spinner while checking authentication
-
   useEffect(() => {
     if (!state.isAuthenticated && !state.isLoading) {
       const token = localStorage.getItem("access_token");
 
-      if (token) {
-        // A token exists but user not in memory → try to restore
-        fetchUserProfile();
-      } else {
-        // No token at all → redirect right away
-        navigate("/auth?mode=login", {
-          replace: true,
-          state: { from: location },
-        });
-      }
+      token
+        ? fetchUserProfile()
+        : navigate("/auth?mode=login", {
+            replace: true,
+            state: { from: location },
+          });
     }
   }, [
     state.isAuthenticated,
@@ -36,18 +30,6 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
     navigate,
     location,
   ]);
-
-  useEffect(() => {
-    if (!state.isAuthenticated && !state.isLoading) {
-      const token = localStorage.getItem("access_token");
-      if (!token) {
-        navigate("/auth?mode=login", {
-          replace: true,
-          state: { from: location },
-        });
-      }
-    }
-  }, [state.isAuthenticated, state.isLoading, navigate, location]);
 
   if (state.isLoading) {
     return (
