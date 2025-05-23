@@ -1,11 +1,13 @@
 import { createContext, useContext, useReducer, type ReactNode } from "react";
 import type {
+  CastMember,
   GenreResponse,
   Movie,
   MovieFilters,
   MoviesAction,
   MoviesResponse,
   MoviesState,
+  MovieTrailer,
 } from "../types/movies";
 import { BACKEND_URL } from "../data/constants";
 
@@ -36,6 +38,14 @@ const initialState: MoviesState = {
     maxYear: new Date().getFullYear(),
   },
   filteredResults: [],
+
+  trailers: new Map(),
+  trailersLoading: new Map(),
+  trailersError: new Map(),
+
+  casts: new Map(),
+  castsLoading: new Map(),
+  castsError: new Map(),
 };
 
 function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
@@ -206,6 +216,96 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         filteredResults: applyFilters(state.searchResults, state.filters),
       };
 
+    // Trailers
+    case "FETCH_TRAILER_START": {
+      const { movieId } = action.payload;
+      const trailers_loading_map = new Map(state.trailersLoading).set(
+        movieId,
+        true
+      );
+      const trailers_errors_map = new Map(state.trailersError);
+
+      trailers_loading_map.delete(movieId);
+
+      return {
+        ...state,
+        trailersLoading: trailers_loading_map,
+        trailersError: trailers_errors_map,
+      };
+    }
+
+    case "FETCH_TRAILER_SUCCESS": {
+      const { movieId, trailer } = action.payload;
+      const trailers_map = new Map(state.trailers).set(movieId, trailer);
+      const trailers_loading_map = new Map(state.trailersLoading).set(
+        movieId,
+        false
+      );
+
+      return {
+        ...state,
+        trailers: trailers_map,
+        trailersLoading: trailers_loading_map,
+      };
+    }
+
+    case "FETCH_TRAILER_ERROR": {
+      const { movieId, error } = action.payload;
+
+      const trailers_loading_map = new Map(state.trailersLoading).set(
+        movieId,
+        false
+      );
+      const trailers_error_map = new Map(state.trailersError).set(
+        movieId,
+        error
+      );
+
+      return {
+        ...state,
+        trailersLoading: trailers_loading_map,
+        trailersError: trailers_error_map,
+      };
+    }
+
+    //Cast
+    case "FETCH_CAST_START": {
+      const { movieId } = action.payload;
+      const cast_loading_map = new Map(state.castsLoading).set(movieId, true);
+      const cast_error_map = new Map(state.castsError);
+
+      cast_error_map.delete(movieId);
+
+      return {
+        ...state,
+        castsLoading: cast_loading_map,
+        castsError: cast_error_map,
+      };
+    }
+
+    case "FETCH_CAST_SUCCESS": {
+      const { movieId, cast } = action.payload;
+      const cast_map = new Map(state.casts).set(movieId, cast);
+      const cast_loading_map = new Map(state.castsLoading).set(movieId, false);
+
+      return {
+        ...state,
+        casts: cast_map,
+        castsLoading: cast_loading_map,
+      };
+    }
+
+    case "FETCH_CAST_ERROR": {
+      const { movieId, error } = action.payload;
+      const cast_loading_map = new Map(state.castsLoading).set(movieId, false);
+      const cast_error_map = new Map(state.castsError).set(movieId, error);
+
+      return {
+        ...state,
+        castsLoading: cast_loading_map,
+        castsError: cast_error_map,
+      };
+    }
     default:
       return state;
   }
@@ -280,6 +380,12 @@ interface MoviesContextType {
   fetchPopularMovies: () => Promise<void>;
   fetchMoreMoviesByGenre: (genreId: number, page: number) => Promise<void>;
 
+  // Trailers action
+  fetchMovieTrailer: (movieId: number) => Promise<void>;
+
+  // Cast action
+  fetchMovieCast: (id: number) => Promise<void>;
+
   // Search actions
   setSearchQuery: (query: string) => void;
   searchMovies: (query: string) => Promise<void>;
@@ -293,6 +399,12 @@ interface MoviesContextType {
   getGenreName: (genreId: number) => string;
   getMoviesByGenre: (genreId: number) => Movie[];
   getPopularMovies: () => Movie[];
+  getTrailer: (movieId: number) => MovieTrailer | undefined;
+  isTrailerLoading: (movieId: number) => boolean;
+  trailerError: (movieId: number) => string | null;
+  getCast: (id: number) => CastMember[];
+  isCastLoading: (id: number) => boolean;
+  castError: (id: number) => string | null;
 }
 
 const MoviesContext = createContext<MoviesContextType | undefined>(undefined);
@@ -414,6 +526,59 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
+  const fetchMovieTrailer = async (movieId: number) => {
+    // if we already have it, do nothing
+    if (state.trailers.has(movieId) || state.trailersLoading.get(movieId))
+      return;
+
+    dispatch({ type: "FETCH_TRAILER_START", payload: { movieId } });
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/movies/${movieId}/trailer`);
+
+      if (!res.ok) throw new Error("Failed to fetch trailer");
+
+      const trailer = await res.json();
+
+      dispatch({
+        type: "FETCH_TRAILER_SUCCESS",
+        payload: { movieId, trailer },
+      });
+    } catch (error) {
+      let message = await getErrorMessage(error);
+
+      dispatch({
+        type: "FETCH_TRAILER_ERROR",
+        payload: { movieId, error: message },
+      });
+    }
+  };
+
+  const fetchMovieCast = async (movieId: number) => {
+    if (state.casts.has(movieId) || state.castsLoading.get(movieId)) return;
+
+    dispatch({ type: "FETCH_CAST_START", payload: { movieId } });
+
+    try {
+      const res = await fetch(`${BACKEND_URL}/movies/${movieId}/cast`);
+
+      if (!res.ok) throw new Error("Failed to fetch cast");
+
+      const data = await res.json();
+      dispatch({
+        type: "FETCH_CAST_SUCCESS",
+        payload: { movieId, cast: data.cast.slice(0, 10) },
+      });
+    } catch (error) {
+      let message = await getErrorMessage(error);
+
+      dispatch({
+        type: "FETCH_CAST_ERROR",
+        payload: { movieId, error: message },
+      });
+    }
+  };
+
   // Search actions
   const setSearchQuery = (query: string) => {
     dispatch({ type: "SET_SEARCH_QUERY", payload: query });
@@ -474,12 +639,24 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     return state.popularMovies;
   };
 
+  const getTrailer = (movieId: number) => state.trailers.get(movieId);
+  const isTrailerLoading = (movieId: number) =>
+    state.trailersLoading.get(movieId) ?? false;
+  const trailerError = (movieId: number) =>
+    state.trailersError.get(movieId) ?? null;
+
+  const getCast = (id: number) => state.casts.get(id) ?? [];
+  const isCastLoading = (id: number) => state.castsLoading.get(id) ?? false;
+  const castError = (id: number) => state.castsError.get(id) ?? null;
+
   const contextValue: MoviesContextType = {
     state,
     fetchGenres,
     fetchMoviesByGenre,
     fetchMoreMoviesByGenre,
     fetchPopularMovies,
+    fetchMovieTrailer,
+    fetchMovieCast,
     setSearchQuery,
     searchMovies,
     clearSearch,
@@ -488,6 +665,12 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     getGenreName,
     getMoviesByGenre,
     getPopularMovies,
+    getTrailer,
+    isTrailerLoading,
+    trailerError,
+    getCast,
+    isCastLoading,
+    castError,
   };
 
   return (

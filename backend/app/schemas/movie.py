@@ -41,3 +41,9 @@ class MovieReviewsResponse(BaseModel):
     movie_id: int
     reviews: List[MovieReview]
     total_results: int
+
+
+class MovieTrailerResponse(BaseModel):
+    movie_id: int
+    title: Optional[str] = None
+    embed_url: Optional[str] = None

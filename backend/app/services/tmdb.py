@@ -5,6 +5,7 @@ from app.schemas.movie import (
     MovieCastResponse,
     MovieReview,
     MovieReviewsResponse,
+    MovieTrailerResponse,
 )
 from app.schemas.genre import Genre
 import aiohttp
@@ -93,6 +94,39 @@ async def fetch_movie_reviews(movie_id: int):
 
     return MovieReviewsResponse(
         movie_id=movie_id, reviews=reviews, total_results=total_results
+    )
+
+
+async def fetch_movie_trailer(movie_id: int) -> MovieTrailerResponse:
+    url = (
+        f"{settings.BASE_URL}/movie/{movie_id}/videos"
+        f"?api_key={settings.TMDB_API_KEY}&language=en-US"
+    )
+    trailers_data = await make_request(url)
+
+    videos = trailers_data.get("results", [])
+
+    yt_trailers = [
+        video
+        for video in videos
+        if video.get("site") == "YouTube" and video.get("type") == "Trailer"
+    ]
+
+    yt_trailers.sort(
+        key=lambda video: (
+            not video.get("official", False),  # official first
+            -(video.get("size") or 0),  # bigger resolution first
+        )
+    )
+
+    trailer = yt_trailers[0] if yt_trailers else None
+
+    return MovieTrailerResponse(
+        movie_id=movie_id,
+        title=trailer.get("name") if trailer else None,
+        embed_url=(
+            f"https://www.youtube.com/embed/{trailer['key']}" if trailer else None
+        ),
     )
 
 

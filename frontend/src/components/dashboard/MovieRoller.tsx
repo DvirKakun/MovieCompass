@@ -3,21 +3,31 @@ import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useMovies } from "../../contexts/MoviesContext";
 import MovieCard from "./MovieCard";
 import type { Movie } from "../../types/movies";
+import { useFetchOnView } from "../../hooks/useFetchOnView";
 
 interface MovieRollerProps {
   title: string;
   genreId: number | null;
-  isPopular?: boolean;
 }
 
 export default function MovieRoller({ title, genreId }: MovieRollerProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { state, getMoviesByGenre, getPopularMovies } = useMovies();
+  const {
+    state,
+    getMoviesByGenre,
+    getPopularMovies,
+    fetchMoviesByGenre,
+    fetchPopularMovies,
+  } = useMovies();
 
   // Get movies for this genre (or empty array if not loaded yet)
   const movies: Movie[] = genreId
     ? getMoviesByGenre(genreId)
     : getPopularMovies();
+  const fetchFn = genreId
+    ? () => fetchMoviesByGenre(genreId)
+    : fetchPopularMovies;
+  const viewRef = useFetchOnView(fetchFn);
 
   // For now, create placeholder movies if none are loaded
   const displayMovies =
@@ -50,7 +60,7 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
   };
 
   return (
-    <div className="relative group">
+    <div ref={viewRef} className="relative group">
       {/* Section Title */}
       <div className="container mx-auto px-4 mb-4">
         <h2 className="text-xl font-bold text-foreground">{title}</h2>

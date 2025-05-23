@@ -16,6 +16,7 @@ import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import DashboardPage from "./pages/DashboardPage";
 import { MoviesProvider } from "./contexts/MoviesContext";
+import { MovieModalProvider } from "./contexts/MovieModalContext";
 
 function App() {
   return (
@@ -43,7 +44,9 @@ function App() {
               path="/dashboard"
               element={
                 <ProtectedRoute>
-                  <DashboardPage />
+                  <MovieModalProvider>
+                    <DashboardPage />
+                  </MovieModalProvider>
                 </ProtectedRoute>
               }
             />

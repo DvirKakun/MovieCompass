@@ -404,8 +404,8 @@ def remove_movie_from_watchlist(user: User, movie_id: int):
 
 
 async def add_movie_rating(user: User, movie_id: int, rating: int):
-    if rating < 1 or rating > 5:
-        raise HTTPException(status_code=400, detail="Rating should be between 1 and 5")
+    if rating < 1 or rating > 10:
+        raise HTTPException(status_code=400, detail="Rating should be between 1 and 10")
 
     try:
         url = f"{settings.BASE_URL}/movie/{movie_id}?api_key={settings.TMDB_API_KEY}"

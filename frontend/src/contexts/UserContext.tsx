@@ -3,15 +3,20 @@ import { createContext, useContext, useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
 import { BACKEND_URL } from "../data/constants";
 
+export interface Rating {
+  movie_id: number;
+  rating: number;
+}
+
 interface UserProfile {
   id: string;
   username: string;
   firstName: string;
   lastName: string;
   email: string;
-  favoriteMovies: [];
-  watchlist: [];
-  ratings: [];
+  favoriteMovies: number[];
+  watchlist: number[];
+  ratings: Rating[];
 }
 
 interface UserState {

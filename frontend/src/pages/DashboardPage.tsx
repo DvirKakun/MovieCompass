@@ -9,6 +9,8 @@ import CategoryResults from "../components/dashboard/CategoryResults";
 import { useMovies } from "../contexts/MoviesContext";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import { useMovieModal } from "../contexts/MovieModalContext";
+import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 
 type ViewMode = "home" | "search" | "category" | "ai-recommendations";
 
@@ -18,13 +20,13 @@ interface CategoryState {
 }
 
 export default function DashboardPage() {
+  const { isOpen, selectedMovie, closeModal } = useMovieModal();
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] =
     useState<CategoryState | null>(null);
 
-  const { state, fetchGenres, fetchMoviesByGenre, fetchPopularMovies } =
-    useMovies();
+  const { state, fetchGenres } = useMovies();
   const {
     genres,
     genresLoading,
@@ -43,24 +45,10 @@ export default function DashboardPage() {
     }
   }, [searchQuery]);
 
-  // Fetch popular movies
-  useEffect(() => {
-    fetchPopularMovies();
-  }, []);
-
   // Fetch genres on component mount
   useEffect(() => {
     fetchGenres();
   }, []);
-
-  // Fetch movies for each genre once genres are loaded
-  useEffect(() => {
-    if (genres.length > 0) {
-      genres.forEach((genre) => {
-        fetchMoviesByGenre(genre.id);
-      });
-    }
-  }, [genres]);
 
   const handleSearchModeChange = (isSearching: boolean) => {
     setViewMode(isSearching ? "search" : "home");
@@ -121,128 +109,133 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      <Navbar onSearchModeChange={handleSearchModeChange} />
+    <>
+      <div className="min-h-screen bg-background text-foreground">
+        <Navbar onSearchModeChange={handleSearchModeChange} />
 
-      {/* Browse Categories Button - Only show on home view */}
-      {viewMode === "home" && (
-        <div className="container mx-auto px-4 pt-4">
-          <Button
-            variant="outline"
-            onClick={() => setIsSidebarOpen(true)}
-            className="flex items-center gap-2 mb-4"
-          >
-            <Menu className="w-4 h-4" />
-            Browse Categories
-          </Button>
-        </div>
-      )}
-
-      <main className="py-8">
-        <AnimatePresence mode="wait">
-          {viewMode === "search" && (
-            <motion.div
-              key="search-results"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
+        {/* Browse Categories Button - Only show on home view */}
+        {viewMode === "home" && (
+          <div className="container mx-auto px-4 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsSidebarOpen(true)}
+              className="flex items-center gap-2 mb-4"
             >
-              <SearchResults />
-            </motion.div>
-          )}
+              <Menu className="w-4 h-4" />
+              Browse Categories
+            </Button>
+          </div>
+        )}
 
-          {(viewMode === "category" || viewMode === "ai-recommendations") &&
-            selectedCategory && (
+        <main className="py-8">
+          <AnimatePresence mode="wait">
+            {viewMode === "search" && (
               <motion.div
-                key="category-results"
+                key="search-results"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3 }}
               >
-                <CategoryResults
-                  categoryName={selectedCategory.genreName}
-                  genreId={selectedCategory.genreId}
-                  onBack={handleBackToHome}
-                  isAIRecommendations={viewMode === "ai-recommendations"}
-                />
+                <SearchResults />
               </motion.div>
             )}
 
-          {viewMode === "home" && (
-            <motion.div
-              key="movie-rollers"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              transition={{ duration: 0.3 }}
-              className="space-y-8"
-            >
-              {/* Welcome Header */}
-              <div className="container mx-auto px-4">
-                <h1 className="text-3xl font-bold mb-2">
-                  Welcome to MovieCompass
-                </h1>
-                <p className="text-secondary">
-                  Discover your next favorite movie
-                </p>
-              </div>
-
-              {/* Movie Rollers by Genre */}
-              <div className="space-y-8">
-                {/* Popular Movies Roller */}
-                <MovieRoller
-                  title="Popular Movies"
-                  genreId={null}
-                  isPopular={true}
-                />
-
-                {/* Genre-based Rollers */}
-                {genres.map((genre) => (
-                  <MovieRoller
-                    key={genre.id}
-                    title={genre.name}
-                    genreId={genre.id}
+            {(viewMode === "category" || viewMode === "ai-recommendations") &&
+              selectedCategory && (
+                <motion.div
+                  key="category-results"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <CategoryResults
+                    categoryName={selectedCategory.genreName}
+                    genreId={selectedCategory.genreId}
+                    onBack={handleBackToHome}
+                    isAIRecommendations={viewMode === "ai-recommendations"}
                   />
-                ))}
-              </div>
-
-              {/* Loading state for rollers */}
-              {rollersLoading && (
-                <div className="container mx-auto px-4">
-                  <div className="flex items-center space-x-2 text-secondary">
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>Loading movies...</span>
-                  </div>
-                </div>
+                </motion.div>
               )}
 
-              {/* Error state for rollers */}
-              {rollersError && (
+            {viewMode === "home" && (
+              <motion.div
+                key="movie-rollers"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-8"
+              >
+                {/* Welcome Header */}
                 <div className="container mx-auto px-4">
-                  <div className="flex items-center space-x-2 text-destructive">
-                    <AlertCircle className="w-4 h-4" />
-                    <span>{rollersError}</span>
-                  </div>
+                  <h1 className="text-3xl font-bold mb-2">
+                    Welcome to MovieCompass
+                  </h1>
+                  <p className="text-secondary">
+                    Discover your next favorite movie
+                  </p>
                 </div>
-              )}
-            </motion.div>
+
+                {/* Movie Rollers by Genre */}
+                <div className="space-y-8">
+                  {/* Popular Movies Roller */}
+                  <MovieRoller title="Popular Movies" genreId={null} />
+
+                  {/* Genre-based Rollers */}
+                  {genres.map((genre) => (
+                    <MovieRoller
+                      key={genre.id}
+                      title={genre.name}
+                      genreId={genre.id}
+                    />
+                  ))}
+                </div>
+
+                {/* Loading state for rollers */}
+                {rollersLoading && (
+                  <div className="container mx-auto px-4">
+                    <div className="flex items-center space-x-2 text-secondary">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Loading movies...</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Error state for rollers */}
+                {rollersError && (
+                  <div className="container mx-auto px-4">
+                    <div className="flex items-center space-x-2 text-destructive">
+                      <AlertCircle className="w-4 h-4" />
+                      <span>{rollersError}</span>
+                    </div>
+                  </div>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </main>
+
+        {/* Category Sidebar */}
+        <AnimatePresence>
+          {isSidebarOpen && (
+            <CategorySidebar
+              isOpen={isSidebarOpen}
+              onClose={() => setIsSidebarOpen(false)}
+              onCategorySelect={handleCategorySelect}
+              onAIRecommendations={handleAIRecommendations}
+            />
           )}
         </AnimatePresence>
-      </main>
-
-      {/* Category Sidebar */}
-      <AnimatePresence>
-        {isSidebarOpen && (
-          <CategorySidebar
-            isOpen={isSidebarOpen}
-            onClose={() => setIsSidebarOpen(false)}
-            onCategorySelect={handleCategorySelect}
-            onAIRecommendations={handleAIRecommendations}
-          />
-        )}
-      </AnimatePresence>
-    </div>
+      </div>
+      {selectedMovie && (
+        <MovieDetailModal
+          isOpen={isOpen}
+          onClose={closeModal}
+          movie={selectedMovie}
+        />
+      )}
+    </>
   );
 }

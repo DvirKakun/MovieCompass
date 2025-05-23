@@ -4,6 +4,7 @@ from app.schemas.movie import (
     Movie,
     MovieCastResponse,
     MovieReviewsResponse,
+    MovieTrailerResponse,
 )
 from app.schemas.genre import GenreResponse
 from app.services.tmdb import (
@@ -14,6 +15,7 @@ from app.services.tmdb import (
     fetch_movies_genres,
     fetch_movie_cast,
     fetch_movie_reviews,
+    fetch_movie_trailer,
 )
 
 router = APIRouter()
@@ -61,6 +63,13 @@ async def get_movie_reviews(movie_id: int):
     reviews = await fetch_movie_reviews(movie_id)
 
     return reviews
+
+
+@router.get("/{movie_id}/trailer", response_model=MovieTrailerResponse)
+async def get_movie_trailer(movie_id: int):
+    trailer = await fetch_movie_trailer(movie_id)
+
+    return trailer
 
 
 @router.get("/{movie_id}", response_model=Movie)

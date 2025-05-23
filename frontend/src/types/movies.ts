@@ -31,6 +31,19 @@ export interface MovieFilters {
   maxYear: number | null;
 }
 
+export interface MovieTrailer {
+  movie_id: number;
+  title: string | null;
+  embed_url: string | null;
+}
+
+export interface CastMember {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
 export interface MoviesState {
   // Genres
   genres: Genre[];
@@ -56,6 +69,16 @@ export interface MoviesState {
   // Filters
   filters: MovieFilters;
   filteredResults: Movie[];
+
+  // Trailers
+  trailers: Map<number, MovieTrailer>;
+  trailersLoading: Map<number, boolean>;
+  trailersError: Map<number, string>;
+
+  // Cast
+  casts: Map<number, CastMember[]>;
+  castsLoading: Map<number, boolean>;
+  castsError: Map<number, string>;
 }
 
 export type MoviesAction =
@@ -93,4 +116,23 @@ export type MoviesAction =
   // Filter actions
   | { type: "SET_FILTERS"; payload: Partial<MovieFilters> }
   | { type: "RESET_FILTERS" }
-  | { type: "APPLY_FILTERS" };
+  | { type: "APPLY_FILTERS" }
+
+  // Trailers actions
+  | { type: "FETCH_TRAILER_START"; payload: { movieId: number } }
+  | {
+      type: "FETCH_TRAILER_SUCCESS";
+      payload: { movieId: number; trailer: MovieTrailer };
+    }
+  | {
+      type: "FETCH_TRAILER_ERROR";
+      payload: { movieId: number; error: string };
+    }
+
+  //Cast actions
+  | { type: "FETCH_CAST_START"; payload: { movieId: number } }
+  | {
+      type: "FETCH_CAST_SUCCESS";
+      payload: { movieId: number; cast: CastMember[] };
+    }
+  | { type: "FETCH_CAST_ERROR"; payload: { movieId: number; error: string } };
