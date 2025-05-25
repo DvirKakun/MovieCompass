@@ -17,11 +17,7 @@ export default function Navbar({ onSearchModeChange }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null!);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const {
-    searchMovies,
-    clearSearch,
-    setSearchQuery: setSearchQueryContext,
-  } = useMovies();
+  const { clearSearch, setSearchQuery: setSearchQueryContext } = useMovies();
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -35,7 +31,7 @@ export default function Navbar({ onSearchModeChange }: NavbarProps) {
 
     debounceRef.current = setTimeout(async () => {
       setSearchQueryContext(searchQuery.trim());
-      await searchMovies(searchQuery.trim());
+      // await fetchSearchPage(searchQuery.trim(), 1);
       onSearchModeChange?.(true);
     }, 500); // debounce delay
 
@@ -47,7 +43,7 @@ export default function Navbar({ onSearchModeChange }: NavbarProps) {
   const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      await searchMovies(searchQuery.trim());
+      // await fetchSearchPage(searchQuery.trim(), 1);
       onSearchModeChange?.(true);
     }
   };

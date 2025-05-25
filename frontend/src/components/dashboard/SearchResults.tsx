@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Filter, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
 import { useMovies } from "../../contexts/MoviesContext";
@@ -18,16 +18,69 @@ import { Label } from "../ui/label";
 
 export default function SearchResults() {
   const [showFilters, setShowFilters] = useState(false);
-  const { state, setFilters, resetFilters, getGenreName } = useMovies();
+  const [isFetching, setIsFetching] = useState(false);
 
   const {
-    searchQuery,
-    filteredResults,
-    searchLoading,
-    searchError,
-    filters,
-    genres,
-  } = state;
+    state: {
+      searchQuery,
+      filteredResults,
+      searchHasMore,
+      searchLoading,
+      searchError,
+      filters,
+      genres,
+    },
+    fetchSearchPage,
+    setFilters,
+    resetFilters,
+    getGenreName,
+  } = useMovies();
+
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const observerRef = useRef<IntersectionObserver | null>(null);
+
+  // Initial search when query changes
+  useEffect(() => {
+    if (!searchQuery.trim()) return;
+
+    fetchSearchPage(searchQuery, 1);
+  }, [searchQuery]);
+
+  // Load next page function (similar to CategoryResults pattern)
+  const loadNextPage = useCallback(async () => {
+    if (isFetching || searchLoading || !searchHasMore || !searchQuery.trim())
+      return;
+
+    setIsFetching(true);
+    try {
+      await fetchSearchPage(searchQuery); // fetch page N+1
+    } finally {
+      setIsFetching(false);
+    }
+  }, [isFetching, searchLoading, searchHasMore, searchQuery, fetchSearchPage]);
+
+  // Intersection observer for infinite scroll
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el) return;
+
+    observerRef.current?.disconnect();
+
+    observerRef.current = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          observerRef.current?.unobserve(el);
+          loadNextPage().finally(() => {
+            observerRef.current?.observe(el);
+          });
+        }
+      },
+      { rootMargin: "600px" }
+    );
+
+    observerRef.current.observe(el);
+    return () => observerRef.current?.disconnect();
+  }, [loadNextPage, searchQuery]);
 
   const currentYear = new Date().getFullYear();
 
@@ -49,7 +102,8 @@ export default function SearchResults() {
     return false;
   }).length;
 
-  if (searchLoading) {
+  // Loading state for initial search
+  if (searchLoading && filteredResults.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center space-y-4">
@@ -79,7 +133,7 @@ export default function SearchResults() {
         <div className="flex items-center justify-between">
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Search Results for {searchQuery}
+              Search Results for "{searchQuery}"
             </h2>
             <div className="flex items-center gap-2 mt-2">
               <p className="text-secondary">
@@ -101,9 +155,7 @@ export default function SearchResults() {
           {/* Filter Toggle */}
           <Button
             variant="outline"
-            onClick={() =>
-              setShowFilters((prevShowFilters) => !prevShowFilters)
-            }
+            onClick={() => setShowFilters(!showFilters)}
             className="flex items-center gap-2"
           >
             <Filter className="w-4 h-4" />
@@ -199,7 +251,7 @@ export default function SearchResults() {
                             className="w-full"
                           />
                           <Slider
-                            value={[filters.maxRating ?? 0]}
+                            value={[filters.maxRating ?? 10]}
                             onValueChange={([value]) =>
                               handleFilterChange({ maxRating: value })
                             }
@@ -362,6 +414,19 @@ export default function SearchResults() {
             ))}
           </motion.div>
         )}
+
+        {/* Loading More Indicator */}
+        {isFetching && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-secondary">Loading more movies...</p>
+            </div>
+          </div>
+        )}
+
+        {/* Sentinel for infinite scroll */}
+        <div ref={sentinelRef} className="h-1" />
       </div>
     </div>
   );

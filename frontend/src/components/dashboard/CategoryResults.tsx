@@ -19,35 +19,37 @@ export default function CategoryResults({
   onBack,
   isAIRecommendations = false,
 }: CategoryResultsProps) {
-  const { state, getMoviesByGenre, getPopularMovies, fetchMoreMoviesByGenre } =
+  const { state, getMoviesByGenre, getPopularMovies, fetchGenrePage } =
     useMovies();
 
   // Get movies based on category type
   const movies = genreId ? getMoviesByGenre(genreId) : getPopularMovies();
-  const isLoading = state.rollersLoading || state.popularLoading;
-  const hasError = state.rollersError || state.popularError;
+  const isLoading = state.moviesLoading || state.popularLoading;
+  const hasError = state.moviesError || state.popularError;
 
-  const pageRef = useRef(1); // last page that *succeeded*
-  const fetchedPagesRef = useRef<Set<number>>(new Set([1])); // pages we already have
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isFetching, setIsFetching] = useState(false);
 
   const loadNextPage = useCallback(async () => {
     if (genreId && !isFetching) {
-      const nextPage = pageRef.current + 1;
+      const hasMore = state.hasMoreByGenre.get(genreId) ?? true;
 
-      if (fetchedPagesRef.current.has(nextPage)) return;
+      if (!hasMore) return;
 
       setIsFetching(true);
       try {
-        await fetchMoreMoviesByGenre(genreId, nextPage);
-        fetchedPagesRef.current.add(nextPage);
-        pageRef.current = nextPage;
+        await fetchGenrePage(genreId);
       } finally {
         setIsFetching(false);
       }
     }
-  }, [genreId, isFetching, fetchMoreMoviesByGenre]);
+  }, [genreId, isFetching, fetchGenrePage, state.hasMoreByGenre]);
+
+  useEffect(() => {
+    if (genreId) {
+      fetchGenrePage(genreId, 1);
+    }
+  }, [genreId]);
 
   useEffect(() => {
     const el = sentinelRef.current;

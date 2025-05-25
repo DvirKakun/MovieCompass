@@ -242,31 +242,6 @@ export default memo(function MovieDetailModal({
             </div>
           )}
         </div>
-
-        {/* Add CSS for scrollbar styling */}
-        <style>{`
-          .scrollbar-container {
-            scrollbar-width: thin;
-            scrollbar-color: rgba(102, 102, 102, 0.4) transparent;
-          }
-
-          .scrollbar-container::-webkit-scrollbar {
-            width: 6px;
-          }
-
-          .scrollbar-container::-webkit-scrollbar-track {
-            background: transparent;
-          }
-
-          .scrollbar-container::-webkit-scrollbar-thumb {
-            background-color: rgba(102, 102, 102, 0.4);
-            border-radius: 6px;
-          }
-
-          .scrollbar-container::-webkit-scrollbar-thumb:hover {
-            background-color: rgba(102, 102, 102, 0.7);
-          }
-        `}</style>
       </DialogContent>
     </Dialog>
   );

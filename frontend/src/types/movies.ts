@@ -57,14 +57,18 @@ export interface MoviesState {
 
   // Movie rollers by genre
   moviesByGenre: Map<number, Movie[]>;
-  rollersLoading: boolean;
-  rollersError: string | null;
+  pagesByGenre: Map<number, number>;
+  hasMoreByGenre: Map<number, boolean>;
+  moviesLoading: boolean;
+  moviesError: string | null;
 
   // Search
   searchQuery: string;
   searchResults: Movie[];
   searchLoading: boolean;
   searchError: string | null;
+  searchHasMore: boolean;
+  searchCurrentPage: number;
 
   // Filters
   filters: MovieFilters;
@@ -98,19 +102,27 @@ export type MoviesAction =
       payload: { genreId: number; movies: Movie[] };
     }
 
-  // Movie rollers actions
-  | { type: "FETCH_ROLLERS_START" }
+  // Movies actions
+  | { type: "FETCH_GENRE_PAGE_START" }
   | {
-      type: "FETCH_ROLLERS_SUCCESS";
-      payload: { genreId: number; movies: Movie[] };
+      type: "FETCH_GENRE_PAGE_SUCCESS";
+      payload: {
+        genreId: number;
+        page: number;
+        movies: Movie[];
+        hasMore: boolean;
+      };
     }
-  | { type: "FETCH_ROLLERS_ERROR"; payload: string }
+  | { type: "FETCH_GENRE_PAGE_ERROR"; payload: string }
 
   // Search actions
+  | { type: "FETCH_SEARCH_PAGE_START" }
+  | {
+      type: "FETCH_SEARCH_PAGE_SUCCESS";
+      payload: { movies: Movie[]; page: number; hasMore: boolean };
+    }
+  | { type: "FETCH_SEARCH_PAGE_ERROR"; payload: string }
   | { type: "SET_SEARCH_QUERY"; payload: string }
-  | { type: "FETCH_SEARCH_START" }
-  | { type: "FETCH_SEARCH_SUCCESS"; payload: Movie[] }
-  | { type: "FETCH_SEARCH_ERROR"; payload: string }
   | { type: "CLEAR_SEARCH" }
 
   // Filter actions

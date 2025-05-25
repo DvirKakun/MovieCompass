@@ -22,13 +22,17 @@ const initialState: MoviesState = {
   popularError: null,
 
   moviesByGenre: new Map(),
-  rollersLoading: false,
-  rollersError: null,
+  pagesByGenre: new Map(),
+  hasMoreByGenre: new Map(),
+  moviesLoading: false,
+  moviesError: null,
 
   searchQuery: "",
   searchResults: [],
   searchLoading: false,
   searchError: null,
+  searchCurrentPage: 1,
+  searchHasMore: true,
 
   filters: {
     genre: null,
@@ -104,31 +108,38 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         popularError: action.payload,
       };
 
-    // Movie rollers
-    case "FETCH_ROLLERS_START":
+    // Movie actions
+    case "FETCH_GENRE_PAGE_START":
       return {
         ...state,
-        rollersLoading: true,
-        rollersError: null,
+        moviesLoading: true,
+        moviesError: null,
       };
 
-    case "FETCH_ROLLERS_SUCCESS":
-      const newMoviesByGenre = new Map(state.moviesByGenre);
+    case "FETCH_GENRE_PAGE_SUCCESS": {
+      const { genreId, page, movies, hasMore } = action.payload;
 
-      newMoviesByGenre.set(action.payload.genreId, action.payload.movies);
+      const prevMovies = state.moviesByGenre.get(genreId) ?? [];
+      const seenIds = new Set(prevMovies.map((m) => m.id));
+      const merged = [
+        ...prevMovies,
+        ...movies.filter((m) => !seenIds.has(m.id)),
+      ];
 
       return {
         ...state,
-        moviesByGenre: newMoviesByGenre,
-        rollersLoading: false,
-        rollersError: null,
+        moviesByGenre: new Map(state.moviesByGenre).set(genreId, merged),
+        pagesByGenre: new Map(state.pagesByGenre).set(genreId, page),
+        hasMoreByGenre: new Map(state.hasMoreByGenre).set(genreId, hasMore),
+        moviesLoading: false,
       };
+    }
 
-    case "FETCH_ROLLERS_ERROR":
+    case "FETCH_GENRE_PAGE_ERROR":
       return {
         ...state,
-        rollersLoading: false,
-        rollersError: action.payload,
+        moviesLoading: false,
+        moviesError: action.payload,
       };
 
     // Search
@@ -136,60 +147,43 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
       return {
         ...state,
         searchQuery: action.payload,
+        searchResults: [],
+        searchCurrentPage: 0,
+        searchHasMore: true,
       };
 
-    case "FETCH_SEARCH_START":
-      return {
-        ...state,
-        searchLoading: true,
-        searchError: null,
-      };
+    case "FETCH_SEARCH_PAGE_START":
+      return { ...state, searchLoading: true, searchError: null };
 
-    case "FETCH_SEARCH_SUCCESS":
+    case "FETCH_SEARCH_PAGE_SUCCESS": {
+      const { movies, page, hasMore } = action.payload;
+
+      const ids = new Set(state.searchResults.map((m) => m.id));
+      const merged = [
+        ...state.searchResults,
+        ...movies.filter((m) => !ids.has(m.id)),
+      ];
+
       return {
         ...state,
-        searchResults: action.payload,
+        searchResults: merged,
+        filteredResults: applyFilters(merged, state.filters),
+        searchCurrentPage: page,
+        searchHasMore: hasMore,
         searchLoading: false,
-        searchError: null,
-        filteredResults: applyFilters(action.payload, state.filters),
       };
-    case "FETCH_MORE_MOVIES_SUCCESS":
-      const newMoviesByGenreMore = new Map(state.moviesByGenre);
-      const existingMoviesMore =
-        newMoviesByGenreMore.get(action.payload.genreId) || [];
+    }
 
-      // Get existing movie IDs for duplicate checking
-      const existingIds = new Set(existingMoviesMore.map((movie) => movie.id));
-
-      // Filter out duplicate movies
-      const uniqueNewMovies = action.payload.movies.filter(
-        (movie) => !existingIds.has(movie.id)
-      );
-
-      // Append only unique new movies to existing ones
-      const updatedMoviesMore = [...existingMoviesMore, ...uniqueNewMovies];
-      newMoviesByGenreMore.set(action.payload.genreId, updatedMoviesMore);
-
-      return {
-        ...state,
-        moviesByGenre: newMoviesByGenreMore,
-        rollersLoading: false,
-        rollersError: null,
-      };
-
-    case "FETCH_SEARCH_ERROR":
-      return {
-        ...state,
-        searchLoading: false,
-        searchError: action.payload,
-      };
+    case "FETCH_SEARCH_PAGE_ERROR":
+      return { ...state, searchLoading: false, searchError: action.payload };
 
     case "CLEAR_SEARCH":
       return {
         ...state,
         searchQuery: "",
         searchResults: [],
-        filteredResults: [],
+        searchCurrentPage: 0,
+        searchHasMore: true,
         searchError: null,
       };
 
@@ -374,11 +368,10 @@ interface MoviesContextType {
   fetchGenres: () => Promise<void>;
 
   // Movie roller actions
-  fetchMoviesByGenre: (genreId: number, page?: number) => Promise<void>;
+  fetchGenrePage: (genreId: number, explicitPage?: number) => Promise<void>;
 
   // Popluar movies action
   fetchPopularMovies: () => Promise<void>;
-  fetchMoreMoviesByGenre: (genreId: number, page: number) => Promise<void>;
 
   // Trailers action
   fetchMovieTrailer: (movieId: number) => Promise<void>;
@@ -388,7 +381,7 @@ interface MoviesContextType {
 
   // Search actions
   setSearchQuery: (query: string) => void;
-  searchMovies: (query: string) => Promise<void>;
+  fetchSearchPage: (query: string, explicitPage?: number) => Promise<void>;
   clearSearch: () => void;
 
   // Filter actions
@@ -440,31 +433,32 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
-  // Movie roller actions
-  const fetchMoviesByGenre = async (genreId: number, page: number = 1) => {
-    dispatch({ type: "FETCH_ROLLERS_START" });
+  // Movies actions
+  const fetchGenrePage = async (genreId: number, explicitPage?: number) => {
+    dispatch({ type: "FETCH_GENRE_PAGE_START" });
+
+    const nextPage = explicitPage ?? (state.pagesByGenre.get(genreId) ?? 0) + 1;
 
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/movies/genre/${genreId}?page=${page}`
+      const res = await fetch(
+        `${BACKEND_URL}/movies/genre/${genreId}?page=${nextPage}`
       );
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch movies for genre ${genreId}`);
-      }
+      if (!res.ok) throw new Error("Failed to fetch genre movies");
 
-      const movies_data: MoviesResponse = await response.json();
-      const movies = movies_data.movies;
+      const data: MoviesResponse = await res.json();
+      const movies = data.movies;
+      const hasMore = movies.length > 0;
 
       dispatch({
-        type: "FETCH_ROLLERS_SUCCESS",
-        payload: { genreId, movies },
+        type: "FETCH_GENRE_PAGE_SUCCESS",
+        payload: { genreId, page: nextPage, movies, hasMore },
       });
     } catch (error) {
       let message = await getErrorMessage(error);
 
       dispatch({
-        type: "FETCH_ROLLERS_ERROR",
+        type: "FETCH_GENRE_PAGE_ERROR",
         payload: message,
       });
     }
@@ -493,34 +487,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
 
       dispatch({
         type: "FETCH_POPULAR_ERROR",
-        payload: message,
-      });
-    }
-  };
-
-  const fetchMoreMoviesByGenre = async (genreId: number, page: number) => {
-    dispatch({ type: "FETCH_ROLLERS_START" });
-
-    try {
-      const response = await fetch(
-        `${BACKEND_URL}/movies/genre/${genreId}?page=${page}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`Failed to fetch movies for genre ${genreId}`);
-      }
-
-      const movies_data: MoviesResponse = await response.json();
-      const movies = movies_data.movies;
-
-      dispatch({
-        type: "FETCH_MORE_MOVIES_SUCCESS", // Different action type
-        payload: { genreId, movies },
-      });
-    } catch (error) {
-      let message = await getErrorMessage(error);
-      dispatch({
-        type: "FETCH_ROLLERS_ERROR",
         payload: message,
       });
     }
@@ -584,31 +550,39 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     dispatch({ type: "SET_SEARCH_QUERY", payload: query });
   };
 
-  const searchMovies = async (query: string) => {
+  const fetchSearchPage = async (query: string, explicitPage?: number) => {
     if (!query.trim()) {
       dispatch({ type: "CLEAR_SEARCH" });
 
       return;
     }
 
-    dispatch({ type: "FETCH_SEARCH_START" });
-    try {
-      const response = await fetch(
-        `${BACKEND_URL}/movies/search?query=${encodeURIComponent(query)}`
-      );
-      if (!response.ok) {
-        throw new Error("Failed to search movies");
-      }
-      const movies_data: MoviesResponse = await response.json();
-      const movies = movies_data.movies;
+    dispatch({ type: "FETCH_SEARCH_PAGE_START" });
 
-      dispatch({ type: "FETCH_SEARCH_SUCCESS", payload: movies });
+    const page = explicitPage ?? state.searchCurrentPage + 1;
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/movies/search?query=${encodeURIComponent(
+          query
+        )}&page=${page}`
+      );
+      if (!res.ok) throw new Error("Search failed");
+
+      const data: MoviesResponse = await res.json();
+      const movies = data.movies;
+      const hasMore = movies.length > 0;
+
+      dispatch({
+        type: "FETCH_SEARCH_PAGE_SUCCESS",
+        payload: { movies, page, hasMore },
+      });
     } catch (error) {
       let message = await getErrorMessage(error);
 
       dispatch({
-        type: "FETCH_SEARCH_ERROR",
-        payload: message,
+        type: "FETCH_SEARCH_PAGE_ERROR",
+        payload: await getErrorMessage(message),
       });
     }
   };
@@ -652,13 +626,12 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   const contextValue: MoviesContextType = {
     state,
     fetchGenres,
-    fetchMoviesByGenre,
-    fetchMoreMoviesByGenre,
     fetchPopularMovies,
+    fetchGenrePage,
     fetchMovieTrailer,
     fetchMovieCast,
     setSearchQuery,
-    searchMovies,
+    fetchSearchPage,
     clearSearch,
     setFilters,
     resetFilters,

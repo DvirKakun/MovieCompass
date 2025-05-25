@@ -22,8 +22,8 @@ async def fetch_popular_movies():
     return movies
 
 
-async def search_movies(query: str):
-    url = f"{settings.BASE_URL}/search/movie?api_key={settings.TMDB_API_KEY}&query={query}&language=en-US"
+async def search_movies(query: str, page: int = 1):
+    url = f"{settings.BASE_URL}/search/movie?api_key={settings.TMDB_API_KEY}&query={query}&language=en-US&page={page}"
     movies_data = await make_request(url)
     movies = [Movie(**movie) for movie in movies_data.get("results", [])]
 

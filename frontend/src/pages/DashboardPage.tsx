@@ -31,8 +31,8 @@ export default function DashboardPage() {
     genres,
     genresLoading,
     genresError,
-    rollersLoading,
-    rollersError,
+    moviesLoading,
+    moviesError,
     searchQuery,
   } = state;
 
@@ -194,7 +194,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Loading state for rollers */}
-                {rollersLoading && (
+                {moviesLoading && (
                   <div className="container mx-auto px-4">
                     <div className="flex items-center space-x-2 text-secondary">
                       <Loader2 className="w-4 h-4 animate-spin" />
@@ -204,11 +204,11 @@ export default function DashboardPage() {
                 )}
 
                 {/* Error state for rollers */}
-                {rollersError && (
+                {moviesError && (
                   <div className="container mx-auto px-4">
                     <div className="flex items-center space-x-2 text-destructive">
                       <AlertCircle className="w-4 h-4" />
-                      <span>{rollersError}</span>
+                      <span>{moviesError}</span>
                     </div>
                   </div>
                 )}

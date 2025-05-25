@@ -1,16 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import { User } from "lucide-react";
-import { BACKEND_URL } from "../../../data/constants";
 import { Skeleton } from "../../ui/skeleton";
 import { motion } from "framer-motion";
 import { useMovies } from "../../../contexts/MoviesContext";
-
-interface CastMember {
-  id: number;
-  name: string;
-  character: string;
-  profile_path: string | null;
-}
 
 interface MovieCastListProps {
   movieId: number;

@@ -29,8 +29,10 @@ async def get_popular_movies():
 
 
 @router.get("/search", response_model=MovieResponse)
-async def search_movie(query: str):
-    movies = await search_movies(query)
+async def search_movie(
+    query: str, page: int = Query(1, ge=1, description="Page number for pagination")
+):
+    movies = await search_movies(query, page)
 
     return MovieResponse(movies=movies)
 

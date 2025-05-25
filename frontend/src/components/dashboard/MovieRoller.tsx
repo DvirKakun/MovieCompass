@@ -16,7 +16,7 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
     state,
     getMoviesByGenre,
     getPopularMovies,
-    fetchMoviesByGenre,
+    fetchGenrePage,
     fetchPopularMovies,
   } = useMovies();
 
@@ -25,7 +25,7 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
     ? getMoviesByGenre(genreId)
     : getPopularMovies();
   const fetchFn = genreId
-    ? () => fetchMoviesByGenre(genreId)
+    ? () => fetchGenrePage(genreId, 1)
     : fetchPopularMovies;
   const viewRef = useFetchOnView(fetchFn);
 
@@ -108,7 +108,7 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
       </div>
 
       {/* Error State (if needed) */}
-      {state.rollersError && (
+      {state.moviesError && (
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center space-x-2 text-destructive text-sm">
             <AlertCircle className="w-4 h-4" />
