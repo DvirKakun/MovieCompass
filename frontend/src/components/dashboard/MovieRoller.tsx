@@ -17,16 +17,14 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
     getMoviesByGenre,
     getPopularMovies,
     fetchGenrePage,
-    fetchPopularMovies,
+    fetchPopularPage,
   } = useMovies();
 
   // Get movies for this genre (or empty array if not loaded yet)
   const movies: Movie[] = genreId
     ? getMoviesByGenre(genreId)
     : getPopularMovies();
-  const fetchFn = genreId
-    ? () => fetchGenrePage(genreId, 1)
-    : fetchPopularMovies;
+  const fetchFn = genreId ? () => fetchGenrePage(genreId, 1) : fetchPopularPage;
   const viewRef = useFetchOnView(fetchFn);
 
   // For now, create placeholder movies if none are loaded

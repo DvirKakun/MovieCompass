@@ -22,8 +22,10 @@ router = APIRouter()
 
 
 @router.get("/popular", response_model=MovieResponse)
-async def get_popular_movies():
-    movies = await fetch_popular_movies()
+async def get_popular_movies(
+    page: int = Query(1, ge=1, description="Page number for pagination")
+):
+    movies = await fetch_popular_movies(page)
 
     return MovieResponse(movies=movies)
 

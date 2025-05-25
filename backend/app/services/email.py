@@ -12,7 +12,7 @@ def auth_email_create_token_and_send_email(
 ):
     token = create_access_token(
         data={"sub": user_id, "new_email": email},
-        expires_delta=timedelta(minutes=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS),
+        expires_delta=timedelta(hours=settings.EMAIL_ACCESS_TOKEN_EXPIRE_HOURS),
     )
 
     verification_link = f"{settings.FRONTEND_URL}/auth/verify-email?token={token}"

@@ -19,44 +19,56 @@ export default function CategoryResults({
   onBack,
   isAIRecommendations = false,
 }: CategoryResultsProps) {
-  const { state, getMoviesByGenre, getPopularMovies, fetchGenrePage } =
-    useMovies();
+  const {
+    state,
+    getMoviesByGenre,
+    getPopularMovies,
+    fetchGenrePage,
+    fetchPopularPage,
+  } = useMovies();
 
   // Get movies based on category type
   const movies = genreId ? getMoviesByGenre(genreId) : getPopularMovies();
+  const hasMore = genreId
+    ? state.hasMoreByGenre.get(genreId) ?? true
+    : state.popularHasMore;
   const isLoading = state.moviesLoading || state.popularLoading;
   const hasError = state.moviesError || state.popularError;
 
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isFetching, setIsFetching] = useState(false);
 
-  const loadNextPage = useCallback(async () => {
-    if (genreId && !isFetching) {
-      const hasMore = state.hasMoreByGenre.get(genreId) ?? true;
-
-      if (!hasMore) return;
-
-      setIsFetching(true);
-      try {
-        await fetchGenrePage(genreId);
-      } finally {
-        setIsFetching(false);
-      }
-    }
-  }, [genreId, isFetching, fetchGenrePage, state.hasMoreByGenre]);
-
+  // Load first page on mount
   useEffect(() => {
-    if (genreId) {
+    if (genreId !== null) {
       fetchGenrePage(genreId, 1);
+    } else {
+      fetchPopularPage(1);
     }
   }, [genreId]);
+
+  // Load next page when scrolling
+  const loadNextPage = useCallback(async () => {
+    if (isFetching || !hasMore) return;
+
+    setIsFetching(true);
+    try {
+      if (genreId !== null) {
+        await fetchGenrePage(genreId);
+      } else {
+        await fetchPopularPage();
+      }
+    } finally {
+      setIsFetching(false);
+    }
+  }, [isFetching, hasMore, genreId]);
 
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
 
     const observer = new IntersectionObserver(
-      (entries) => entries[0].isIntersecting && loadNextPage(),
+      ([entry]) => entry.isIntersecting && loadNextPage(),
       { rootMargin: "600px" }
     );
 

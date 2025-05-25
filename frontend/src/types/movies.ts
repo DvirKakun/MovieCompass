@@ -54,6 +54,8 @@ export interface MoviesState {
   popularMovies: Movie[];
   popularLoading: boolean;
   popularError: string | null;
+  popularCurrentPage: number;
+  popularHasMore: boolean;
 
   // Movie rollers by genre
   moviesByGenre: Map<number, Movie[]>;
@@ -92,9 +94,12 @@ export type MoviesAction =
   | { type: "FETCH_GENRES_ERROR"; payload: string }
 
   // Popular movies actions
-  | { type: "FETCH_POPULAR_START" }
-  | { type: "FETCH_POPULAR_SUCCESS"; payload: Movie[] }
-  | { type: "FETCH_POPULAR_ERROR"; payload: string }
+  | { type: "FETCH_POPULAR_PAGE_START" }
+  | {
+      type: "FETCH_POPULAR_PAGE_SUCCESS";
+      payload: { movies: Movie[]; page: number; hasMore: boolean };
+    }
+  | { type: "FETCH_POPULAR_PAGE_ERROR"; payload: string }
 
   // Fetch more movies for infinit scroll
   | {

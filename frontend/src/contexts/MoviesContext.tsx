@@ -20,6 +20,8 @@ const initialState: MoviesState = {
   popularMovies: [],
   popularLoading: false,
   popularError: null,
+  popularCurrentPage: 0,
+  popularHasMore: true,
 
   moviesByGenre: new Map(),
   pagesByGenre: new Map(),
@@ -86,27 +88,30 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
 
     //Popular
 
-    case "FETCH_POPULAR_START":
-      return {
-        ...state,
-        popularLoading: true,
-        popularError: null,
-      };
+    case "FETCH_POPULAR_PAGE_START":
+      return { ...state, popularLoading: true, popularError: null };
 
-    case "FETCH_POPULAR_SUCCESS":
-      return {
-        ...state,
-        popularMovies: action.payload,
-        popularLoading: false,
-        popularError: null,
-      };
+    case "FETCH_POPULAR_PAGE_SUCCESS": {
+      const { movies, page, hasMore } = action.payload;
 
-    case "FETCH_POPULAR_ERROR":
+      // dedupe
+      const ids = new Set(state.popularMovies.map((m) => m.id));
+      const merged = [
+        ...state.popularMovies,
+        ...movies.filter((m) => !ids.has(m.id)),
+      ];
+
       return {
         ...state,
+        popularMovies: merged,
+        popularCurrentPage: page,
+        popularHasMore: hasMore,
         popularLoading: false,
-        popularError: action.payload,
       };
+    }
+
+    case "FETCH_POPULAR_PAGE_ERROR":
+      return { ...state, popularLoading: false, popularError: action.payload };
 
     // Movie actions
     case "FETCH_GENRE_PAGE_START":
@@ -371,7 +376,7 @@ interface MoviesContextType {
   fetchGenrePage: (genreId: number, explicitPage?: number) => Promise<void>;
 
   // Popluar movies action
-  fetchPopularMovies: () => Promise<void>;
+  fetchPopularPage: (explicitPage?: number) => Promise<void>;
 
   // Trailers action
   fetchMovieTrailer: (movieId: number) => Promise<void>;
@@ -465,33 +470,32 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   };
 
   // Fetch popular movies
-  const fetchPopularMovies = async () => {
-    dispatch({ type: "FETCH_POPULAR_START" });
+  const fetchPopularPage = async (explicitPage?: number) => {
+    dispatch({ type: "FETCH_POPULAR_PAGE_START" });
+
+    const page = explicitPage ?? state.popularCurrentPage + 1;
 
     try {
-      const response = await fetch(`${BACKEND_URL}/movies/popular`);
+      const res = await fetch(`${BACKEND_URL}/movies/popular?page=${page}`);
+      if (!res.ok) throw new Error("Failed to fetch popular movies");
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch popular movies");
-      }
-
-      const movies_data: MoviesResponse = await response.json();
-      const movies = movies_data.movies;
+      const data: MoviesResponse = await res.json();
+      const movies = data.movies;
+      const hasMore = movies.length > 0;
 
       dispatch({
-        type: "FETCH_POPULAR_SUCCESS",
-        payload: movies,
+        type: "FETCH_POPULAR_PAGE_SUCCESS",
+        payload: { movies, page, hasMore },
       });
     } catch (error) {
       let message = await getErrorMessage(error);
 
       dispatch({
-        type: "FETCH_POPULAR_ERROR",
+        type: "FETCH_POPULAR_PAGE_ERROR",
         payload: message,
       });
     }
   };
-
   const fetchMovieTrailer = async (movieId: number) => {
     // if we already have it, do nothing
     if (state.trailers.has(movieId) || state.trailersLoading.get(movieId))
@@ -626,7 +630,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   const contextValue: MoviesContextType = {
     state,
     fetchGenres,
-    fetchPopularMovies,
+    fetchPopularPage,
     fetchGenrePage,
     fetchMovieTrailer,
     fetchMovieCast,

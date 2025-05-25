@@ -46,7 +46,6 @@ export default function SearchResults() {
     fetchSearchPage(searchQuery, 1);
   }, [searchQuery]);
 
-  // Load next page function (similar to CategoryResults pattern)
   const loadNextPage = useCallback(async () => {
     if (isFetching || searchLoading || !searchHasMore || !searchQuery.trim())
       return;

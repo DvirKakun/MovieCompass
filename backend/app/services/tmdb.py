@@ -14,8 +14,8 @@ from fastapi import HTTPException
 from .tmdb_constants import tmdb_to_http_map
 
 
-async def fetch_popular_movies():
-    url = f"{settings.BASE_URL}/movie/popular?api_key={settings.TMDB_API_KEY}&language=en-US"
+async def fetch_popular_movies(page: int = 1):
+    url = f"{settings.BASE_URL}/movie/popular?api_key={settings.TMDB_API_KEY}&language=en-US&page={page}"
     movies_data = await make_request(url)
     movies = [Movie(**movie) for movie in movies_data.get("results", [])]
 
