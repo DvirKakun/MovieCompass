@@ -8,7 +8,7 @@ from app.schemas.movie import (
 )
 from app.schemas.genre import GenreResponse
 from app.services.tmdb import (
-    fetch_movie_details,
+    fetch_multiple_movies_details,
     search_movies,
     fetch_movies_by_genre,
     fetch_popular_movies,
@@ -17,6 +17,7 @@ from app.services.tmdb import (
     fetch_movie_reviews,
     fetch_movie_trailer,
 )
+from typing import List
 
 router = APIRouter()
 
@@ -78,8 +79,17 @@ async def get_movie_trailer(movie_id: int):
     return trailer
 
 
-@router.get("/{movie_id}", response_model=Movie)
-async def get_movie(movie_id: int):
-    movie = await fetch_movie_details(movie_id)
+# @router.get("/{movie_id}", response_model=Movie)
+# async def get_movie(movie_id: int):
+#     movie = await fetch_movie_details(movie_id)
 
-    return movie
+#     return movie
+
+
+@router.get("/", response_model=List[Movie])
+async def get_movies_by_ids(
+    ids: List[int] = Query(..., description="List of TMDB movie IDs")
+):
+    movies = await fetch_multiple_movies_details(ids)
+
+    return movies

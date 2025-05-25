@@ -99,6 +99,11 @@ export interface MoviesState {
   reviewsError: Map<number, string | null>;
   reviewPages: Map<number, number>;
   reviewHasMore: Map<number, boolean>;
+
+  // Movies by id
+  fetchedMoviesById: Map<number, Movie>;
+  fetchedMoviesLoading: boolean;
+  fetchedMoviesError: string | null;
 }
 
 export type MoviesAction =
@@ -182,4 +187,9 @@ export type MoviesAction =
   | {
       type: "FETCH_REVIEWS_PAGE_ERROR";
       payload: { movieId: number; error: string };
-    };
+    }
+
+  // Movies by id actions
+  | { type: "FETCH_MOVIES_BY_IDS_START" }
+  | { type: "FETCH_MOVIES_BY_IDS_SUCCESS"; payload: Map<number, Movie> }
+  | { type: "FETCH_MOVIES_BY_IDS_ERROR"; payload: string };

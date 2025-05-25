@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useMovieModal } from "../../contexts/MovieModalContext";
 import { useMovies } from "../../contexts/MoviesContext";
 import { Card, CardContent } from "../ui/card";
@@ -17,45 +16,12 @@ export default function WatchlistMovieCard({
   onRemove,
 }: WatchlistMovieCardProps) {
   const { openModal } = useMovieModal();
-  const [movie, setMovie] = useState<any>(null);
-  const { state: moviesState } = useMovies();
   const { removeFromWatchlist } = useUserActions();
   const { listLoading } = useUserState();
+  const { getMovieById } = useMovies();
+  const movie = getMovieById(movieId);
 
   const isRemoving = listLoading.watchlist.has(movieId);
-
-  // Find movie in all available sources
-  useEffect(() => {
-    // Search in popular movies
-    const popularMovie = moviesState.popularMovies.find(
-      (m) => m.id === movieId
-    );
-    if (popularMovie) {
-      setMovie(popularMovie);
-      return;
-    }
-
-    // Search in genre movies
-    for (const [_, movies] of moviesState.moviesByGenre) {
-      const foundMovie = movies.find((movie) => movie.id === movieId);
-
-      if (foundMovie) {
-        setMovie(foundMovie);
-
-        return;
-      }
-    }
-
-    // Search in search results
-    const searchMovie = moviesState.searchResults.find(
-      (movie) => movie.id === movieId
-    );
-    if (searchMovie) {
-      setMovie(searchMovie);
-
-      return;
-    }
-  }, [movieId, moviesState]);
 
   const handleRemove = async () => {
     await removeFromWatchlist(movieId);

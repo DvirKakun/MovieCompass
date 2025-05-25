@@ -249,26 +249,3 @@ export function useUserActions() {
   }
   return context;
 }
-
-export function useIsInWatchlist(movieId: number) {
-  return useContextSelector(
-    UserStateContext,
-    (s) => !!s?.user && s.user.watchlist.includes(movieId)
-  );
-}
-
-export function useIsInFavorites(movieId: number) {
-  return useContextSelector(
-    UserStateContext,
-    (s) => !!s?.user && s.user.favoriteMovies.includes(movieId)
-  );
-}
-
-export function useListLoadingFor(
-  movieId: number,
-  list: ListKind /* "watchlist" | "favoriteMovies" */
-) {
-  return useContextSelector(UserStateContext, (s) =>
-    s?.listLoading[list].has(movieId)
-  );
-}

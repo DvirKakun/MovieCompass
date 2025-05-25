@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Bookmark } from "lucide-react";
 import { Button } from "../components/ui/button";
@@ -9,19 +9,27 @@ import WatchlistMovieCard from "../components/watchlist/WatchlistMovieCard";
 import { useMovieModal } from "../contexts/MovieModalContext";
 import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 import { useUserState } from "../contexts/UserContext";
+import { useMovies } from "../contexts/MoviesContext";
 
 export default function WatchlistPage() {
   const navigate = useNavigate();
   const { user } = useUserState();
   const { isOpen, selectedMovie, closeModal } = useMovieModal();
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
-
+  const { fetchMoviesByIds, state: moviesState } = useMovies();
   const watchlistIds = user?.watchlist || [];
 
-  // Filter out removed movies for smooth animation
   const displayedWatchlist = watchlistIds.filter(
     (id) => !removedMovies.has(id)
   );
+
+  useEffect(() => {
+    if (displayedWatchlist.length) {
+      fetchMoviesByIds(displayedWatchlist);
+    }
+  }, [displayedWatchlist, fetchMoviesByIds]);
+
+  // Filter out removed movies for smooth animation
 
   const handleMovieRemoved = (movieId: number) => {
     setRemovedMovies((prev) => new Set([...prev, movieId]));
@@ -122,6 +130,11 @@ export default function WatchlistPage() {
                       onRemove={() => handleMovieRemoved(movieId)}
                     />
                   ))}
+                  {moviesState.fetchedMoviesLoading && (
+                    <p className="text-center text-secondary mt-4">
+                      Loading details&hellip;
+                    </p>
+                  )}
                 </motion.div>
               )}
             </AnimatePresence>

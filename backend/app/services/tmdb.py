@@ -12,6 +12,7 @@ import aiohttp
 import asyncio
 from fastapi import HTTPException
 from .tmdb_constants import tmdb_to_http_map
+from typing import List
 
 
 async def fetch_popular_movies(page: int = 1):
@@ -44,6 +45,13 @@ async def fetch_movies_by_genre(genre_id: int, page: int = 1):
     movies = [Movie(**movie) for movie in movies_data.get("results", [])]
 
     return movies
+
+
+async def fetch_multiple_movies_details(movie_ids: List[int]) -> List[Movie]:
+    tasks = [fetch_movie_details(movie_id) for movie_id in movie_ids]
+    movies = await asyncio.gather(*tasks, return_exceptions=True)
+
+    return [movie for movie in movies if isinstance(movie, Movie)]
 
 
 async def fetch_movie_details(movie_id: int):
