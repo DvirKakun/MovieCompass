@@ -71,29 +71,25 @@ async def fetch_movie_cast(movie_id: int) -> MovieCastResponse:
     return MovieCastResponse(movie_id=movie_id, cast=cast)
 
 
-async def fetch_movie_reviews(movie_id: int):
-    url = f"{settings.BASE_URL}/movie/{movie_id}/reviews?api_key={settings.TMDB_API_KEY}&language=en-US"
+async def fetch_movie_reviews(movie_id: int, page: int = 1):
+    url = f"{settings.BASE_URL}/movie/{movie_id}/reviews?api_key={settings.TMDB_API_KEY}&language=en-US&page={page}"
 
-    first_page_reviews = await make_request(url, "GET", 1)
-    total_pages = first_page_reviews.get("total_pages", 0)
-    total_results = first_page_reviews.get("total_results", 0)
-
-    tasks = [make_request(url, "GET", page) for page in range(2, total_pages + 1)]
-    results = await asyncio.gather(*tasks)
-    reviews_data = [first_page_reviews] + results
+    response = await make_request(url, "GET")
 
     reviews = [
         MovieReview(
-            author=review["author"],
-            content=review["content"],
-            created_at=review["created_at"],
+            id=review.get("id"),
+            author=review.get("author"),
+            content=review.get("content"),
+            created_at=review.get("created_at"),
         )
-        for page in reviews_data
-        for review in page.get("results", [])
+        for review in response.get("results", [])
     ]
 
     return MovieReviewsResponse(
-        movie_id=movie_id, reviews=reviews, total_results=total_results
+        movie_id=movie_id,
+        reviews=reviews,
+        total_results=response.get("total_results", 0),
     )
 
 

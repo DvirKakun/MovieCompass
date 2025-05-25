@@ -63,8 +63,10 @@ async def get_movie_cast(movie_id: int):
 
 
 @router.get("/{movie_id}/reviews", response_model=MovieReviewsResponse)
-async def get_movie_reviews(movie_id: int):
-    reviews = await fetch_movie_reviews(movie_id)
+async def get_movie_reviews(
+    movie_id: int, page: int = Query(1, ge=1, description="Page number for pagination")
+):
+    reviews = await fetch_movie_reviews(movie_id, page)
 
     return reviews
 

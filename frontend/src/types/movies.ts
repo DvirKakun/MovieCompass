@@ -3,6 +3,13 @@ export interface Genre {
   name: string;
 }
 
+export interface Review {
+  id: string;
+  author: string;
+  content: string;
+  created_at: string;
+}
+
 export interface GenreResponse {
   genres: Genre[];
 }
@@ -85,6 +92,13 @@ export interface MoviesState {
   casts: Map<number, CastMember[]>;
   castsLoading: Map<number, boolean>;
   castsError: Map<number, string>;
+
+  // Reviews
+  reviews: Map<number, Review[]>;
+  reviewsLoading: Map<number, boolean>;
+  reviewsError: Map<number, string | null>;
+  reviewPages: Map<number, number>;
+  reviewHasMore: Map<number, boolean>;
 }
 
 export type MoviesAction =
@@ -146,10 +160,26 @@ export type MoviesAction =
       payload: { movieId: number; error: string };
     }
 
-  //Cast actions
+  // Cast actions
   | { type: "FETCH_CAST_START"; payload: { movieId: number } }
   | {
       type: "FETCH_CAST_SUCCESS";
       payload: { movieId: number; cast: CastMember[] };
     }
-  | { type: "FETCH_CAST_ERROR"; payload: { movieId: number; error: string } };
+  | { type: "FETCH_CAST_ERROR"; payload: { movieId: number; error: string } }
+
+  // Reviews actions
+  | { type: "FETCH_REVIEWS_PAGE_START"; payload: { movieId: number } }
+  | {
+      type: "FETCH_REVIEWS_PAGE_SUCCESS";
+      payload: {
+        movieId: number;
+        reviews: Review[];
+        page: number;
+        hasMore: boolean;
+      };
+    }
+  | {
+      type: "FETCH_REVIEWS_PAGE_ERROR";
+      payload: { movieId: number; error: string };
+    };

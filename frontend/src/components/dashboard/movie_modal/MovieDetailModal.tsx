@@ -16,6 +16,7 @@ import MovieRating from "./MovieRating";
 import { useUser } from "../../../contexts/UserContext";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import type { Movie } from "../../../types/movies";
+import MovieReviewsList from "./MovieReviewsList";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
@@ -237,6 +238,14 @@ export default memo(function MovieDetailModal({
                     Cast
                   </h3>
                   <MovieCastList movieId={movie.id} />
+                </div>
+
+                {/*Reviews section*/}
+                <div>
+                  <h3 className="text-lg font-medium text-foreground mb-3">
+                    Reviews
+                  </h3>
+                  <MovieReviewsList movieId={movie.id} />
                 </div>
               </div>
             </div>

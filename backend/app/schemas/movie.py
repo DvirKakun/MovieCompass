@@ -32,6 +32,7 @@ class MovieCastResponse(BaseModel):
 
 
 class MovieReview(BaseModel):
+    id: str
     author: str
     content: str
     created_at: str

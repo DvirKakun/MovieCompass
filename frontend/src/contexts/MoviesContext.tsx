@@ -8,6 +8,7 @@ import type {
   MoviesResponse,
   MoviesState,
   MovieTrailer,
+  Review,
 } from "../types/movies";
 import { BACKEND_URL } from "../data/constants";
 
@@ -52,6 +53,12 @@ const initialState: MoviesState = {
   casts: new Map(),
   castsLoading: new Map(),
   castsError: new Map(),
+
+  reviews: new Map(),
+  reviewsLoading: new Map(),
+  reviewsError: new Map(),
+  reviewPages: new Map(),
+  reviewHasMore: new Map(),
 };
 
 function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
@@ -305,6 +312,48 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         castsError: cast_error_map,
       };
     }
+
+    // Reviews
+    case "FETCH_REVIEWS_PAGE_START": {
+      const { movieId } = action.payload;
+      const loading = new Map(state.reviewsLoading).set(movieId, true);
+      const error = new Map(state.reviewsError);
+
+      error.delete(movieId);
+
+      return { ...state, reviewsLoading: loading, reviewsError: error };
+    }
+
+    case "FETCH_REVIEWS_PAGE_SUCCESS": {
+      const { movieId, reviews, page, hasMore } = action.payload;
+      const prevReviews = state.reviews.get(movieId) ?? [];
+      const mergedReviews = [
+        ...prevReviews,
+        ...reviews.filter(
+          (review) =>
+            !prevReviews.some((prevReview) => prevReview.id === review.id)
+        ),
+      ];
+
+      return {
+        ...state,
+        reviews: new Map(state.reviews).set(movieId, mergedReviews),
+        reviewPages: new Map(state.reviewPages).set(movieId, page),
+        reviewHasMore: new Map(state.reviewHasMore).set(movieId, hasMore),
+        reviewsLoading: new Map(state.reviewsLoading).set(movieId, false),
+      };
+    }
+
+    case "FETCH_REVIEWS_PAGE_ERROR": {
+      const { movieId, error } = action.payload;
+
+      return {
+        ...state,
+        reviewsLoading: new Map(state.reviewsLoading).set(movieId, false),
+        reviewsError: new Map(state.reviewsError).set(movieId, error),
+      };
+    }
+
     default:
       return state;
   }
@@ -383,6 +432,9 @@ interface MoviesContextType {
 
   // Cast action
   fetchMovieCast: (id: number) => Promise<void>;
+
+  // Reviews action
+  fetchReviewPage: (movieId: number, explicitPage?: number) => Promise<void>;
 
   // Search actions
   setSearchQuery: (query: string) => void;
@@ -591,6 +643,36 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
+  const fetchReviewPage = async (movieId: number, explicitPage?: number) => {
+    dispatch({ type: "FETCH_REVIEWS_PAGE_START", payload: { movieId } });
+
+    const page = explicitPage ?? (state.reviewPages.get(movieId) ?? 0) + 1;
+
+    try {
+      const res = await fetch(
+        `${BACKEND_URL}/movies/${movieId}/reviews?page=${page}`
+      );
+
+      if (!res.ok) throw new Error("Failed to fetch reviews");
+
+      const data = await res.json();
+      const reviews = data.reviews as Review[];
+      const hasMore = reviews.length > 0;
+
+      dispatch({
+        type: "FETCH_REVIEWS_PAGE_SUCCESS",
+        payload: { movieId, reviews, page, hasMore },
+      });
+    } catch (error) {
+      const message = await getErrorMessage(error);
+
+      dispatch({
+        type: "FETCH_REVIEWS_PAGE_ERROR",
+        payload: { movieId, error: message },
+      });
+    }
+  };
+
   const clearSearch = () => {
     dispatch({ type: "CLEAR_SEARCH" });
   };
@@ -634,6 +716,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     fetchGenrePage,
     fetchMovieTrailer,
     fetchMovieCast,
+    fetchReviewPage,
     setSearchQuery,
     fetchSearchPage,
     clearSearch,
