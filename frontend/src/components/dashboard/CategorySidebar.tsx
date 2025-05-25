@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Separator } from "../ui/separator";
 import { Badge } from "../ui/badge";
 import { useMovies } from "../../contexts/MoviesContext";
-import { useUser } from "../../contexts/UserContext";
+import { useUserState } from "../../contexts/UserContext";
 
 interface CategorySidebarProps {
   isOpen: boolean;
@@ -21,9 +21,8 @@ export default function CategorySidebar({
   onAIRecommendations,
 }: CategorySidebarProps) {
   const { state } = useMovies();
-  const { state: userState } = useUser();
+  const { user } = useUserState();
   const { genres } = state;
-  const user = userState.user;
 
   const hasFavorites = user?.favoriteMovies && user.favoriteMovies.length > 0;
 

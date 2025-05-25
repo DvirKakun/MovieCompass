@@ -1,15 +1,16 @@
 // src/pages/AuthPage.tsx
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useUser } from "../contexts/UserContext";
 import { AuthProvider } from "../contexts/AuthContext";
 import { AuthHeader } from "../components/auth/AuthHeader";
 import { AuthMessages } from "../components/auth/AuthMessages";
 import { AuthSidebar } from "../components/auth/AuthSidebar";
 import { AuthFormSection } from "../components/sections/AuthFormSection";
+import { useUserActions, useUserState } from "../contexts/UserContext";
 
 export default function AuthPage() {
-  const { state, fetchUserProfile } = useUser();
+  const { isAuthenticated, isLoading } = useUserState();
+  const { fetchUserProfile, setError } = useUserActions();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -21,20 +22,19 @@ export default function AuthPage() {
 
   /* ②  When the user becomes authenticated, go to the dashboard.     */
   useEffect(() => {
-    if (state.isAuthenticated) navigate("/dashboard", { replace: true });
-  }, [state.isAuthenticated, navigate]);
+    if (isAuthenticated) navigate("/dashboard", { replace: true });
+  }, [isAuthenticated, navigate]);
 
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const msg = params.get("msg");
     if (msg) {
-      // Optional: Dispatch an error to UserContext or use a flash context
-      state.error = msg; // Direct assignment if you want fast feedback
+      setError(msg);
     }
   }, [location.search]);
 
   /* ③  Loading spinner while we *might* still be restoring a session. */
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <div className="h-screen flex items-center justify-center bg-background">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>

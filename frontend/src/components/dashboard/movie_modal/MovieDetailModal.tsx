@@ -13,10 +13,10 @@ import { Button } from "../../ui/button";
 import { useMovies } from "../../../contexts/MoviesContext";
 import MovieCastList from "./MovieCastList";
 import MovieRating from "./MovieRating";
-import { useUser } from "../../../contexts/UserContext";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
 import type { Movie } from "../../../types/movies";
 import MovieReviewsList from "./MovieReviewsList";
+import { useUserActions, useUserState } from "../../../contexts/UserContext";
 
 interface MovieDetailModalProps {
   isOpen: boolean;
@@ -32,18 +32,16 @@ export default memo(function MovieDetailModal({
   const { fetchMovieTrailer, getTrailer, isTrailerLoading, trailerError } =
     useMovies();
   const movieId = movie.id;
-
-  const { state: userState, addToFavorite, addToWatchlist } = useUser();
+  const { toggleToFavorite, toggleToWatchlist } = useUserActions();
+  const {
+    listLoading: { watchlist: wlLoad, favoriteMovies: favLoad },
+    user,
+  } = useUserState();
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isInFavorites, setIsInFavorites] = useState(false);
   const trailer = movieId ? getTrailer(movieId) : undefined;
   const isLoadingTrailer = movieId ? isTrailerLoading(movieId) : false;
   const trailerErr = movieId ? trailerError(movieId) : null;
-
-  const user = userState.user;
-  const {
-    listLoading: { watchlist: wlLoad, favoriteMovies: favLoad },
-  } = userState;
 
   const isWLBusy = wlLoad.has(movieId);
   const isFavBusy = favLoad.has(movieId);
@@ -67,8 +65,8 @@ export default memo(function MovieDetailModal({
     setIsInFavorites(inFavorites);
   }, [movieId, user]);
 
-  const handleAddToWatchlist = () => addToWatchlist(movieId);
-  const handleAddToFavorites = () => addToFavorite(movieId);
+  const handleToggleToWatchlist = () => toggleToWatchlist(movieId);
+  const handleAddToFavorites = () => toggleToFavorite(movieId);
 
   // If we don't have a movie yet, show a loading state
   if (!movie && isOpen) {
@@ -179,7 +177,7 @@ export default memo(function MovieDetailModal({
                           ? "border-primary text-primary"
                           : "border-border text-secondary"
                       }`}
-                      onClick={handleAddToWatchlist}
+                      onClick={handleToggleToWatchlist}
                     >
                       {isWLBusy ? (
                         <Loader2 className="w-4 h-4 mr-1 animate-spin" />

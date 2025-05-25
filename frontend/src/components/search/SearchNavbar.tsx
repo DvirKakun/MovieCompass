@@ -2,56 +2,61 @@ import { useState, useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, ChevronDown, X } from "lucide-react";
 import { Input } from "../ui/input";
-import UserAvatar from "./UserAvatar";
-import UserMenu from "./UserMenu";
-import LogoComponent from "./LogoComponent";
+import UserAvatar from "../dashboard/UserAvatar";
+import UserMenu from "../dashboard/UserMenu";
+import LogoComponent from "../dashboard/LogoComponent";
 import { useMovies } from "../../contexts/MoviesContext";
 import { Button } from "../ui/button";
+import { useNavigate } from "react-router-dom";
 
-interface NavbarProps {
-  onSearchModeChange?: (isSearching: boolean) => void;
-}
-
-export default function Navbar({ onSearchModeChange }: NavbarProps) {
+export default function SearchNavbar() {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuBtnRef = useRef<HTMLButtonElement>(null!);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
-  const { clearSearch, setSearchQuery: setSearchQueryContext } = useMovies();
+  const {
+    state,
+    clearSearch,
+    setSearchQuery: setSearchQueryContext,
+  } = useMovies();
+
+  useEffect(() => {
+    setSearchQuery(state.searchQuery || "");
+  }, [state.searchQuery]);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    // If empty, clear immediately
     if (searchQuery.trim() === "") {
       clearSearch();
-      onSearchModeChange?.(false);
+
       return;
     }
 
-    debounceRef.current = setTimeout(async () => {
+    debounceRef.current = setTimeout(() => {
       setSearchQueryContext(searchQuery.trim());
-      // await fetchSearchPage(searchQuery.trim(), 1);
-      onSearchModeChange?.(true);
-    }, 500); // debounce delay
+      navigate("/dashboard/search");
+    }, 500);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchQuery]);
+  }, [searchQuery, navigate]);
 
-  const handleSearchSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      // await fetchSearchPage(searchQuery.trim(), 1);
-      onSearchModeChange?.(true);
+      setSearchQueryContext(searchQuery.trim());
+      navigate("/dashboard/search");
     }
   };
 
   const handleClearSearch = () => {
     setSearchQuery("");
+    setSearchQueryContext("");
     clearSearch();
-    onSearchModeChange?.(false);
+    navigate(-1);
   };
 
   const toggleMenu = () => setIsMenuOpen((prev) => !prev);

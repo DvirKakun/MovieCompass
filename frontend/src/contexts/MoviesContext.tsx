@@ -1,4 +1,11 @@
-import { createContext, useContext, useReducer, type ReactNode } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useReducer,
+  type ReactNode,
+} from "react";
 import type {
   CastMember,
   GenreResponse,
@@ -691,13 +698,16 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     return state.genreMap.get(genreId) || "Unknown Genre";
   };
 
-  const getMoviesByGenre = (genreId: number): Movie[] => {
-    return state.moviesByGenre.get(genreId) || [];
-  };
+  const getMoviesByGenre = useCallback(
+    (genreId: number): Movie[] => {
+      return state.moviesByGenre.get(genreId) || [];
+    },
+    [state.moviesByGenre]
+  );
 
-  const getPopularMovies = (): Movie[] => {
+  const getPopularMovies = useCallback((): Movie[] => {
     return state.popularMovies;
-  };
+  }, [state.popularMovies]);
 
   const getTrailer = (movieId: number) => state.trailers.get(movieId);
   const isTrailerLoading = (movieId: number) =>
@@ -709,29 +719,54 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   const isCastLoading = (id: number) => state.castsLoading.get(id) ?? false;
   const castError = (id: number) => state.castsError.get(id) ?? null;
 
-  const contextValue: MoviesContextType = {
-    state,
-    fetchGenres,
-    fetchPopularPage,
-    fetchGenrePage,
-    fetchMovieTrailer,
-    fetchMovieCast,
-    fetchReviewPage,
-    setSearchQuery,
-    fetchSearchPage,
-    clearSearch,
-    setFilters,
-    resetFilters,
-    getGenreName,
-    getMoviesByGenre,
-    getPopularMovies,
-    getTrailer,
-    isTrailerLoading,
-    trailerError,
-    getCast,
-    isCastLoading,
-    castError,
-  };
+  const contextValue: MoviesContextType = useMemo(
+    () => ({
+      state,
+      fetchGenres,
+      fetchPopularPage,
+      fetchGenrePage,
+      fetchMovieTrailer,
+      fetchMovieCast,
+      fetchReviewPage,
+      setSearchQuery,
+      fetchSearchPage,
+      clearSearch,
+      setFilters,
+      resetFilters,
+      getGenreName,
+      getMoviesByGenre,
+      getPopularMovies,
+      getTrailer,
+      isTrailerLoading,
+      trailerError,
+      getCast,
+      isCastLoading,
+      castError,
+    }),
+    [
+      state, // safe because it's from useReducer
+      fetchGenres,
+      fetchPopularPage,
+      fetchGenrePage,
+      fetchMovieTrailer,
+      fetchMovieCast,
+      fetchReviewPage,
+      setSearchQuery,
+      fetchSearchPage,
+      clearSearch,
+      setFilters,
+      resetFilters,
+      getGenreName,
+      getMoviesByGenre,
+      getPopularMovies,
+      getTrailer,
+      isTrailerLoading,
+      trailerError,
+      getCast,
+      isCastLoading,
+      castError,
+    ]
+  );
 
   return (
     <MoviesContext.Provider value={contextValue}>

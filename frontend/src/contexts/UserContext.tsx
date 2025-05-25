@@ -1,7 +1,6 @@
 // src/contexts/UserContext.tsx
-import { createContext, useContext, useReducer, useCallback } from "react";
+import { useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
-import { BACKEND_URL } from "../data/constants";
 import type {
   ListKind,
   UserAction,
@@ -10,6 +9,11 @@ import type {
 } from "../types/user";
 import { registerLogout } from "../api/logoutRegistry";
 import { authFetch } from "../api/authFetch";
+import {
+  createContext,
+  useContextSelector,
+  useContext,
+} from "use-context-selector";
 
 // Initial state
 const initialState: UserState = {
@@ -70,6 +74,16 @@ function userReducer(state: UserState, action: UserAction): UserState {
         user: { ...state.user, [action.list]: newList },
       };
     }
+    case "REMOVE_FROM_WATCHLIST_SUCCESS":
+      if (!state.user) return state;
+
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          watchlist: state.user.watchlist.filter((id) => id !== action.payload),
+        },
+      };
     default:
       return state;
   }
@@ -81,11 +95,16 @@ interface UserContextType {
   dispatch: React.Dispatch<UserAction>;
   fetchUserProfile: () => Promise<void>;
   logout: () => void;
-  addToWatchlist: (id: number) => void;
-  addToFavorite: (id: number) => void;
+  toggleToWatchlist: (id: number) => void;
+  toggleToFavorite: (id: number) => void;
+  removeFromWatchlist: (movieId: number) => Promise<void>;
+  setError: (message: string) => void;
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+const UserStateContext = createContext<UserState | undefined>(undefined);
+const UserActionsContext = createContext<
+  Omit<UserContextType, "state" | "dispatch"> | undefined
+>(undefined);
 
 // Provider component
 export function UserProvider({ children }: { children: ReactNode }) {
@@ -95,6 +114,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     dispatch({ type: "CLEAR_USER" });
+  }, []);
+
+  const setError = useCallback((message: string) => {
+    dispatch({ type: "SET_ERROR", payload: message });
   }, []);
 
   registerLogout(logout);
@@ -158,32 +181,94 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const addToWatchlist = (id: number) => toggleMovieOnServer(id, "watchlist");
-  const addToFavorite = (id: number) =>
+  const removeFromWatchlist = async (movieId: number) => {
+    if (!state.user) return;
+
+    const list: ListKind = "watchlist";
+
+    // Add to loading state
+    dispatch({ type: "SET_LIST_LOADING", list, movieId, value: true });
+
+    try {
+      await authFetch(`/users/me/watchlist/${movieId}`, {
+        method: "DELETE",
+      });
+
+      // Update user state - remove movie from watchlist
+      dispatch({
+        type: "REMOVE_FROM_WATCHLIST_SUCCESS",
+        payload: movieId,
+      });
+    } catch (error) {
+      // Handle error - authFetch already handles token issues
+      dispatch({
+        type: "SET_ERROR",
+        payload: "Failed to remove from watchlist",
+      });
+    } finally {
+      // Remove from loading state
+      dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
+    }
+  };
+  const toggleToWatchlist = (id: number) =>
+    toggleMovieOnServer(id, "watchlist");
+  const toggleToFavorite = (id: number) =>
     toggleMovieOnServer(id, "favoriteMovies");
 
   return (
-    <UserContext.Provider
-      value={{
-        state,
-        dispatch,
-        fetchUserProfile,
-        logout,
-        addToWatchlist,
-        addToFavorite,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
+    <UserStateContext.Provider value={state}>
+      <UserActionsContext.Provider
+        value={{
+          fetchUserProfile,
+          logout,
+          setError,
+          toggleToWatchlist,
+          toggleToFavorite,
+          removeFromWatchlist,
+        }}
+      >
+        {children}
+      </UserActionsContext.Provider>
+    </UserStateContext.Provider>
   );
 }
 
 // Custom hook to use the user context
-export function useUser() {
-  const context = useContext(UserContext);
-
+export function useUserState() {
+  const context = useContext(UserStateContext);
   if (context === undefined) {
-    throw new Error("useUser must be used within a UserProvider");
+    throw new Error("useUserState must be used within a UserProvider");
   }
   return context;
+}
+
+export function useUserActions() {
+  const context = useContext(UserActionsContext);
+  if (context === undefined) {
+    throw new Error("useUserActions must be used within a UserProvider");
+  }
+  return context;
+}
+
+export function useIsInWatchlist(movieId: number) {
+  return useContextSelector(
+    UserStateContext,
+    (s) => !!s?.user && s.user.watchlist.includes(movieId)
+  );
+}
+
+export function useIsInFavorites(movieId: number) {
+  return useContextSelector(
+    UserStateContext,
+    (s) => !!s?.user && s.user.favoriteMovies.includes(movieId)
+  );
+}
+
+export function useListLoadingFor(
+  movieId: number,
+  list: ListKind /* "watchlist" | "favoriteMovies" */
+) {
+  return useContextSelector(UserStateContext, (s) =>
+    s?.listLoading[list].has(movieId)
+  );
 }

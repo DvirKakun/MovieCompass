@@ -1,9 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
-import Navbar from "../components/dashboard/Navbar";
 import MovieRoller from "../components/dashboard/MovieRoller";
-import SearchResults from "../components/dashboard/SearchResults";
 import CategorySidebar from "../components/dashboard/CategorySidebar";
 import CategoryResults from "../components/dashboard/CategoryResults";
 import { useMovies } from "../contexts/MoviesContext";
@@ -12,7 +10,7 @@ import { Button } from "../components/ui/button";
 import { useMovieModal } from "../contexts/MovieModalContext";
 import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 
-type ViewMode = "home" | "search" | "category" | "ai-recommendations";
+type ViewMode = "home" | "category" | "ai-recommendations";
 
 interface CategoryState {
   genreId: number | null;
@@ -27,32 +25,13 @@ export default function DashboardPage() {
     useState<CategoryState | null>(null);
 
   const { state, fetchGenres } = useMovies();
-  const {
-    genres,
-    genresLoading,
-    genresError,
-    moviesLoading,
-    moviesError,
-    searchQuery,
-  } = state;
-
-  // Update view mode based on search query
-  useEffect(() => {
-    if (searchQuery.length > 0) {
-      setViewMode("search");
-    } else if (viewMode === "search") {
-      setViewMode("home");
-    }
-  }, [searchQuery]);
+  const { genres, genresLoading, genresError, moviesLoading, moviesError } =
+    state;
 
   // Fetch genres on component mount
   useEffect(() => {
     fetchGenres();
   }, []);
-
-  const handleSearchModeChange = (isSearching: boolean) => {
-    setViewMode(isSearching ? "search" : "home");
-  };
 
   const handleCategorySelect = (genreId: number | null, genreName: string) => {
     setSelectedCategory({ genreId, genreName });
@@ -75,7 +54,6 @@ export default function DashboardPage() {
   if (genresLoading && genres.length === 0) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <Navbar onSearchModeChange={handleSearchModeChange} />
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4">
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
@@ -90,7 +68,6 @@ export default function DashboardPage() {
   if (genresError) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <Navbar onSearchModeChange={handleSearchModeChange} />
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="flex flex-col items-center space-y-4 text-center">
             <AlertCircle className="w-8 h-8 text-destructive" />
@@ -111,8 +88,6 @@ export default function DashboardPage() {
   return (
     <>
       <div className="min-h-screen bg-background text-foreground">
-        <Navbar onSearchModeChange={handleSearchModeChange} />
-
         {/* Browse Categories Button - Only show on home view */}
         {viewMode === "home" && (
           <div className="container mx-auto px-4 pt-4">
@@ -129,18 +104,6 @@ export default function DashboardPage() {
 
         <main className="py-8">
           <AnimatePresence mode="wait">
-            {viewMode === "search" && (
-              <motion.div
-                key="search-results"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <SearchResults />
-              </motion.div>
-            )}
-
             {(viewMode === "category" || viewMode === "ai-recommendations") &&
               selectedCategory && (
                 <motion.div

@@ -1,8 +1,7 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight, AlertCircle } from "lucide-react";
 import { useMovies } from "../../contexts/MoviesContext";
 import MovieCard from "./MovieCard";
-import type { Movie } from "../../types/movies";
 import { useFetchOnView } from "../../hooks/useFetchOnView";
 
 interface MovieRollerProps {
@@ -21,23 +20,24 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
   } = useMovies();
 
   // Get movies for this genre (or empty array if not loaded yet)
-  const movies: Movie[] = genreId
-    ? getMoviesByGenre(genreId)
-    : getPopularMovies();
+  const movies = useMemo(() => {
+    return genreId ? getMoviesByGenre(genreId) : getPopularMovies();
+  }, [genreId, getMoviesByGenre, getPopularMovies]);
   const fetchFn = genreId ? () => fetchGenrePage(genreId, 1) : fetchPopularPage;
   const viewRef = useFetchOnView(fetchFn);
 
   // For now, create placeholder movies if none are loaded
-  const displayMovies =
-    movies.length > 0
-      ? movies
-      : Array(10)
-          .fill(null)
-          .map((_, index) => ({
-            id: `placeholder-${genreId}-${index}`,
-            title: `Movie ${index + 1}`,
-            placeholder: true,
-          }));
+
+  const displayMovies = useMemo(() => {
+    if (movies.length > 0) return movies;
+    return Array(10)
+      .fill(null)
+      .map((_, index) => ({
+        id: +`placeholder-${genreId}-${index}`,
+        title: `Movie ${index + 1}`,
+        placeholder: true,
+      }));
+  }, [movies, genreId]);
 
   const scrollLeft = () => {
     if (scrollRef.current) {
@@ -114,20 +114,6 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
           </div>
         </div>
       )}
-
-      {/* Custom CSS for hiding scrollbar */}
-      <style>
-        {`
-          .scrollbar-hide {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;     /* Firefox */
-          }
-              
-          .scrollbar-hide::-webkit-scrollbar {
-            display: none;             /* Chrome, Safari */
-          }
-        `}
-      </style>
     </div>
   );
 }

@@ -35,4 +35,5 @@ export type UserAction =
       movieId: number;
       value: boolean;
     }
-  | { type: "TOGGLE_MOVIE_IN_LIST"; list: ListKind; movieId: number };
+  | { type: "TOGGLE_MOVIE_IN_LIST"; list: ListKind; movieId: number }
+  | { type: "REMOVE_FROM_WATCHLIST_SUCCESS"; payload: number };

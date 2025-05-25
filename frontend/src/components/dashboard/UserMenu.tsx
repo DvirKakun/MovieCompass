@@ -2,7 +2,7 @@ import { useEffect, useRef, type JSX } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Bookmark, Star, LogOut, Heart } from "lucide-react";
-import { useUser } from "../../contexts/UserContext";
+import { useUserActions, useUserState } from "../../contexts/UserContext";
 
 interface UserMenuProps {
   isOpen: boolean;
@@ -23,9 +23,9 @@ export default function UserMenu({
   buttonRef,
 }: UserMenuProps) {
   const navigate = useNavigate();
-  const { state, logout } = useUser();
+  const { user } = useUserState();
+  const { logout } = useUserActions();
   const menuRef = useRef<HTMLDivElement>(null);
-  const user = state.user;
 
   // Close menu when clicking outside
   useEffect(() => {
@@ -72,27 +72,27 @@ export default function UserMenu({
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
-        navigate("/profile");
+        navigate("/dashboard/profile");
       },
     },
     {
       label: "Your Watchlist",
-      icon: <Heart className="h-4 w-4 mr-2" />,
+      icon: <Bookmark className="h-4 w-4 mr-2" />,
       count: user?.watchlist?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
-        navigate("/watchlist");
+        navigate("/dashboard/watchlist");
       },
     },
     {
       label: "Your Favorites",
-      icon: <Bookmark className="h-4 w-4 mr-2" />,
+      icon: <Heart className="h-4 w-4 mr-2" />,
       count: user?.favoriteMovies?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
-        navigate("/favorites");
+        navigate("/dashboard/favorites");
       },
     },
     {
@@ -102,7 +102,7 @@ export default function UserMenu({
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
         setIsOpen(false);
-        navigate("/ratings");
+        navigate("/dashboard/ratings");
       },
     },
     {

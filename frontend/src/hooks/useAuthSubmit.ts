@@ -3,7 +3,7 @@ import { useAuth } from "../contexts/AuthContext";
 import type { AuthFormData, FormErrors } from "../types/auth";
 import { useAuthMode } from "./useAuthMode";
 import { BACKEND_URL } from "../data/constants";
-import { useUser } from "../contexts/UserContext";
+import { useUserActions } from "../contexts/UserContext";
 
 function transformBackendErrors(
   backendErrors: Array<{ field: string; message: string }>
@@ -32,7 +32,7 @@ export function useAuthSubmit() {
   const navigate = useNavigate();
   const { state, dispatch } = useAuth();
   const { handleModeChange } = useAuthMode();
-  const { fetchUserProfile } = useUser();
+  const { fetchUserProfile } = useUserActions();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

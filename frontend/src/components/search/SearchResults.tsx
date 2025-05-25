@@ -1,8 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Filter, X, ChevronDown, Loader2, AlertCircle } from "lucide-react";
+import {
+  Filter,
+  X,
+  ChevronDown,
+  Loader2,
+  AlertCircle,
+  Search,
+} from "lucide-react";
 import { useMovies } from "../../contexts/MoviesContext";
-import MovieCard from "./MovieCard";
+import MovieCard from "../dashboard/MovieCard";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
@@ -100,6 +107,26 @@ export default function SearchResults() {
     if (key === "maxYear" && value !== currentYear) return true;
     return false;
   }).length;
+
+  if (!searchQuery.trim()) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+            <Search className="w-8 h-8 text-muted-foreground" />
+          </div>
+          <div>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              Search for Movies
+            </h3>
+            <p className="text-secondary">
+              Enter a movie title, actor name, or genre to get started
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state for initial search
   if (searchLoading && filteredResults.length === 0) {

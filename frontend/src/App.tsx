@@ -15,8 +15,11 @@ import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import DashboardPage from "./pages/DashboardPage";
+import WatchlistPage from "./pages/WatchlistPage";
 import { MoviesProvider } from "./contexts/MoviesContext";
 import { MovieModalProvider } from "./contexts/MovieModalContext";
+import SearchPage from "./pages/SearchPage";
+import SearchNavbar from "./components/search/SearchNavbar";
 
 function App() {
   return (
@@ -41,11 +44,21 @@ function App() {
             />
 
             <Route
-              path="/dashboard"
+              path="/dashboard/*"
               element={
                 <ProtectedRoute>
                   <MovieModalProvider>
-                    <DashboardPage />
+                    <div className="min-h-screen bg-background text-foreground">
+                      <SearchNavbar />
+                      <Routes>
+                        <Route index element={<DashboardPage />} />
+                        <Route path="search" element={<SearchPage />} />
+                        {/* <Route path="profile" element={<ProfilePage />} /> */}
+                        <Route path="watchlist" element={<WatchlistPage />} />
+                        {/* <Route path="favorites" element={<FavoritesPage />} /> */}
+                        {/* <Route path="ratings" element={<RatingsPage />} /> */}
+                      </Routes>
+                    </div>
                   </MovieModalProvider>
                 </ProtectedRoute>
               }

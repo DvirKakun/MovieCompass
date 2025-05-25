@@ -1,32 +1,24 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUser } from "../../contexts/UserContext";
+import { useUserActions } from "../../contexts/UserContext";
 
 export function GoogleCallbackHandler() {
   const navigate = useNavigate();
-  const { fetchUserProfile, dispatch } = useUser();
+  const { fetchUserProfile, setError } = useUserActions();
 
   useEffect(() => {
-    // Extract token from URL hash fragment
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
     const token = hashParams.get("access_token");
 
     if (token) {
-      // Store the token in localStorage
       localStorage.setItem("access_token", token);
       fetchUserProfile();
-
-      // Redirect to dashboard
       setTimeout(() => navigate("/dashboard"), 0);
     } else {
-      // Handle error case - no token found
-      dispatch({
-        type: "SET_ERROR",
-        payload: "Something went wrong",
-      });
+      setError("Something went wrong");
       setTimeout(() => navigate("/auth?mode=login"), 0);
     }
-  }, [navigate]);
+  }, [navigate, fetchUserProfile, setError]);
 
   return (
     <div className="flex items-center justify-center h-screen">

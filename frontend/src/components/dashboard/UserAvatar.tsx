@@ -1,10 +1,9 @@
 import { User } from "lucide-react";
 import { Avatar, AvatarFallback } from "../ui/avatar";
-import { useUser } from "../../contexts/UserContext";
+import { useUserState } from "../../contexts/UserContext";
 
 export default function UserAvatar() {
-  const { state } = useUser();
-  const currentUser = state.user;
+  const { user: currentUser } = useUserState();
 
   // Generate initials from user's name
   const getInitials = () => {

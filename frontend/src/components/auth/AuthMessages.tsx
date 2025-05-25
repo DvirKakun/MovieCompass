@@ -1,11 +1,11 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
-import { useUser } from "../../contexts/UserContext";
+import { useUserState } from "../../contexts/UserContext";
 
 export function AuthMessages() {
   const { state } = useAuth();
-  const { state: userState } = useUser();
+  const { error: userError } = useUserState();
 
   return (
     <>
@@ -24,7 +24,7 @@ export function AuthMessages() {
       </AnimatePresence>
 
       <AnimatePresence>
-        {(state.errors.general || userState.error) && (
+        {(state.errors.general || userError) && (
           <motion.div
             initial={{ opacity: 0, y: -50 }}
             animate={{ opacity: 1, y: 0 }}
@@ -32,7 +32,7 @@ export function AuthMessages() {
             className="fixed top-4 right-4 z-50 p-4 bg-destructive/10 border border-destructive/20 rounded-lg flex items-center text-destructive shadow-lg"
           >
             <AlertCircle className="w-5 h-5 mr-2" />
-            {state.errors.general || userState.error}
+            {state.errors.general || userError}
           </motion.div>
         )}
       </AnimatePresence>
