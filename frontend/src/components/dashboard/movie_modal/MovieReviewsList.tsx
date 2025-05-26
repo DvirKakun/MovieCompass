@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { User, Calendar, Loader2, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "../../ui/card";
 import { motion } from "framer-motion";
 import { useMovies } from "../../../contexts/MoviesContext";
+import { useInfiniteScroll } from "../../../hooks/useInfiniteScroll";
 
 interface MovieReviewsListProps {
   movieId: number;
@@ -10,13 +11,9 @@ interface MovieReviewsListProps {
 
 export default function MovieReviewsList({ movieId }: MovieReviewsListProps) {
   const { state, fetchReviewPage } = useMovies();
-  const [isFetching, setIsFetching] = useState(false);
   const [expandedReviews, setExpandedReviews] = useState<Set<string>>(
     new Set()
   );
-
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
 
   // Get reviews data for this movie
   const reviews = state.reviews.get(movieId) ?? [];
@@ -24,46 +21,25 @@ export default function MovieReviewsList({ movieId }: MovieReviewsListProps) {
   const error = state.reviewsError.get(movieId) ?? null;
   const hasMore = state.reviewHasMore.get(movieId) ?? true;
 
+  // Fetch function for infinite scroll
+  const fetchNextPage = useCallback(async () => {
+    await fetchReviewPage(movieId);
+  }, [movieId, fetchReviewPage]);
+
+  // Use infinite scroll hook
+  const { sentinelRef, isFetching } = useInfiniteScroll({
+    fetchFn: fetchNextPage,
+    hasMore,
+    isLoading,
+    rootMargin: "400px",
+  });
+
   // Initial fetch when component mounts
   useEffect(() => {
     if (reviews.length === 0 && !isLoading && !error) {
       fetchReviewPage(movieId, 1);
     }
-  }, [movieId]);
-
-  const loadNextPage = useCallback(async () => {
-    if (isFetching || isLoading || !hasMore) return;
-
-    setIsFetching(true);
-    try {
-      await fetchReviewPage(movieId);
-    } finally {
-      setIsFetching(false);
-    }
-  }, [isFetching, isLoading, hasMore, movieId, fetchReviewPage]);
-
-  // Intersection observer for infinite scroll
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el || reviews.length === 0) return;
-
-    observerRef.current?.disconnect();
-
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          observerRef.current?.unobserve(el);
-          loadNextPage().finally(() => {
-            observerRef.current?.observe(el);
-          });
-        }
-      },
-      { rootMargin: "400px" }
-    );
-
-    observerRef.current.observe(el);
-    return () => observerRef.current?.disconnect();
-  }, [loadNextPage, reviews.length]);
+  }, [movieId, reviews.length, isLoading, error, fetchReviewPage]);
 
   // Loading state for initial fetch
   if (isLoading && reviews.length === 0) {

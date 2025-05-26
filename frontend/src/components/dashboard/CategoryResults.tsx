@@ -4,7 +4,8 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useMovies } from "../../contexts/MoviesContext";
 import MovieCard from "./MovieCard";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect } from "react";
+import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 
 interface CategoryResultsProps {
   categoryName: string;
@@ -35,9 +36,6 @@ export default function CategoryResults({
   const isLoading = state.moviesLoading || state.popularLoading;
   const hasError = state.moviesError || state.popularError;
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const [isFetching, setIsFetching] = useState(false);
-
   // Load first page on mount
   useEffect(() => {
     if (genreId !== null) {
@@ -47,34 +45,19 @@ export default function CategoryResults({
     }
   }, [genreId]);
 
-  // Load next page when scrolling
-  const loadNextPage = useCallback(async () => {
-    if (isFetching || !hasMore) return;
-
-    setIsFetching(true);
-    try {
-      if (genreId !== null) {
-        await fetchGenrePage(genreId);
-      } else {
-        await fetchPopularPage();
-      }
-    } finally {
-      setIsFetching(false);
+  const fetchNextPage = useCallback(async () => {
+    if (genreId !== null) {
+      await fetchGenrePage(genreId);
+    } else {
+      await fetchPopularPage();
     }
-  }, [isFetching, hasMore, genreId]);
+  }, [genreId, fetchGenrePage, fetchPopularPage]);
 
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    const observer = new IntersectionObserver(
-      ([entry]) => entry.isIntersecting && loadNextPage(),
-      { rootMargin: "600px" }
-    );
-
-    observer.observe(el);
-    return () => observer.disconnect();
-  }, [loadNextPage]);
+  const { sentinelRef, isFetching } = useInfiniteScroll({
+    fetchFn: fetchNextPage,
+    hasMore,
+    isLoading,
+  });
 
   if (isLoading && movies.length === 0) {
     return (

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Filter,
@@ -22,10 +22,10 @@ import {
 } from "../ui/select";
 import { Slider } from "../ui/slider";
 import { Label } from "../ui/label";
+import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
 
 export default function SearchResults() {
   const [showFilters, setShowFilters] = useState(false);
-  const [isFetching, setIsFetching] = useState(false);
 
   const {
     state: {
@@ -43,8 +43,19 @@ export default function SearchResults() {
     getGenreName,
   } = useMovies();
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
-  const observerRef = useRef<IntersectionObserver | null>(null);
+  // Fetch function for infinite scroll
+  const fetchNextPage = useCallback(async () => {
+    if (!searchQuery.trim()) return;
+    await fetchSearchPage(searchQuery); // fetch page N+1
+  }, [searchQuery, fetchSearchPage]);
+
+  // Use infinite scroll hook
+  const { sentinelRef, isFetching } = useInfiniteScroll({
+    fetchFn: fetchNextPage,
+    hasMore: searchHasMore,
+    isLoading: searchLoading,
+    rootMargin: "600px",
+  });
 
   // Initial search when query changes
   useEffect(() => {
@@ -52,41 +63,6 @@ export default function SearchResults() {
 
     fetchSearchPage(searchQuery, 1);
   }, [searchQuery]);
-
-  const loadNextPage = useCallback(async () => {
-    if (isFetching || searchLoading || !searchHasMore || !searchQuery.trim())
-      return;
-
-    setIsFetching(true);
-    try {
-      await fetchSearchPage(searchQuery); // fetch page N+1
-    } finally {
-      setIsFetching(false);
-    }
-  }, [isFetching, searchLoading, searchHasMore, searchQuery, fetchSearchPage]);
-
-  // Intersection observer for infinite scroll
-  useEffect(() => {
-    const el = sentinelRef.current;
-    if (!el) return;
-
-    observerRef.current?.disconnect();
-
-    observerRef.current = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          observerRef.current?.unobserve(el);
-          loadNextPage().finally(() => {
-            observerRef.current?.observe(el);
-          });
-        }
-      },
-      { rootMargin: "600px" }
-    );
-
-    observerRef.current.observe(el);
-    return () => observerRef.current?.disconnect();
-  }, [loadNextPage, searchQuery]);
 
   const currentYear = new Date().getFullYear();
 
@@ -105,6 +81,7 @@ export default function SearchResults() {
     if (key === "maxRating" && value !== 10) return true;
     if (key === "minYear" && value !== 1900) return true;
     if (key === "maxYear" && value !== currentYear) return true;
+
     return false;
   }).length;
 
