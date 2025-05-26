@@ -29,10 +29,16 @@ export default memo(function MovieDetailModal({
   onClose,
   movie,
 }: MovieDetailModalProps) {
-  const { fetchMovieTrailer, getTrailer, isTrailerLoading, trailerError } =
-    useMovies();
+  const {
+    fetchMovieTrailer,
+    getTrailer,
+    isTrailerLoading,
+    trailerError,
+    getGenreName,
+  } = useMovies();
   const movieId = movie.id;
-  const { toggleToFavorite, toggleToWatchlist } = useUserActions();
+  const { toggleToFavorite, toggleToWatchlist, getUserRating } =
+    useUserActions();
   const {
     listLoading: { watchlist: wlLoad, favoriteMovies: favLoad },
     user,
@@ -42,9 +48,11 @@ export default memo(function MovieDetailModal({
   const trailer = movieId ? getTrailer(movieId) : undefined;
   const isLoadingTrailer = movieId ? isTrailerLoading(movieId) : false;
   const trailerErr = movieId ? trailerError(movieId) : null;
+  const userRating = getUserRating(movieId);
 
   const isWLBusy = wlLoad.has(movieId);
   const isFavBusy = favLoad.has(movieId);
+
   // Fetch trailer when movie changes
   useEffect(() => {
     if (isOpen) fetchMovieTrailer(movieId);
@@ -68,6 +76,14 @@ export default memo(function MovieDetailModal({
   const handleToggleToWatchlist = () => toggleToWatchlist(movieId);
   const handleAddToFavorites = () => toggleToFavorite(movieId);
 
+  // Get genres for display
+  const genres = movie.genre_ids
+    ? movie.genre_ids.slice(0, 3).map((id) => getGenreName(id))
+    : movie.genres?.slice(0, 3).map((genre) => genre.name) || [];
+  const releaseYear = movie.release_date
+    ? new Date(movie.release_date).getFullYear()
+    : null;
+
   // If we don't have a movie yet, show a loading state
   if (!movie && isOpen) {
     return (
@@ -80,6 +96,8 @@ export default memo(function MovieDetailModal({
       </Dialog>
     );
   }
+
+  console.log(movie);
 
   return (
     <Dialog open={isOpen} onOpenChange={() => onClose()}>
@@ -137,37 +155,64 @@ export default memo(function MovieDetailModal({
                   </div>
                 )}
               </div>
+
               {/* Movie info section */}
               <div className="p-4 space-y-4 overflow-y-auto flex-grow scrollbar-container">
-                {/* Title and year */}
+                {/* Title and metadata */}
                 <div className="flex justify-between items-start">
-                  <div>
+                  <div className="flex-1 min-w-0 pr-4">
                     <h2 className="text-2xl font-bold text-foreground mb-2">
                       {movie.title}
                     </h2>
-                    <div className="flex items-center space-x-3 text-secondary">
-                      {movie.release_date && (
-                        <div className="flex items-center">
-                          <Calendar className="w-4 h-4 mr-1" />
-                          <span>
-                            {new Date(movie.release_date).getFullYear()}
+
+                    {/* Year and Genres */}
+                    <div className="flex items-center gap-2 text-sm text-secondary mb-3">
+                      {releaseYear && (
+                        <>
+                          <Calendar className="w-4 h-4" />
+                          <span>{releaseYear}</span>
+                        </>
+                      )}
+                      {genres.length > 0 && (
+                        <>
+                          <span>•</span>
+                          <span>{genres.join(", ")}</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Ratings Row */}
+                    <div className="flex items-center gap-4 text-sm">
+                      {/* Movie Rating */}
+                      {movie.vote_average > 0 && (
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-rating fill-current" />
+                          <span className="text-foreground font-medium">
+                            {movie.vote_average.toFixed(1)}
+                          </span>
+                          <span className="text-secondary">
+                            ({movie.vote_count.toLocaleString()} votes)
                           </span>
                         </div>
                       )}
-                      {movie.vote_average > 0 && (
-                        <div className="flex items-center">
-                          <Star className="w-4 h-4 mr-1 text-rating" />
-                          <span>{movie.vote_average.toFixed(1)}</span>
-                          <span className="ml-1 text-xs">
-                            ({movie.vote_count})
-                          </span>
-                        </div>
+
+                      {/* User Rating */}
+                      {userRating && (
+                        <>
+                          <span className="text-muted-foreground">•</span>
+                          <div className="flex items-center gap-1">
+                            <Star className="w-4 h-4 text-primary fill-current" />
+                            <span className="text-primary font-medium">
+                              Your rating: {userRating}/10
+                            </span>
+                          </div>
+                        </>
                       )}
                     </div>
                   </div>
 
                   {/* Action buttons */}
-                  <div className="flex space-x-2">
+                  <div className="flex space-x-2 flex-shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
@@ -217,7 +262,7 @@ export default memo(function MovieDetailModal({
                   <h3 className="text-lg font-medium text-foreground mb-2">
                     Overview
                   </h3>
-                  <p className="text-secondary">
+                  <p className="text-secondary leading-relaxed">
                     {movie.overview || "No overview available."}
                   </p>
                 </div>

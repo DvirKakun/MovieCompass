@@ -21,7 +21,9 @@ export default function MovieRoller({ title, genreId }: MovieRollerProps) {
 
   // Get movies for this genre (or empty array if not loaded yet)
   const movies = useMemo(() => {
-    return genreId ? getMoviesByGenre(genreId) : getPopularMovies();
+    const allMovies = genreId ? getMoviesByGenre(genreId) : getPopularMovies();
+
+    return allMovies.slice(0, 20);
   }, [genreId, getMoviesByGenre, getPopularMovies]);
   const fetchFn = genreId ? () => fetchGenrePage(genreId, 1) : fetchPopularPage;
   const viewRef = useFetchOnView(fetchFn);

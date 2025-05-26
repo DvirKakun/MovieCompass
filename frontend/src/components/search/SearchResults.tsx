@@ -1,89 +1,168 @@
-import { useCallback, useEffect, useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useCallback, useEffect, useState, useMemo } from "react";
+import { motion } from "framer-motion";
 import {
   Filter,
-  X,
-  ChevronDown,
   Loader2,
   AlertCircle,
   Search,
+  ChevronDown,
 } from "lucide-react";
 import { useMovies } from "../../contexts/MoviesContext";
 import MovieCard from "../dashboard/MovieCard";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "../ui/select";
-import { Slider } from "../ui/slider";
-import { Label } from "../ui/label";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
+import FilterPanel from "../common/FilterPanel";
 
 export default function SearchResults() {
   const [showFilters, setShowFilters] = useState(false);
+  const [allSearchResults, setAllSearchResults] = useState<any[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const {
     state: {
       searchQuery,
-      filteredResults,
+      searchResults,
       searchHasMore,
       searchLoading,
       searchError,
       filters,
-      genres,
     },
     fetchSearchPage,
-    setFilters,
     resetFilters,
-    getGenreName,
   } = useMovies();
 
-  // Fetch function for infinite scroll
-  const fetchNextPage = useCallback(async () => {
-    if (!searchQuery.trim()) return;
-    await fetchSearchPage(searchQuery); // fetch page N+1
-  }, [searchQuery, fetchSearchPage]);
+  // Keep track of all fetched results locally to avoid re-filtering massive arrays
+  useEffect(() => {
+    setAllSearchResults(searchResults);
+  }, [searchResults]);
 
-  // Use infinite scroll hook
-  const { sentinelRef, isFetching } = useInfiniteScroll({
+  // Apply filters locally with performance optimization
+  const filteredResults = useMemo(() => {
+    if (!allSearchResults.length) return [];
+
+    const currentYear = new Date().getFullYear();
+
+    // Check if any filters are active
+    const hasActiveFilters =
+      filters.genre !== null ||
+      (filters.minRating !== null && filters.minRating !== 0) ||
+      (filters.maxRating !== null && filters.maxRating !== 10) ||
+      (filters.minYear !== null && filters.minYear !== 1900) ||
+      (filters.maxYear !== null && filters.maxYear !== currentYear);
+
+    // If no filters, return all results
+    if (!hasActiveFilters) {
+      return allSearchResults;
+    }
+
+    // Apply filters efficiently
+    return allSearchResults.filter((movie) => {
+      // Genre filter
+      if (filters.genre !== null) {
+        const genreIds =
+          movie.genre_ids ?? movie.genres?.map((g: any) => g.id) ?? [];
+
+        if (!genreIds.includes(filters.genre)) return false;
+      }
+
+      // Rating filter
+      if (filters.minRating !== null && movie.vote_average < filters.minRating)
+        return false;
+      if (filters.maxRating !== null && movie.vote_average > filters.maxRating)
+        return false;
+
+      // Year filter
+      const movieYear = new Date(movie.release_date).getFullYear();
+      if (filters.minYear !== null && movieYear < filters.minYear) return false;
+      if (filters.maxYear !== null && movieYear > filters.maxYear) return false;
+
+      return true;
+    });
+  }, [allSearchResults, filters]);
+
+  // Smart fetch logic - only show loading when we need more filtered results
+  const needsMoreResults = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const hasActiveFilters =
+      filters.genre !== null ||
+      (filters.minRating !== null && filters.minRating !== 0) ||
+      (filters.maxRating !== null && filters.maxRating !== 10) ||
+      (filters.minYear !== null && filters.minYear !== 1900) ||
+      (filters.maxYear !== null && filters.maxYear !== currentYear);
+
+    if (!hasActiveFilters) {
+      return searchHasMore; // No filters, use backend pagination
+    }
+
+    // With filters: only fetch more if we have very few filtered results and more data is available
+    return (
+      searchHasMore &&
+      filteredResults.length < 20 &&
+      allSearchResults.length > 0
+    );
+  }, [filters, searchHasMore, filteredResults.length, allSearchResults.length]);
+
+  // Optimized fetch function
+  const fetchNextPage = useCallback(async () => {
+    if (
+      !searchQuery.trim() ||
+      !needsMoreResults ||
+      searchLoading ||
+      isLoadingMore
+    )
+      return;
+
+    setIsLoadingMore(true);
+    try {
+      await fetchSearchPage(searchQuery);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [
+    searchQuery,
+    needsMoreResults,
+    searchLoading,
+    isLoadingMore,
+    fetchSearchPage,
+  ]);
+
+  // Use infinite scroll hook with smart loading
+  const { sentinelRef } = useInfiniteScroll({
     fetchFn: fetchNextPage,
-    hasMore: searchHasMore,
-    isLoading: searchLoading,
-    rootMargin: "600px",
+    hasMore: needsMoreResults,
+    isLoading: searchLoading || isLoadingMore,
+    rootMargin: "400px",
   });
 
   // Initial search when query changes
   useEffect(() => {
     if (!searchQuery.trim()) return;
 
+    // Reset local state for new search
+    setAllSearchResults([]);
+    setIsLoadingMore(false);
     fetchSearchPage(searchQuery, 1);
   }, [searchQuery]);
 
   const currentYear = new Date().getFullYear();
 
-  const handleFilterChange = (newFilters: Partial<typeof filters>) => {
-    setFilters(newFilters);
-  };
-
-  const handleResetFilters = () => {
-    resetFilters();
-  };
-
   // Count active filters
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
     if (key === "genre" && value !== null) return true;
-    if (key === "minRating" && value !== 0) return true;
-    if (key === "maxRating" && value !== 10) return true;
-    if (key === "minYear" && value !== 1900) return true;
-    if (key === "maxYear" && value !== currentYear) return true;
-
+    if (key === "minRating" && value !== null && value !== 0) return true;
+    if (key === "maxRating" && value !== null && value !== 10) return true;
+    if (key === "minYear" && value !== null && value !== 1900) return true;
+    if (key === "maxYear" && value !== null && value !== currentYear)
+      return true;
     return false;
   }).length;
+
+  // Show loading only for initial search or when we actually need more results
+  const showLoadingIndicator =
+    (searchLoading && allSearchResults.length === 0) ||
+    (isLoadingMore && needsMoreResults);
 
   if (!searchQuery.trim()) {
     return (
@@ -106,7 +185,7 @@ export default function SearchResults() {
   }
 
   // Loading state for initial search
-  if (searchLoading && filteredResults.length === 0) {
+  if (searchLoading && allSearchResults.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center space-y-4">
@@ -142,6 +221,8 @@ export default function SearchResults() {
               <p className="text-secondary">
                 {filteredResults.length} movie
                 {filteredResults.length !== 1 ? "s" : ""} found
+                {activeFiltersCount > 0 &&
+                  ` (filtered from ${allSearchResults.length})`}
               </p>
               {activeFiltersCount > 0 && (
                 <Badge
@@ -155,7 +236,7 @@ export default function SearchResults() {
             </div>
           </div>
 
-          {/* Filter Toggle */}
+          {/* Filter Toggle Button */}
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
@@ -180,199 +261,19 @@ export default function SearchResults() {
         </div>
       </div>
 
-      {/* Filters Panel */}
-      <AnimatePresence>
-        {showFilters && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-y border-border bg-card/50"
-          >
-            <div className="container mx-auto px-4 py-6">
-              <Card>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {/* Genre Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium text-foreground">
-                        Genre
-                      </Label>
-                      <Select
-                        value={
-                          filters.genre !== null
-                            ? filters.genre.toString()
-                            : "all"
-                        }
-                        onValueChange={(value) =>
-                          handleFilterChange({
-                            genre: value === "all" ? null : parseInt(value),
-                          })
-                        }
-                      >
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="All Genres" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">All Genres</SelectItem>
-                          {genres.map((genre) => (
-                            <SelectItem
-                              key={genre.id}
-                              value={genre.id.toString()}
-                            >
-                              {genre.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {filters.genre && (
-                        <Badge variant="outline" className="text-xs">
-                          {getGenreName(filters.genre)}
-                        </Badge>
-                      )}
-                    </div>
-
-                    {/* Rating Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium text-foreground">
-                        Rating: {filters.minRating} - {filters.maxRating}
-                      </Label>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs text-secondary">
-                            <span>Min: {filters.minRating}</span>
-                            <span>Max: {filters.maxRating}</span>
-                          </div>
-                          <Slider
-                            value={[filters.minRating ?? 0]}
-                            onValueChange={([value]) =>
-                              handleFilterChange({ minRating: value })
-                            }
-                            max={10}
-                            min={0}
-                            step={0.5}
-                            className="w-full"
-                          />
-                          <Slider
-                            value={[filters.maxRating ?? 10]}
-                            onValueChange={([value]) =>
-                              handleFilterChange({ maxRating: value })
-                            }
-                            max={10}
-                            min={0}
-                            step={0.5}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Year Filter */}
-                    <div className="space-y-3">
-                      <Label className="text-sm font-medium text-foreground">
-                        Release Year: {filters.minYear} - {filters.maxYear}
-                      </Label>
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <div className="flex justify-between text-xs text-secondary">
-                            <span>From: {filters.minYear}</span>
-                            <span>To: {filters.maxYear}</span>
-                          </div>
-                          <Slider
-                            value={[filters.minYear ?? 1900]}
-                            onValueChange={([value]) =>
-                              handleFilterChange({ minYear: value })
-                            }
-                            max={currentYear}
-                            min={1900}
-                            step={1}
-                            className="w-full"
-                          />
-                          <Slider
-                            value={[filters.maxYear ?? currentYear]}
-                            onValueChange={([value]) =>
-                              handleFilterChange({ maxYear: value })
-                            }
-                            max={currentYear}
-                            min={1900}
-                            step={1}
-                            className="w-full"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Reset Filters */}
-                    <div className="flex flex-col justify-end space-y-3">
-                      <Label className="text-sm font-medium text-foreground">
-                        Actions
-                      </Label>
-                      <Button
-                        variant="outline"
-                        onClick={handleResetFilters}
-                        className="w-full"
-                        disabled={activeFiltersCount === 0}
-                      >
-                        <X className="w-4 h-4 mr-2" />
-                        Reset Filters
-                      </Button>
-                      {activeFiltersCount > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {filters.genre && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() =>
-                                handleFilterChange({ genre: null })
-                              }
-                            >
-                              {getGenreName(filters.genre)} ×
-                            </Badge>
-                          )}
-                          {(filters.minRating !== 0 ||
-                            filters.maxRating !== 10) && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() =>
-                                handleFilterChange({
-                                  minRating: 0,
-                                  maxRating: 10,
-                                })
-                              }
-                            >
-                              Rating: {filters.minRating}-{filters.maxRating} ×
-                            </Badge>
-                          )}
-                          {(filters.minYear !== 1900 ||
-                            filters.maxYear !== currentYear) && (
-                            <Badge
-                              variant="secondary"
-                              className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
-                              onClick={() =>
-                                handleFilterChange({
-                                  minYear: 1900,
-                                  maxYear: currentYear,
-                                })
-                              }
-                            >
-                              Year: {filters.minYear}-{filters.maxYear} ×
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Filter Panel */}
+      <FilterPanel
+        showFilters={showFilters}
+        filters={filters}
+        onFilterChange={() => {}} // Not used when useContextFilters=true
+        onResetFilters={() => {}} // Not used when useContextFilters=true
+        activeFiltersCount={activeFiltersCount}
+        useContextFilters={true}
+      />
 
       {/* Search Results Grid */}
       <div className="container mx-auto px-4">
-        {filteredResults.length === 0 ? (
+        {filteredResults.length === 0 && allSearchResults.length > 0 ? (
           <Card className="border-dashed">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="text-center space-y-3">
@@ -381,21 +282,38 @@ export default function SearchResults() {
                 </div>
                 <div>
                   <p className="text-secondary text-lg font-medium">
+                    No movies match your filters
+                  </p>
+                  <p className="text-muted-foreground text-sm mt-1">
+                    Found {allSearchResults.length} total results, but none
+                    match your current filters
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  onClick={resetFilters}
+                  className="mt-4"
+                >
+                  Clear All Filters
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : filteredResults.length === 0 ? (
+          <Card className="border-dashed">
+            <CardContent className="flex flex-col items-center justify-center py-12">
+              <div className="text-center space-y-3">
+                <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto">
+                  <Search className="w-8 h-8 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-secondary text-lg font-medium">
                     No movies found
                   </p>
                   <p className="text-muted-foreground text-sm mt-1">
-                    Try adjusting your search terms or filters
+                    Try different search terms
                   </p>
                 </div>
-                {activeFiltersCount > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={handleResetFilters}
-                    className="mt-4"
-                  >
-                    Clear All Filters
-                  </Button>
-                )}
               </div>
             </CardContent>
           </Card>
@@ -418,18 +336,33 @@ export default function SearchResults() {
           </motion.div>
         )}
 
-        {/* Loading More Indicator */}
-        {isFetching && (
+        {/* Smart Loading Indicator - Only show when actually beneficial */}
+        {showLoadingIndicator && (
           <div className="flex items-center justify-center py-8">
             <div className="flex items-center space-x-3">
               <Loader2 className="w-5 h-5 animate-spin text-primary" />
-              <p className="text-secondary">Loading more movies...</p>
+              <p className="text-secondary">
+                {allSearchResults.length === 0
+                  ? "Searching movies..."
+                  : "Loading more movies..."}
+              </p>
             </div>
           </div>
         )}
 
-        {/* Sentinel for infinite scroll */}
-        <div ref={sentinelRef} className="h-1" />
+        {/* End of results indicator */}
+        {!needsMoreResults && filteredResults.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-secondary text-sm">
+              {activeFiltersCount > 0
+                ? `Showing all ${filteredResults.length} movies that match your filters`
+                : "You've reached the end of search results"}
+            </p>
+          </div>
+        )}
+
+        {/* Sentinel for infinite scroll - Only render when we need more results */}
+        {needsMoreResults && <div ref={sentinelRef} className="h-1" />}
       </div>
     </div>
   );

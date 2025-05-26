@@ -20,6 +20,7 @@ import { MoviesProvider } from "./contexts/MoviesContext";
 import { MovieModalProvider } from "./contexts/MovieModalContext";
 import SearchPage from "./pages/SearchPage";
 import SearchNavbar from "./components/search/SearchNavbar";
+import FavoritesPage from "./pages/FavoritesPage";
 
 function App() {
   return (
@@ -55,7 +56,7 @@ function App() {
                         <Route path="search" element={<SearchPage />} />
                         {/* <Route path="profile" element={<ProfilePage />} /> */}
                         <Route path="watchlist" element={<WatchlistPage />} />
-                        {/* <Route path="favorites" element={<FavoritesPage />} /> */}
+                        <Route path="favorites" element={<FavoritesPage />} />
                         {/* <Route path="ratings" element={<RatingsPage />} /> */}
                       </Routes>
                     </div>

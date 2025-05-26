@@ -1,39 +1,40 @@
-import { useMovieModal } from "../../contexts/MovieModalContext";
-import { useMovies } from "../../contexts/MoviesContext";
-import { Card, CardContent } from "../ui/card";
-import { Badge } from "../ui/badge";
-import { motion } from "framer-motion";
-import { Calendar, Play, Star, Trash2, Image as ImageIcon } from "lucide-react";
-import { Button } from "../ui/button";
-import { useUserActions, useUserState } from "../../contexts/UserContext";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Heart,
+  Play,
+  Calendar,
+  Star,
+  Loader2,
+  Image as ImageIcon,
+} from "lucide-react";
+import { Card, CardContent } from "../ui/card";
+import { Button } from "../ui/button";
+import { Badge } from "../ui/badge";
+import { useMovies } from "../../contexts/MoviesContext";
+import { useUserActions, useUserState } from "../../contexts/UserContext";
+import { useMovieModal } from "../../contexts/MovieModalContext";
+import MovieRating from "../dashboard/movie_modal/MovieRating";
 
-interface WatchlistMovieCardProps {
+interface FavoriteMovieCardProps {
   movieId: number;
-  onRemove: () => void;
+  onRemove?: () => void;
 }
 
-export default function WatchlistMovieCard({
+export default function FavoriteMovieCard({
   movieId,
   onRemove,
-}: WatchlistMovieCardProps) {
-  const { openModal } = useMovieModal();
-  const { removeFromWatchlist } = useUserActions();
-  const { listLoading } = useUserState();
+}: FavoriteMovieCardProps) {
   const { getMovieById } = useMovies();
+  const { toggleToFavorite, getUserRating } = useUserActions();
+  const { listLoading } = useUserState();
+  const { openModal } = useMovieModal();
   const [imageError, setImageError] = useState(false);
-  const movie = getMovieById(movieId)!;
+  const [showRating, setShowRating] = useState(false);
 
-  const isRemoving = listLoading.watchlist.has(movieId);
-
-  const handleRemove = async () => {
-    await removeFromWatchlist(movieId);
-    onRemove();
-  };
-
-  const handleOpenModal = () => {
-    openModal(movie);
-  };
+  const movie = getMovieById(movieId);
+  const isRemoving = listLoading.favoriteMovies.has(movieId);
+  const userRating = getUserRating(movieId);
 
   if (!movie) {
     return (
@@ -51,6 +52,15 @@ export default function WatchlistMovieCard({
       </Card>
     );
   }
+
+  const handleRemove = async () => {
+    toggleToFavorite(movieId);
+    onRemove?.();
+  };
+
+  const handleOpenModal = () => {
+    openModal(movie);
+  };
 
   const releaseYear = movie.release_date
     ? new Date(movie.release_date).getFullYear()
@@ -74,20 +84,16 @@ export default function WatchlistMovieCard({
                 <img
                   src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`}
                   alt={movie.title}
-                  className="w-full h-full object-cover rounded-lg cursor-pointer"
-                  onClick={handleOpenModal}
+                  className="w-full h-full object-cover rounded-lg"
                   onError={() => setImageError(true)}
                 />
               ) : (
-                <div
-                  className="w-full h-full bg-muted rounded-lg flex items-center justify-center cursor-pointer"
-                  onClick={handleOpenModal}
-                >
+                <div className="w-full h-full bg-muted rounded-lg flex items-center justify-center">
                   <ImageIcon className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
 
-              {/* Rating Badge */}
+              {/* IMDb Rating Badge */}
               <div className="absolute top-2 right-2">
                 <Badge
                   variant="secondary"
@@ -104,11 +110,7 @@ export default function WatchlistMovieCard({
               <div className="space-y-3">
                 {/* Title and Year */}
                 <div>
-                  <h3
-                    className="font-bold text-foreground text-lg leading-tight mb-1 group-hover:text-primary transition-colors cursor-pointer"
-                    onClick={handleOpenModal}
-                    title={movie.title}
-                  >
+                  <h3 className="font-bold text-foreground text-lg leading-tight mb-1 group-hover:text-primary transition-colors">
                     {movie.title}
                   </h3>
                   <div className="flex items-center gap-2 text-sm text-secondary mb-2">
@@ -122,15 +124,31 @@ export default function WatchlistMovieCard({
                     )}
                   </div>
 
-                  {/* Movie Rating */}
-                  <div className="flex items-center gap-1 text-sm">
-                    <Star className="w-4 h-4 text-rating fill-current" />
-                    <span className="text-foreground font-medium">
-                      {movie.vote_average.toFixed(1)}
-                    </span>
-                    <span className="text-secondary">
-                      ({movie.vote_count.toLocaleString()} votes)
-                    </span>
+                  {/* Ratings Row */}
+                  <div className="flex items-center gap-4 text-sm">
+                    {/* Movie Rating */}
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-rating fill-current" />
+                      <span className="text-foreground font-medium">
+                        {movie.vote_average.toFixed(1)}
+                      </span>
+                      <span className="text-secondary">
+                        ({movie.vote_count.toLocaleString()} votes)
+                      </span>
+                    </div>
+
+                    {/* User Rating */}
+                    {userRating && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-primary fill-current" />
+                          <span className="text-primary font-medium">
+                            Your rating: {userRating}/10
+                          </span>
+                        </div>
+                      </>
+                    )}
                   </div>
                 </div>
 
@@ -138,6 +156,18 @@ export default function WatchlistMovieCard({
                 <p className="text-secondary text-sm leading-relaxed line-clamp-3">
                   {movie.overview || "No overview available."}
                 </p>
+
+                {/* Rating Section */}
+                {showRating && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="border-t border-border pt-3"
+                  >
+                    <MovieRating movieId={movieId} />
+                  </motion.div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex items-center gap-2 pt-2">
@@ -152,6 +182,20 @@ export default function WatchlistMovieCard({
                   </Button>
 
                   <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowRating(!showRating)}
+                    className="border-primary text-primary hover:bg-primary hover:text-background"
+                  >
+                    <Star className="w-4 h-4 mr-2" />
+                    {showRating
+                      ? "Hide Rating"
+                      : userRating
+                      ? "Edit Rating"
+                      : "Rate"}
+                  </Button>
+
+                  <Button
                     variant="ghost"
                     size="sm"
                     onClick={handleRemove}
@@ -159,16 +203,11 @@ export default function WatchlistMovieCard({
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                   >
                     {isRemoving ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-destructive mr-2"></div>
-                        Removing...
-                      </div>
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove
-                      </>
+                      <Heart className="w-4 h-4 fill-current" />
                     )}
+                    {isRemoving ? "Removing..." : "Remove"}
                   </Button>
                 </div>
               </div>
