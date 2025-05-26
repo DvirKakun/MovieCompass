@@ -706,38 +706,41 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
-  const fetchMoviesByIds = useCallback(async (ids: number[]) => {
-    /* remove those we already have */
-    const idsToFetch = ids.filter((id) => !state.fetchedMoviesById.has(id));
-    if (idsToFetch.length === 0) return;
+  const fetchMoviesByIds = useCallback(
+    async (ids: number[]) => {
+      /* remove those we already have */
+      const idsToFetch = ids.filter((id) => !state.fetchedMoviesById.has(id));
+      if (idsToFetch.length === 0) return;
 
-    dispatch({ type: "FETCH_MOVIES_BY_IDS_START" });
+      dispatch({ type: "FETCH_MOVIES_BY_IDS_START" });
 
-    try {
-      const params = new URLSearchParams();
+      try {
+        const params = new URLSearchParams();
 
-      idsToFetch.forEach((id) => params.append("ids", id.toString()));
+        idsToFetch.forEach((id) => params.append("ids", id.toString()));
 
-      const res = await fetch(`${BACKEND_URL}/movies?${params.toString()}`);
+        const res = await fetch(`${BACKEND_URL}/movies?${params.toString()}`);
 
-      if (!res.ok) throw new Error("Failed to fetch movie details");
+        if (!res.ok) throw new Error("Failed to fetch movie details");
 
-      const movies: Movie[] = await res.json();
+        const movies: Movie[] = await res.json();
 
-      /* merge into a new Map to keep ref stable */
-      const merged = new Map(state.fetchedMoviesById);
-      movies.forEach((movie) => merged.set(movie.id, movie));
+        /* merge into a new Map to keep ref stable */
+        const merged = new Map(state.fetchedMoviesById);
+        movies.forEach((movie) => merged.set(movie.id, movie));
 
-      dispatch({ type: "FETCH_MOVIES_BY_IDS_SUCCESS", payload: merged });
-    } catch (error) {
-      const message = await getErrorMessage(error);
+        dispatch({ type: "FETCH_MOVIES_BY_IDS_SUCCESS", payload: merged });
+      } catch (error) {
+        const message = await getErrorMessage(error);
 
-      dispatch({
-        type: "FETCH_MOVIES_BY_IDS_ERROR",
-        payload: message,
-      });
-    }
-  }, []);
+        dispatch({
+          type: "FETCH_MOVIES_BY_IDS_ERROR",
+          payload: message,
+        });
+      }
+    },
+    [state.fetchedMoviesById]
+  );
 
   const clearSearch = () => {
     dispatch({ type: "CLEAR_SEARCH" });

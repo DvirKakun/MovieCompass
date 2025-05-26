@@ -223,12 +223,7 @@ export default memo(function MovieDetailModal({
                 </div>
 
                 {/* Rating component */}
-                <MovieRating
-                  initialRating={
-                    user?.ratings.find((movie) => movie.movie_id === movieId)
-                      ?.rating
-                  }
-                />
+                <MovieRating movieId={movie.id} />
 
                 {/* Cast section */}
                 <div>

@@ -20,6 +20,7 @@ export interface UserState {
   error: string | null;
   isAuthenticated: boolean;
   listLoading: Record<ListKind, Set<number>>;
+  ratingLoading: Set<number>;
 }
 
 export type ListKind = "watchlist" | "favoriteMovies";
@@ -36,4 +37,7 @@ export type UserAction =
       value: boolean;
     }
   | { type: "TOGGLE_MOVIE_IN_LIST"; list: ListKind; movieId: number }
-  | { type: "REMOVE_FROM_WATCHLIST_SUCCESS"; payload: number };
+  | { type: "REMOVE_FROM_WATCHLIST_SUCCESS"; payload: number }
+  | { type: "SET_RATING_LOADING"; movieId: number; value: boolean }
+  | { type: "SET_MOVIE_RATING"; movieId: number; rating: number }
+  | { type: "REMOVE_MOVIE_RATING"; movieId: number };

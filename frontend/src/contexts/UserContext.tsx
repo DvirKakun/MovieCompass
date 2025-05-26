@@ -14,10 +14,11 @@ import { createContext, useContext } from "use-context-selector";
 // Initial state
 const initialState: UserState = {
   user: null,
-  isLoading: false, // Start with loading to show spinner initially
+  isLoading: false,
   error: null,
   isAuthenticated: false,
   listLoading: { watchlist: new Set(), favoriteMovies: new Set() },
+  ratingLoading: new Set(),
 };
 
 // Reducer
@@ -34,7 +35,7 @@ function userReducer(state: UserState, action: UserAction): UserState {
     case "CLEAR_USER":
       return {
         ...initialState,
-        isLoading: false, // Not loading after clearing
+        isLoading: false,
       };
     case "SET_LOADING":
       return {
@@ -80,6 +81,63 @@ function userReducer(state: UserState, action: UserAction): UserState {
           watchlist: state.user.watchlist.filter((id) => id !== action.payload),
         },
       };
+    case "SET_RATING_LOADING": {
+      const set = new Set(state.ratingLoading);
+
+      action.value ? set.add(action.movieId) : set.delete(action.movieId);
+
+      return {
+        ...state,
+        ratingLoading: set,
+      };
+    }
+
+    case "SET_MOVIE_RATING": {
+      if (!state.user) return state;
+
+      const existingRatingIndex = state.user.ratings.findIndex(
+        (rating) => rating.movie_id === action.movieId
+      );
+
+      let newRatings = [...state.user.ratings];
+
+      if (existingRatingIndex >= 0) {
+        // Update existing rating
+        newRatings[existingRatingIndex] = {
+          ...newRatings[existingRatingIndex],
+          rating: action.rating,
+        };
+      } else {
+        // Add new rating
+        newRatings.push({
+          movie_id: action.movieId,
+          rating: action.rating,
+        });
+      }
+
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          ratings: newRatings,
+        },
+      };
+    }
+
+    case "REMOVE_MOVIE_RATING": {
+      if (!state.user) return state;
+
+      return {
+        ...state,
+        user: {
+          ...state.user,
+          ratings: state.user.ratings.filter(
+            (rating) => rating.movie_id !== action.movieId
+          ),
+        },
+      };
+    }
+
     default:
       return state;
   }
@@ -94,6 +152,10 @@ interface UserContextType {
   toggleToWatchlist: (id: number) => void;
   toggleToFavorite: (id: number) => void;
   removeFromWatchlist: (movieId: number) => Promise<void>;
+  setMovieRating: (movieId: number, rating: number) => Promise<void>;
+  removeMovieRating: (movieId: number) => Promise<void>;
+  getUserRating: (movieId: number) => number | null;
+  isRatingLoading: (movieId: number) => boolean;
   setError: (message: string) => void;
 }
 
@@ -206,6 +268,107 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
     }
   };
+
+  const setMovieRating = useCallback(
+    async (movieId: number, rating: number) => {
+      if (!state.user) return;
+
+      // Set loading state
+      dispatch({ type: "SET_RATING_LOADING", movieId, value: true });
+
+      // Optimistic update
+      dispatch({ type: "SET_MOVIE_RATING", movieId, rating });
+
+      try {
+        await authFetch(`/users/me/rating/${movieId}?rating=${rating}`, {
+          method: "PUT",
+        });
+      } catch (err: any) {
+        // Revert optimistic update on error
+        const existingRating = state.user.ratings.find(
+          (rating) => rating.movie_id === movieId
+        );
+
+        if (existingRating) {
+          dispatch({
+            type: "SET_MOVIE_RATING",
+            movieId,
+            rating: existingRating.rating,
+          });
+        } else {
+          dispatch({ type: "REMOVE_MOVIE_RATING", movieId });
+        }
+
+        dispatch({
+          type: "SET_ERROR",
+          payload: err.message ?? "Failed to save rating",
+        });
+      } finally {
+        dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
+      }
+    },
+    [state.user]
+  );
+
+  const removeMovieRating = useCallback(
+    async (movieId: number) => {
+      if (!state.user) return;
+
+      const existingRating = state.user.ratings.find(
+        (rating) => rating.movie_id === movieId
+      );
+
+      if (!existingRating) return;
+
+      // Set loading state
+      dispatch({ type: "SET_RATING_LOADING", movieId, value: true });
+
+      // Optimistic update
+      dispatch({ type: "REMOVE_MOVIE_RATING", movieId });
+
+      try {
+        await authFetch(`/users/me/rating/${movieId}`, {
+          method: "DELETE",
+        });
+      } catch (err: any) {
+        // Revert optimistic update on error
+        dispatch({
+          type: "SET_MOVIE_RATING",
+          movieId,
+          rating: existingRating.rating,
+        });
+
+        dispatch({
+          type: "SET_ERROR",
+          payload: err.message ?? "Failed to remove rating",
+        });
+      } finally {
+        dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
+      }
+    },
+    [state.user]
+  );
+
+  const getUserRating = useCallback(
+    (movieId: number): number | null => {
+      if (!state.user) return null;
+
+      const rating = state.user.ratings.find(
+        (rating) => rating.movie_id === movieId
+      );
+
+      return rating ? rating.rating : null;
+    },
+    [state.user]
+  );
+
+  const isRatingLoading = useCallback(
+    (movieId: number): boolean => {
+      return state.ratingLoading.has(movieId);
+    },
+    [state.ratingLoading]
+  );
+
   const toggleToWatchlist = (id: number) =>
     toggleMovieOnServer(id, "watchlist");
   const toggleToFavorite = (id: number) =>
@@ -221,6 +384,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
           toggleToWatchlist,
           toggleToFavorite,
           removeFromWatchlist,
+          setMovieRating,
+          removeMovieRating,
+          getUserRating,
+          isRatingLoading,
         }}
       >
         {children}

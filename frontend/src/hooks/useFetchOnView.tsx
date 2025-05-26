@@ -24,8 +24,7 @@ export function useFetchOnView(fetchFn: () => void, rootMargin = "400px") {
 
     obs.observe(el);
     return () => obs.disconnect();
-  }, [rootMargin]); // ⚠️ fetchFn removed
-  // eslint-ignore if needed
+  }, [rootMargin]);
 
   return ref;
 }

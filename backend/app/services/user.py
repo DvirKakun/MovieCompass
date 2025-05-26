@@ -433,3 +433,21 @@ async def add_movie_rating(user: User, movie_id: int, rating: int):
         )
 
     return updated_user.get("ratings")
+
+
+def delete_movie_rating(user: User, movie_id: int):
+    has_rating = any(r.movie_id == movie_id for r in user.ratings)
+
+    if not has_rating:
+        raise HTTPException(
+            status_code=404,
+            detail="Rating not found for this movie",
+        )
+
+    updated_user = users_collection.find_one_and_update(
+        {"id": user.id},
+        {"$pull": {"ratings": {"movie_id": movie_id}}},
+        return_document=ReturnDocument.AFTER,
+    )
+
+    return updated_user.get("ratings")

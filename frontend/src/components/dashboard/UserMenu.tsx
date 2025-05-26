@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { User, Bookmark, Star, LogOut, Heart } from "lucide-react";
 import { useUserActions, useUserState } from "../../contexts/UserContext";
+import { useMovies } from "../../contexts/MoviesContext";
 
 interface UserMenuProps {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export default function UserMenu({
   const navigate = useNavigate();
   const { user } = useUserState();
   const { logout } = useUserActions();
+  const { clearSearch } = useMovies();
   const menuRef = useRef<HTMLDivElement>(null);
 
   // Close menu when clicking outside
@@ -71,6 +73,7 @@ export default function UserMenu({
       icon: <User className="h-4 w-4 mr-2" />,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
+        clearSearch();
         setIsOpen(false);
         navigate("/dashboard/profile");
       },
@@ -81,6 +84,7 @@ export default function UserMenu({
       count: user?.watchlist?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
+        clearSearch();
         setIsOpen(false);
         navigate("/dashboard/watchlist");
       },
@@ -91,6 +95,7 @@ export default function UserMenu({
       count: user?.favoriteMovies?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
+        clearSearch();
         setIsOpen(false);
         navigate("/dashboard/favorites");
       },
@@ -101,6 +106,7 @@ export default function UserMenu({
       count: user?.ratings?.length || 0,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
+        clearSearch();
         setIsOpen(false);
         navigate("/dashboard/ratings");
       },

@@ -12,6 +12,7 @@ from app.services.user import (
     remove_movie_from_watchlist,
     add_movie_rating,
     update_user_profile,
+    delete_movie_rating,
 )
 
 router = APIRouter()
@@ -103,3 +104,10 @@ async def rate_movie(
     updated_ratings = await add_movie_rating(current_user, movie_id, rating)
 
     return {"message": "Movie rated", "ratings": updated_ratings}
+
+
+@router.delete("/me/rating/{movie_id}")
+async def delete_rating(movie_id: int, current_user: User = Depends(get_current_user)):
+    updated_ratings = delete_movie_rating(current_user, movie_id)
+
+    return {"message": "Rating deleted", "ratings": updated_ratings}
