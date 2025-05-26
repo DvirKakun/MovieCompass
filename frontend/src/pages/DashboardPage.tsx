@@ -18,6 +18,8 @@ interface CategoryState {
 }
 
 export default function DashboardPage() {
+  // console.log("RENDER");
+
   const { isOpen, selectedMovie, closeModal } = useMovieModal();
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);

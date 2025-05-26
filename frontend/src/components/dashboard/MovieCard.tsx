@@ -1,4 +1,4 @@
-import { memo, useMemo } from "react";
+import { memo } from "react";
 import {
   Star,
   Calendar,
@@ -19,26 +19,21 @@ interface MovieCardProps {
 }
 
 export default memo(function MovieCard({ movie }: MovieCardProps) {
-  console.log("RENDER");
+  console.log(movie.id);
   const movieId = movie.id;
   const { openModal } = useMovieModal();
   const { toggleToFavorite, toggleToWatchlist } = useUserActions();
   const { user, listLoading } = useUserState();
+
   // Check if this is a placeholder card
   const isPlaceholder = "placeholder" in movie && movie.placeholder;
 
   const isWLBusy = listLoading.watchlist.has(movieId);
   const isFavBusy = listLoading.favoriteMovies.has(movieId);
 
-  const isInWatchlist = useMemo(() => {
-    if (!user) return false;
-    return user.watchlist.includes(movieId);
-  }, [user, movieId]);
+  const isInWatchlist = user?.watchlist.includes(movieId);
 
-  const isInFavorites = useMemo(() => {
-    if (!user) return false;
-    return user.favoriteMovies.includes(movieId);
-  }, [user, movieId]);
+  const isInFavorites = user?.favoriteMovies.includes(movieId);
 
   const handleToggleToWatchlist = (e: React.MouseEvent) => {
     e.stopPropagation();

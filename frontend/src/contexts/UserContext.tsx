@@ -9,11 +9,7 @@ import type {
 } from "../types/user";
 import { registerLogout } from "../api/logoutRegistry";
 import { authFetch } from "../api/authFetch";
-import {
-  createContext,
-  useContextSelector,
-  useContext,
-} from "use-context-selector";
+import { createContext, useContext } from "use-context-selector";
 
 // Initial state
 const initialState: UserState = {
@@ -236,6 +232,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 // Custom hook to use the user context
 export function useUserState() {
   const context = useContext(UserStateContext);
+
   if (context === undefined) {
     throw new Error("useUserState must be used within a UserProvider");
   }
@@ -244,6 +241,7 @@ export function useUserState() {
 
 export function useUserActions() {
   const context = useContext(UserActionsContext);
+
   if (context === undefined) {
     throw new Error("useUserActions must be used within a UserProvider");
   }
