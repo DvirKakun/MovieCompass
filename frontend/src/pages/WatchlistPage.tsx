@@ -6,15 +6,12 @@ import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent } from "../components/ui/card";
 import WatchlistMovieCard from "../components/watchlist/WatchlistMovieCard";
-import { useMovieModal } from "../contexts/MovieModalContext";
-import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 import { useUserState } from "../contexts/UserContext";
 import { useMovies } from "../contexts/MoviesContext";
 
 export default function WatchlistPage() {
   const navigate = useNavigate();
   const { user } = useUserState();
-  const { isOpen, selectedMovie, closeModal } = useMovieModal();
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
   const { fetchMoviesByIds, state: moviesState } = useMovies();
   const watchlistIds = user?.watchlist || [];
@@ -141,13 +138,6 @@ export default function WatchlistPage() {
           </motion.div>
         </main>
       </div>
-      {selectedMovie && (
-        <MovieDetailModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          movie={selectedMovie}
-        />
-      )}
     </>
   );
 }

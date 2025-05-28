@@ -14,21 +14,14 @@ import { useMovies } from "../../../contexts/MoviesContext";
 import MovieCastList from "./MovieCastList";
 import MovieRating from "./MovieRating";
 import { DialogDescription, DialogTitle } from "@radix-ui/react-dialog";
-import type { Movie } from "../../../types/movies";
 import MovieReviewsList from "./MovieReviewsList";
 import { useUserActions, useUserState } from "../../../contexts/UserContext";
+import {
+  useMovieModalActions,
+  useMovieModalState,
+} from "../../../contexts/MovieModalContext";
 
-interface MovieDetailModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  movie: Movie;
-}
-
-export default memo(function MovieDetailModal({
-  isOpen,
-  onClose,
-  movie,
-}: MovieDetailModalProps) {
+export default memo(function MovieDetailModal() {
   const {
     fetchMovieTrailer,
     getTrailer,
@@ -36,7 +29,9 @@ export default memo(function MovieDetailModal({
     trailerError,
     getGenreName,
   } = useMovies();
-  const movieId = movie.id;
+  const { isOpen, selectedMovie: movie } = useMovieModalState(); // ✅ Only rerenders on state change
+  const { closeModal } = useMovieModalActions();
+  const movieId = movie?.id!;
   const { toggleToFavorite, toggleToWatchlist, getUserRating } =
     useUserActions();
   const {
@@ -77,17 +72,17 @@ export default memo(function MovieDetailModal({
   const handleAddToFavorites = () => toggleToFavorite(movieId);
 
   // Get genres for display
-  const genres = movie.genre_ids
-    ? movie.genre_ids.slice(0, 3).map((id) => getGenreName(id))
-    : movie.genres?.slice(0, 3).map((genre) => genre.name) || [];
-  const releaseYear = movie.release_date
-    ? new Date(movie.release_date).getFullYear()
+  const genres = movie?.genre_ids
+    ? movie?.genre_ids.slice(0, 3).map((id) => getGenreName(id))
+    : movie?.genres?.slice(0, 3).map((genre) => genre.name) || [];
+  const releaseYear = movie?.release_date
+    ? new Date(movie?.release_date).getFullYear()
     : null;
 
   // If we don't have a movie yet, show a loading state
   if (!movie && isOpen) {
     return (
-      <Dialog open={isOpen} onOpenChange={() => onClose()}>
+      <Dialog open={isOpen} onOpenChange={closeModal}>
         <DialogContent className="sm:max-w-2xl bg-card border-border p-0 overflow-hidden">
           <div className="h-96 flex items-center justify-center">
             <Loader2 className="w-10 h-10 text-primary animate-spin" />
@@ -97,10 +92,8 @@ export default memo(function MovieDetailModal({
     );
   }
 
-  console.log(movie);
-
   return (
-    <Dialog open={isOpen} onOpenChange={() => onClose()}>
+    <Dialog open={isOpen} onOpenChange={closeModal}>
       <DialogContent className="sm:max-w-2xl max-h-[90vh] bg-card border-border p-0 overflow-hidden rounded-lg">
         <div className="flex flex-col h-full max-h-[90vh] overflow-y-auto scrollbar-container">
           <DialogHeader className="sr-only">

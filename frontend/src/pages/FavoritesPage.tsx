@@ -21,8 +21,6 @@ import {
 } from "../components/ui/select";
 import FavoriteMovieCard from "../components/favorites/FavoriteMovieCard";
 import FilterPanel from "../components/common/FilterPanel";
-import { useMovieModal } from "../contexts/MovieModalContext";
-import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 import { useUserState } from "../contexts/UserContext";
 import { useMovies } from "../contexts/MoviesContext";
 import type { Movie, MovieFilters } from "../types/movies";
@@ -33,7 +31,6 @@ type SortOrder = "asc" | "desc";
 export default function FavoritesPage() {
   const navigate = useNavigate();
   const { user } = useUserState();
-  const { isOpen, selectedMovie, closeModal } = useMovieModal();
   const { fetchMoviesByIds, state: moviesState } = useMovies();
 
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
@@ -348,14 +345,6 @@ export default function FavoritesPage() {
           </motion.div>
         </main>
       </div>
-
-      {selectedMovie && (
-        <MovieDetailModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          movie={selectedMovie}
-        />
-      )}
     </>
   );
 }

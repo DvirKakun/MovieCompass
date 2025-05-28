@@ -9,7 +9,7 @@ import {
   Loader2,
 } from "lucide-react";
 import type { Movie } from "../../types/movies";
-import { useMovieModal } from "../../contexts/MovieModalContext";
+import { useMovieModalActions } from "../../contexts/MovieModalContext";
 import MoviePlaceholder from "./MoviePlaceholder";
 import { Button } from "../ui/button";
 import { useUserActions, useUserState } from "../../contexts/UserContext";
@@ -19,8 +19,10 @@ interface MovieCardProps {
 }
 
 export default memo(function MovieCard({ movie }: MovieCardProps) {
+  console.log("RENDER");
   const movieId = movie.id;
-  const { openModal } = useMovieModal();
+  // const { openModal } = useMovieModal();
+  const { openModal } = useMovieModalActions();
   const { toggleToFavorite, toggleToWatchlist } = useUserActions();
   const { user, listLoading } = useUserState();
 

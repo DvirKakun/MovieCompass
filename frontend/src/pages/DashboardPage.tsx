@@ -7,8 +7,6 @@ import CategoryResults from "../components/dashboard/CategoryResults";
 import { useMovies } from "../contexts/MoviesContext";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
-import { useMovieModal } from "../contexts/MovieModalContext";
-import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 
 type ViewMode = "home" | "category" | "ai-recommendations";
 
@@ -18,7 +16,7 @@ interface CategoryState {
 }
 
 export default function DashboardPage() {
-  const { isOpen, selectedMovie, closeModal } = useMovieModal();
+  console.log("DASHBOARD");
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] =
@@ -192,13 +190,6 @@ export default function DashboardPage() {
           )}
         </AnimatePresence>
       </div>
-      {selectedMovie && (
-        <MovieDetailModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          movie={selectedMovie}
-        />
-      )}
     </>
   );
 }

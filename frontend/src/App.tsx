@@ -19,8 +19,8 @@ import WatchlistPage from "./pages/WatchlistPage";
 import { MoviesProvider } from "./contexts/MoviesContext";
 import { MovieModalProvider } from "./contexts/MovieModalContext";
 import SearchPage from "./pages/SearchPage";
-import SearchNavbar from "./components/search/SearchNavbar";
 import FavoritesPage from "./pages/FavoritesPage";
+import DashboardLayout from "./components/layout/DashboardLayout";
 
 function App() {
   return (
@@ -45,25 +45,20 @@ function App() {
             />
 
             <Route
-              path="/dashboard/*"
+              path="/dashboard"
               element={
                 <ProtectedRoute>
                   <MovieModalProvider>
-                    <div className="min-h-screen bg-background text-foreground">
-                      <SearchNavbar />
-                      <Routes>
-                        <Route index element={<DashboardPage />} />
-                        <Route path="search" element={<SearchPage />} />
-                        {/* <Route path="profile" element={<ProfilePage />} /> */}
-                        <Route path="watchlist" element={<WatchlistPage />} />
-                        <Route path="favorites" element={<FavoritesPage />} />
-                        {/* <Route path="ratings" element={<RatingsPage />} /> */}
-                      </Routes>
-                    </div>
+                    <DashboardLayout /> {/* layout returns JSX with Outlet */}
                   </MovieModalProvider>
                 </ProtectedRoute>
               }
-            />
+            >
+              <Route index element={<DashboardPage />} />
+              <Route path="search" element={<SearchPage />} />
+              <Route path="watchlist" element={<WatchlistPage />} />
+              <Route path="favorites" element={<FavoritesPage />} />
+            </Route>
 
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>

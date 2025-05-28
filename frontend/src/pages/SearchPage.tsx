@@ -3,13 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "../components/ui/button";
 import SearchResults from "../components/search/SearchResults";
 import { useMovies } from "../contexts/MoviesContext";
-import { useMovieModal } from "../contexts/MovieModalContext";
-import MovieDetailModal from "../components/dashboard/movie_modal/MovieDetailModal";
 
 export default function SearchPage() {
   const navigate = useNavigate();
   const { clearSearch } = useMovies();
-  const { isOpen, selectedMovie, closeModal } = useMovieModal();
 
   const handleBackToDashboard = () => {
     clearSearch();
@@ -33,13 +30,6 @@ export default function SearchPage() {
           <SearchResults />
         </main>
       </div>
-      {selectedMovie && (
-        <MovieDetailModal
-          isOpen={isOpen}
-          onClose={closeModal}
-          movie={selectedMovie}
-        />
-      )}
     </>
   );
 }
