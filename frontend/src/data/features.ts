@@ -1,4 +1,4 @@
-import { Brain, Download, Grid3X3, Star } from "lucide-react";
+import { Brain, Grid3X3, User } from "lucide-react";
 
 export const features = [
   {
@@ -6,43 +6,41 @@ export const features = [
     icon: Brain,
     title: "AI Smart Recommendations",
     description:
-      "Get personalized movie suggestions based on your watch history, ratings, and favorite genres. Our AI learns your taste to find hidden gems you'll love.",
+      "Get personalized movie suggestions powered by AI analysis of your favorite movies, watchlist, and ratings. Our intelligent system learns your unique taste to discover hidden gems perfectly matched to your preferences.",
     benefits: [
-      "Personal taste analysis",
-      "Hidden gem discovery",
-      "Real-time preferences",
+      "Learns from your favorites, watchlist, and ratings",
+      "Discovers hidden gems tailored to your taste",
+      "Improves recommendations with every interaction",
     ],
     gradient: "from-brand/20 to-rating/20",
     position: "left" as const,
   },
   {
     id: 2,
-    icon: Download,
-    title: "Instant Torrent Links",
+    icon: Grid3X3,
+    title: "Browse by Categories",
     description:
-      "Access high-quality torrent links for your favorite movies with verified sources and multiple quality options. Safe and secure downloads.",
-    benefits: ["Verified sources", "Multiple qualities", "Fast downloads"],
-    gradient: "from-rating/20 to-brand/20",
+      "Explore movies through intuitive category browsing with advanced filtering options. Filter by genre, release year, and ratings to find exactly what you're in the mood for.",
+    benefits: [
+      "Browse movies by genre categories",
+      "Filter by year and rating ranges",
+      "Smart search with multiple criteria",
+    ],
+    gradient: "from-brand/20 to-primary/20",
     position: "right" as const,
   },
   {
     id: 3,
-    icon: Grid3X3,
-    title: "Browse by Categories",
+    icon: User,
+    title: "Manage Your Movie Profile",
     description:
-      "Explore movies through intuitive category filters including genre, year, rating, and language. Find exactly what you're in the mood for.",
-    benefits: ["Advanced filters", "Genre exploration", "Smart search"],
-    gradient: "from-brand/20 to-primary/20",
-    position: "left" as const,
-  },
-  {
-    id: 4,
-    icon: Star,
-    title: "Manage Your Ratings",
-    description:
-      "Rate movies you've watched and build your personal movie profile. Track your viewing history and share recommendations with friends.",
-    benefits: ["Personal ratings", "Watch history", "Social sharing"],
+      "Take control of your movie experience with comprehensive profile management. Organize your watchlist, curate favorite movies, rate films you've watched, and customize your account settings.",
+    benefits: [
+      "Organize watchlist and favorite movies",
+      "Rate and track your movie history",
+      "Personalize profile and account settings",
+    ],
     gradient: "from-primary/20 to-rating/20",
-    position: "right" as const,
+    position: "left" as const,
   },
 ];

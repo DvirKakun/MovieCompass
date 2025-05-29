@@ -309,12 +309,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
 
         const result: ProfileUpdateResponse = await response.json();
-        console.log(result);
+        const user_response = result.user;
+
+        const updated_user: UserProfile = {
+          id: user_response.id,
+          username: user_response.username,
+          firstName: user_response.first_name,
+          lastName: user_response.last_name,
+          email: user_response.email,
+          phoneNumber: user_response.phone_number,
+          authProvider: user_response.auth_provider,
+          favoriteMovies: user_response.favorite_movies,
+          watchlist: user_response.watchlist,
+          ratings: user_response.ratings,
+        };
 
         dispatch({
           type: "UPDATE_PROFILE_SUCCESS",
           payload: {
-            user: result.user,
+            user: updated_user,
             message: result.message,
           },
         });

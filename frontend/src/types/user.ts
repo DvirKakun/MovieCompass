@@ -30,7 +30,7 @@ export interface UpdateUserProfile {
 }
 
 export interface ProfileUpdateResponse {
-  user: UserProfile;
+  user: any;
   message: string;
 }
 
