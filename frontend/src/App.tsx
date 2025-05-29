@@ -21,6 +21,7 @@ import { MovieModalProvider } from "./contexts/MovieModalContext";
 import SearchPage from "./pages/SearchPage";
 import FavoritesPage from "./pages/FavoritesPage";
 import DashboardLayout from "./components/layout/DashboardLayout";
+import RatingsPage from "./pages/RatingsPage";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
               <Route path="search" element={<SearchPage />} />
               <Route path="watchlist" element={<WatchlistPage />} />
               <Route path="favorites" element={<FavoritesPage />} />
+              <Route path="ratings" element={<RatingsPage />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" />} />

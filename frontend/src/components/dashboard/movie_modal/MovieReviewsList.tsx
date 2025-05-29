@@ -36,7 +36,7 @@ export default function MovieReviewsList({ movieId }: MovieReviewsListProps) {
 
   // Initial fetch when component mounts
   useEffect(() => {
-    if (reviews.length === 0 && !isLoading && !error) {
+    if (reviews.length === 0 && !isLoading && !error && hasMore) {
       fetchReviewPage(movieId, 1);
     }
   }, [movieId, reviews.length, isLoading, error, fetchReviewPage]);

@@ -69,7 +69,7 @@ export default function UserMenu({
 
   const menuItems: MenuItem[] = [
     {
-      label: "Your Profile",
+      label: "My Profile",
       icon: <User className="h-4 w-4 mr-2" />,
       onClick: (e: React.MouseEvent) => {
         e.stopPropagation();
@@ -79,7 +79,7 @@ export default function UserMenu({
       },
     },
     {
-      label: "Your Watchlist",
+      label: "My Watchlist",
       icon: <Bookmark className="h-4 w-4 mr-2" />,
       count: user?.watchlist?.length || 0,
       onClick: (e: React.MouseEvent) => {
@@ -90,7 +90,7 @@ export default function UserMenu({
       },
     },
     {
-      label: "Your Favorites",
+      label: "My Favorites",
       icon: <Heart className="h-4 w-4 mr-2" />,
       count: user?.favoriteMovies?.length || 0,
       onClick: (e: React.MouseEvent) => {
@@ -101,7 +101,7 @@ export default function UserMenu({
       },
     },
     {
-      label: "Your Ratings",
+      label: "My Ratings",
       icon: <Star className="h-4 w-4 mr-2" />,
       count: user?.ratings?.length || 0,
       onClick: (e: React.MouseEvent) => {

@@ -29,7 +29,7 @@ export default memo(function MovieDetailModal() {
     trailerError,
     getGenreName,
   } = useMovies();
-  const { isOpen, selectedMovie: movie } = useMovieModalState(); // ✅ Only rerenders on state change
+  const { isOpen, selectedMovie: movie } = useMovieModalState();
   const { closeModal } = useMovieModalActions();
   const movieId = movie?.id!;
   const { toggleToFavorite, toggleToWatchlist, getUserRating } =

@@ -16,7 +16,6 @@ interface CategoryState {
 }
 
 export default function DashboardPage() {
-  console.log("DASHBOARD");
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] =

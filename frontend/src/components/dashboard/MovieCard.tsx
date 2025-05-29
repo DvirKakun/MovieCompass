@@ -19,7 +19,6 @@ interface MovieCardProps {
 }
 
 export default memo(function MovieCard({ movie }: MovieCardProps) {
-  console.log("RENDER");
   const movieId = movie.id;
   // const { openModal } = useMovieModal();
   const { openModal } = useMovieModalActions();

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Star, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { useUserActions } from "../../../contexts/UserContext";
@@ -16,6 +16,13 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
   const [hoveredRating, setHoveredRating] = useState(0);
   const isLoading = isRatingLoading(movieId);
 
+  // Reset hoveredRating when currentRating changes (including when it becomes null)
+  useEffect(() => {
+    if (!currentRating) {
+      setHoveredRating(0);
+    }
+  }, [currentRating]);
+
   const handleRating = async (selectedRating: number) => {
     if (isLoading) return;
 
@@ -26,7 +33,21 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
   const handleRemoveRating = async () => {
     if (isLoading) return;
 
+    // Reset hoveredRating immediately when removing
+    setHoveredRating(0);
     await removeMovieRating(movieId);
+  };
+
+  const handleMouseEnter = (star: number) => {
+    if (!isLoading) {
+      setHoveredRating(star);
+    }
+  };
+
+  const handleMouseLeave = () => {
+    if (!isLoading) {
+      setHoveredRating(0);
+    }
   };
 
   return (
@@ -56,8 +77,8 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
             whileHover={!isLoading ? { scale: 1.1 } : {}}
             whileTap={!isLoading ? { scale: 0.9 } : {}}
             onClick={() => handleRating(star)}
-            onMouseEnter={() => !isLoading && setHoveredRating(star)}
-            onMouseLeave={() => !isLoading && setHoveredRating(0)}
+            onMouseEnter={() => handleMouseEnter(star)}
+            onMouseLeave={handleMouseLeave}
             disabled={isLoading}
           >
             <Star
