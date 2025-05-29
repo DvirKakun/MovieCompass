@@ -7,65 +7,76 @@ import {
 } from "react-router-dom";
 import AuthPage from "./pages/AuthPage";
 import HomePage from "./pages/HomePage";
-// import Dashboard from "./pages/Dashboard";
 import { GoogleCallbackHandler } from "./components/auth/GoogleCallbackHandler";
 import { UserProvider } from "./contexts/UserContext";
+import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/auth/ProtectedRoute";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import EmailVerificationPage from "./pages/EmailVerificationPage";
 import DashboardPage from "./pages/DashboardPage";
 import WatchlistPage from "./pages/WatchlistPage";
-import { MoviesProvider } from "./contexts/MoviesContext";
-import { MovieModalProvider } from "./contexts/MovieModalContext";
 import SearchPage from "./pages/SearchPage";
 import FavoritesPage from "./pages/FavoritesPage";
-import DashboardLayout from "./components/layout/DashboardLayout";
 import RatingsPage from "./pages/RatingsPage";
+import UserProfilePage from "./pages/UserProfilePage";
+import { MoviesProvider } from "./contexts/MoviesContext";
+import { MovieModalProvider } from "./contexts/MovieModalContext";
+import DashboardLayout from "./components/layout/DashboardLayout";
+import { RouteChangeMessageClearer } from "./components/auth/RouteChangeMessageClearer";
 
 function App() {
   return (
     <Router>
-      <UserProvider>
-        <MoviesProvider>
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/auth/callback" element={<GoogleCallbackHandler />} />
-            <Route
-              path="/auth/forgot-password"
-              element={<ForgotPasswordPage />}
-            />
-            <Route
-              path="/auth/reset-password"
-              element={<ResetPasswordPage />}
-            />
-            <Route
-              path="/auth/verify-email"
-              element={<EmailVerificationPage />}
-            />
+      <AuthProvider>
+        {" "}
+        {/* Wrap entire app */}
+        <UserProvider>
+          <MoviesProvider>
+            <RouteChangeMessageClearer />
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route
+                path="/auth/callback"
+                element={<GoogleCallbackHandler />}
+              />
+              <Route
+                path="/auth/forgot-password"
+                element={<ForgotPasswordPage />}
+              />
+              <Route
+                path="/auth/reset-password"
+                element={<ResetPasswordPage />}
+              />
+              <Route
+                path="/auth/verify-email"
+                element={<EmailVerificationPage />}
+              />
 
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <MovieModalProvider>
-                    <DashboardLayout /> {/* layout returns JSX with Outlet */}
-                  </MovieModalProvider>
-                </ProtectedRoute>
-              }
-            >
-              <Route index element={<DashboardPage />} />
-              <Route path="search" element={<SearchPage />} />
-              <Route path="watchlist" element={<WatchlistPage />} />
-              <Route path="favorites" element={<FavoritesPage />} />
-              <Route path="ratings" element={<RatingsPage />} />
-            </Route>
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <MovieModalProvider>
+                      <DashboardLayout />
+                    </MovieModalProvider>
+                  </ProtectedRoute>
+                }
+              >
+                <Route index element={<DashboardPage />} />
+                <Route path="search" element={<SearchPage />} />
+                <Route path="watchlist" element={<WatchlistPage />} />
+                <Route path="favorites" element={<FavoritesPage />} />
+                <Route path="ratings" element={<RatingsPage />} />
+                <Route path="profile" element={<UserProfilePage />} />
+              </Route>
 
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </MoviesProvider>
-      </UserProvider>
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </MoviesProvider>
+        </UserProvider>
+      </AuthProvider>
     </Router>
   );
 }

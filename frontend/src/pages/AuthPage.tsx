@@ -1,11 +1,10 @@
 // src/pages/AuthPage.tsx
 import { useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { AuthProvider } from "../contexts/AuthContext";
 import { AuthHeader } from "../components/auth/AuthHeader";
 import { AuthMessages } from "../components/auth/AuthMessages";
 import { AuthSidebar } from "../components/auth/AuthSidebar";
-import { AuthFormSection } from "../components/sections/AuthFormSection";
+import { AuthFormSection } from "../components/home/AuthFormSection";
 import { useUserActions, useUserState } from "../contexts/UserContext";
 
 export default function AuthPage() {
@@ -44,15 +43,13 @@ export default function AuthPage() {
 
   /* ④  No token or token failed → show login / signup UI. */
   return (
-    <AuthProvider>
-      <div className="h-screen bg-background overflow-hidden">
-        <AuthHeader />
-        <AuthMessages /> {/* shows state.error like “session expired” */}
-        <div className="h-full flex">
-          <AuthSidebar />
-          <AuthFormSection />
-        </div>
+    <div className="h-screen bg-background overflow-hidden">
+      <AuthHeader />
+      <AuthMessages /> {/* shows state.error like “session expired” */}
+      <div className="h-full flex">
+        <AuthSidebar />
+        <AuthFormSection />
       </div>
-    </AuthProvider>
+    </div>
   );
 }

@@ -1,26 +1,34 @@
 #!/bin/bash
 set -e
 
-# Check if the model file exists (adjust the file path as needed)
-if [ ! -f "/root/.ollama/models/nous-hermes/ggml-model.bin" ]; then
-  echo "Model not found. Downloading..."
-  # Start the server in the background and capture its PID
-  ollama serve &
+# 👇 the model you want to serve
+MODEL_NAME="mistral:latest"
+
+# derive the folder name inside /root/.ollama/models  (everything before the colon)
+MODEL_DIR="${MODEL_NAME%%:*}"
+MODEL_PATH="/root/.ollama/models/${MODEL_DIR}/ggml-model.bin"
+
+if [ ! -f "$MODEL_PATH" ]; then
+  echo "🧠 Model '$MODEL_NAME' not found. Pulling from Ollama..."
+
+  # Start Ollama server in the background
+  ollama serve &                 # launches API on :11434
   SERVER_PID=$!
 
-  # Wait for the server to be up and running
+  # Wait for the API to accept connections
+  echo "⏳ Waiting for Ollama server..."
   curl --retry 10 --retry-connrefused --retry-delay 1 http://localhost:11434
 
-  # Download the model
-  curl -X POST -d '{"name": "nous-hermes"}' http://localhost:11434/api/pull
+  # Pull the model through the API
+  curl -X POST -d "{\"name\": \"$MODEL_NAME\"}" \
+       http://localhost:11434/api/pull
 
-  # Once downloaded, kill the background server
-  kill $SERVER_PID
-  # Wait for the process to terminate gracefully
-  wait $SERVER_PID || true
+  echo "✅ Model pulled. Shutting down temp server..."
+  kill "$SERVER_PID"
+  wait "$SERVER_PID" || true
 else
-  echo "Model already exists — skipping download ✅"
+  echo "✅ Model '$MODEL_NAME' already exists — skipping pull"
 fi
 
-# Finally, start the Ollama server in the foreground
-exec ollama serve
+echo "🚀 Starting Ollama server..."
+exec ollama serve                # foreground

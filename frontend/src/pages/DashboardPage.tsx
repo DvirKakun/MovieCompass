@@ -7,6 +7,7 @@ import CategoryResults from "../components/dashboard/CategoryResults";
 import { useMovies } from "../contexts/MoviesContext";
 import { AlertCircle, Loader2 } from "lucide-react";
 import { Button } from "../components/ui/button";
+import AIRecommendationsResults from "../components/dashboard/AIRecommendationsResultsProps ";
 
 type ViewMode = "home" | "category" | "ai-recommendations";
 
@@ -36,10 +37,8 @@ export default function DashboardPage() {
   };
 
   const handleAIRecommendations = () => {
-    // TODO: Implement AI recommendations logic
     setSelectedCategory({ genreId: null, genreName: "AI Recommendations" });
     setViewMode("ai-recommendations");
-    console.log("AI Recommendations requested");
   };
 
   const handleBackToHome = () => {
@@ -104,18 +103,25 @@ export default function DashboardPage() {
             {(viewMode === "category" || viewMode === "ai-recommendations") &&
               selectedCategory && (
                 <motion.div
-                  key="category-results"
+                  key={
+                    viewMode === "ai-recommendations"
+                      ? "ai-recommendations"
+                      : "category-results"
+                  }
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -20 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <CategoryResults
-                    categoryName={selectedCategory.genreName}
-                    genreId={selectedCategory.genreId}
-                    onBack={handleBackToHome}
-                    isAIRecommendations={viewMode === "ai-recommendations"}
-                  />
+                  {viewMode === "ai-recommendations" ? (
+                    <AIRecommendationsResults onBack={handleBackToHome} />
+                  ) : (
+                    <CategoryResults
+                      categoryName={selectedCategory.genreName}
+                      genreId={selectedCategory.genreId}
+                      onBack={handleBackToHome}
+                    />
+                  )}
                 </motion.div>
               )}
 

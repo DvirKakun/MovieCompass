@@ -1,3 +1,5 @@
+import type { Movie } from "./movies";
+
 export interface Rating {
   movie_id: number;
   rating: number;
@@ -9,9 +11,32 @@ export interface UserProfile {
   firstName: string;
   lastName: string;
   email: string;
+  phoneNumber: string;
+  authProvider: string;
   favoriteMovies: number[];
   watchlist: number[];
   ratings: Rating[];
+}
+
+export interface UpdateUserProfile {
+  username?: string;
+  old_password?: string;
+  new_password?: string;
+  new_password_confirm?: string;
+  first_name?: string;
+  last_name?: string;
+  phone_number?: string;
+  new_email?: string;
+}
+
+export interface ProfileUpdateResponse {
+  user: UserProfile;
+  message: string;
+}
+
+export interface ProfileFieldError {
+  field?: string;
+  message: string;
 }
 
 export interface UserState {
@@ -21,6 +46,12 @@ export interface UserState {
   isAuthenticated: boolean;
   listLoading: Record<ListKind, Set<number>>;
   ratingLoading: Set<number>;
+  aiRecommendations: Movie[];
+  aiRecommendationsLoading: boolean;
+  aiRecommendationsError: string | null;
+  profileUpdateLoading: boolean;
+  profileFieldErrors: ProfileFieldError[];
+  profileUpdateSuccess: string | null;
 }
 
 export type ListKind = "watchlist" | "favoriteMovies";
@@ -40,4 +71,14 @@ export type UserAction =
   | { type: "REMOVE_FROM_WATCHLIST_SUCCESS"; payload: number }
   | { type: "SET_RATING_LOADING"; movieId: number; value: boolean }
   | { type: "SET_MOVIE_RATING"; movieId: number; rating: number }
-  | { type: "REMOVE_MOVIE_RATING"; movieId: number };
+  | { type: "REMOVE_MOVIE_RATING"; movieId: number }
+  | { type: "FETCH_AI_RECOMMENDATIONS_START" }
+  | { type: "FETCH_AI_RECOMMENDATIONS_SUCCESS"; payload: Movie[] }
+  | { type: "FETCH_AI_RECOMMENDATIONS_ERROR"; payload: string }
+  | { type: "UPDATE_PROFILE_START" }
+  | {
+      type: "UPDATE_PROFILE_SUCCESS";
+      payload: { user: UserProfile; message: string };
+    }
+  | { type: "UPDATE_PROFILE_ERROR"; payload: ProfileFieldError[] }
+  | { type: "CLEAR_PROFILE_MESSAGES" };

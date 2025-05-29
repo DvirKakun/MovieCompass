@@ -3,6 +3,8 @@ import { useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
 import type {
   ListKind,
+  ProfileUpdateResponse,
+  UpdateUserProfile,
   UserAction,
   UserProfile,
   UserState,
@@ -10,6 +12,7 @@ import type {
 import { registerLogout } from "../api/logoutRegistry";
 import { authFetch } from "../api/authFetch";
 import { createContext, useContext } from "use-context-selector";
+import type { Movie } from "../types/movies";
 
 // Initial state
 const initialState: UserState = {
@@ -19,6 +22,12 @@ const initialState: UserState = {
   isAuthenticated: false,
   listLoading: { watchlist: new Set(), favoriteMovies: new Set() },
   ratingLoading: new Set(),
+  aiRecommendations: [],
+  aiRecommendationsLoading: false,
+  aiRecommendationsError: null,
+  profileFieldErrors: [],
+  profileUpdateLoading: false,
+  profileUpdateSuccess: null,
 };
 
 // Reducer
@@ -138,6 +147,70 @@ function userReducer(state: UserState, action: UserAction): UserState {
       };
     }
 
+    // AI Recommendations actions
+    case "FETCH_AI_RECOMMENDATIONS_START":
+      return {
+        ...state,
+        aiRecommendationsLoading: true,
+        aiRecommendationsError: null,
+      };
+
+    case "FETCH_AI_RECOMMENDATIONS_SUCCESS":
+      return {
+        ...state,
+        aiRecommendations: action.payload,
+        aiRecommendationsLoading: false,
+        aiRecommendationsError: null,
+      };
+
+    case "FETCH_AI_RECOMMENDATIONS_ERROR":
+      return {
+        ...state,
+        aiRecommendationsLoading: false,
+        aiRecommendationsError: action.payload,
+      };
+
+    // Update profile actions
+    case "UPDATE_PROFILE_START":
+      return {
+        ...state,
+        profileUpdateLoading: true,
+        profileFieldErrors: [],
+        profileUpdateSuccess: null,
+        error: null, // Clear general errors
+      };
+
+    case "UPDATE_PROFILE_SUCCESS":
+      return {
+        ...state,
+        user: action.payload.user,
+        profileUpdateLoading: false,
+        profileFieldErrors: [],
+        profileUpdateSuccess: action.payload.message,
+        error: null,
+      };
+
+    case "UPDATE_PROFILE_ERROR":
+      // Separate field errors from general errors
+      const fieldErrors = action.payload.filter((err) => err.field);
+      const generalErrors = action.payload.filter((err) => !err.field);
+
+      return {
+        ...state,
+        profileUpdateLoading: false,
+        profileFieldErrors: fieldErrors,
+        profileUpdateSuccess: null,
+        error: generalErrors.length > 0 ? generalErrors[0].message : null,
+      };
+
+    case "CLEAR_PROFILE_MESSAGES":
+      return {
+        ...state,
+        profileFieldErrors: [],
+        profileUpdateSuccess: null,
+        error: null,
+      };
+
     default:
       return state;
   }
@@ -148,6 +221,8 @@ interface UserContextType {
   state: UserState;
   dispatch: React.Dispatch<UserAction>;
   fetchUserProfile: () => Promise<void>;
+  fetchAIRecommendations: () => Promise<void>;
+  updateUserProfile: (profileData: UpdateUserProfile) => Promise<void>;
   logout: () => void;
   toggleToWatchlist: (id: number) => void;
   toggleToFavorite: (id: number) => void;
@@ -157,6 +232,8 @@ interface UserContextType {
   getUserRating: (movieId: number) => number | null;
   isRatingLoading: (movieId: number) => boolean;
   setError: (message: string) => void;
+  clearProfileMessages: () => void;
+  getFieldError: (fieldName: string) => string | undefined;
 }
 
 const UserStateContext = createContext<UserState | undefined>(undefined);
@@ -195,6 +272,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         firstName: raw.first_name,
         lastName: raw.last_name,
         email: raw.email,
+        phoneNumber: raw.phone_number,
+        authProvider: raw.auth_provider,
         favoriteMovies: raw.favorite_movies,
         watchlist: raw.watchlist,
         ratings: raw.ratings,
@@ -209,6 +288,102 @@ export function UserProvider({ children }: { children: ReactNode }) {
       });
     }
   }, []);
+
+  const updateUserProfile = useCallback(
+    async (profileData: UpdateUserProfile) => {
+      if (!state.user) return;
+
+      dispatch({ type: "UPDATE_PROFILE_START" });
+
+      try {
+        const response = await authFetch("/users/me", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(profileData),
+        });
+
+        if (!response.ok) {
+          throw response; // This will be caught and processed below
+        }
+
+        const result: ProfileUpdateResponse = await response.json();
+        console.log(result);
+
+        dispatch({
+          type: "UPDATE_PROFILE_SUCCESS",
+          payload: {
+            user: result.user,
+            message: result.message,
+          },
+        });
+      } catch (error: any) {
+        if (error instanceof Response) {
+          try {
+            const errorData = await error.json();
+            const errors = errorData.errors || [{ message: "Update failed" }];
+
+            dispatch({
+              type: "UPDATE_PROFILE_ERROR",
+              payload: errors,
+            });
+          } catch {
+            dispatch({
+              type: "UPDATE_PROFILE_ERROR",
+              payload: [{ message: "Network error occurred" }],
+            });
+          }
+        } else {
+          dispatch({
+            type: "UPDATE_PROFILE_ERROR",
+            payload: [{ message: error.message || "Update failed" }],
+          });
+        }
+      }
+    },
+    [state.user]
+  );
+
+  // Fetch AI recommendations
+  const fetchAIRecommendations = useCallback(async () => {
+    if (!state.user) {
+      dispatch({
+        type: "FETCH_AI_RECOMMENDATIONS_ERROR",
+        payload: "Please log in to get recommendations",
+      });
+      return;
+    }
+
+    dispatch({ type: "FETCH_AI_RECOMMENDATIONS_START" });
+
+    try {
+      const res = await authFetch("/users/me/recommendations", {
+        method: "POST",
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to fetch AI recommendations");
+      }
+
+      const data = await res.json();
+      const movies: Movie[] = data.movies || [];
+
+      dispatch({
+        type: "FETCH_AI_RECOMMENDATIONS_SUCCESS",
+        payload: movies,
+      });
+    } catch (err: any) {
+      // authFetch already handled token logout/redirect — only network errors reach here
+      const errorMessage =
+        err.message ?? "Failed to fetch AI recommendations. Please try again.";
+
+      dispatch({
+        type: "FETCH_AI_RECOMMENDATIONS_ERROR",
+        payload: errorMessage,
+      });
+    }
+  }, [state.user]);
 
   async function toggleMovieOnServer(movieId: number, list: ListKind) {
     // optimistic UI
@@ -374,11 +549,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const toggleToFavorite = (id: number) =>
     toggleMovieOnServer(id, "favoriteMovies");
 
+  const clearProfileMessages = useCallback(() => {
+    dispatch({ type: "CLEAR_PROFILE_MESSAGES" });
+  }, []);
+
+  const getFieldError = useCallback(
+    (fieldName: string): string | undefined => {
+      return state.profileFieldErrors.find((err) => err.field === fieldName)
+        ?.message;
+    },
+    [state.profileFieldErrors]
+  );
+
   return (
     <UserStateContext.Provider value={state}>
       <UserActionsContext.Provider
         value={{
           fetchUserProfile,
+          fetchAIRecommendations,
+          updateUserProfile,
           logout,
           setError,
           toggleToWatchlist,
@@ -388,6 +577,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
           removeMovieRating,
           getUserRating,
           isRatingLoading,
+          clearProfileMessages,
+          getFieldError,
         }}
       >
         {children}

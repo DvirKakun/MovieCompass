@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { ArrowLeft, Loader2, AlertCircle, Sparkles } from "lucide-react";
+import { ArrowLeft, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { useMovies } from "../../contexts/MoviesContext";
@@ -11,14 +11,12 @@ interface CategoryResultsProps {
   categoryName: string;
   genreId: number | null;
   onBack: () => void;
-  isAIRecommendations?: boolean;
 }
 
 export default function CategoryResults({
   categoryName,
   genreId,
   onBack,
-  isAIRecommendations = false,
 }: CategoryResultsProps) {
   const {
     state,
@@ -124,22 +122,6 @@ export default function CategoryResults({
           <ArrowLeft className="w-4 h-4 mr-2" />
           Back to Browse
         </Button>
-
-        <div className="flex items-center gap-3">
-          {isAIRecommendations && (
-            <div className="w-8 h-8 bg-primary/20 rounded-lg flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-primary" />
-            </div>
-          )}
-          <div>
-            <h2 className="text-2xl font-bold text-foreground">
-              {categoryName}
-            </h2>
-            <p className="text-secondary mt-1">
-              {movies.length} movie{movies.length !== 1 ? "s" : ""} available
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* Movies Grid */}

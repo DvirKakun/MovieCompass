@@ -286,10 +286,10 @@ def update_user_profile(
     db_updates = {**db_updates_username, **db_updates_password, **db_updates_profile}
 
     if not db_updates and not user_email_response:
-        return {"updated_user": current_user, "detail": "No changes"}
+        return UserResponse(user=current_user, message="No changes")
 
     elif not db_updates and user_email_response:
-        return {"updated_user": current_user, "detail": user_email_response.message}
+        return UserResponse(user=current_user, message=user_email_response.message)
 
     updated_user = users_collection.find_one_and_update(
         {"id": current_user.id},
@@ -300,6 +300,12 @@ def update_user_profile(
     if not updated_user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
+        )
+
+    if db_updates and user_email_response:
+        return UserResponse(
+            user=User(**updated_user),
+            message=f"Profile updated. {user_email_response.message}",
         )
 
     return UserResponse(user=User(**updated_user), message="Profile updated")
