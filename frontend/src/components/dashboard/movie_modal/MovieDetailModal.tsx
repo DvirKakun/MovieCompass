@@ -50,7 +50,6 @@ export default memo(function MovieDetailModal() {
 
   // Fetch trailer when movie changes
   useEffect(() => {
-    console.log("TRAILER");
     if (isOpen) fetchMovieTrailer(movieId);
   }, [isOpen, movieId]);
 

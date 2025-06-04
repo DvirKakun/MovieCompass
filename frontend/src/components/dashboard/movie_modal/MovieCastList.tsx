@@ -15,7 +15,6 @@ export default function MovieCastList({ movieId }: MovieCastListProps) {
   const error = castError(movieId);
 
   useEffect(() => {
-    console.log("CAST");
     fetchMovieCast(movieId);
   }, [movieId]);
 

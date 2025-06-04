@@ -1,5 +1,5 @@
 // src/contexts/UserContext.tsx
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useEffect } from "react";
 import type { ReactNode } from "react";
 import type {
   ListKind,
@@ -11,10 +11,11 @@ import type {
   UserState,
 } from "../types/user";
 import { registerLogout } from "../api/logoutRegistry";
-import { authFetch } from "../api/authFetch";
+import { authFetch, setGlobalNavigate } from "../api/authFetch";
 import { createContext, useContext } from "use-context-selector";
 import type { Movie } from "../types/movies";
 import { useMessages } from "./MessageContext";
+import { useNavigate } from "react-router-dom";
 
 // Initial state
 const initialState: UserState = {
@@ -235,6 +236,11 @@ const UserActionsContext = createContext<
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
   const { showError, showSuccess } = useMessages();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    setGlobalNavigate(navigate);
+  }, []);
 
   // Logout user
   const logout = useCallback(() => {
@@ -250,7 +256,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
     try {
       /* authFetch throws + redirects if the token is bad */
-      const res = await authFetch("/users/me");
+      const res = await authFetch("/users/me", {}, showError);
       const raw = await res.json();
 
       const user: UserProfile = {
@@ -282,13 +288,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "UPDATE_PROFILE_START" });
 
       try {
-        const response = await authFetch("/users/me", {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
+        const response = await authFetch(
+          "/users/me",
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(profileData),
           },
-          body: JSON.stringify(profileData),
-        });
+          showError
+        );
 
         if (!response.ok) {
           throw response; // This will be caught and processed below
@@ -362,9 +372,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "FETCH_AI_RECOMMENDATIONS_START" });
 
     try {
-      const res = await authFetch("/users/me/recommendations", {
-        method: "POST",
-      });
+      const res = await authFetch(
+        "/users/me/recommendations",
+        {
+          method: "POST",
+        },
+        showError
+      );
 
       if (!res.ok) {
         throw new Error("Failed to fetch AI recommendations");
@@ -404,7 +418,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
         `/users/me/${
           list === "watchlist" ? "watchlist" : "favorite"
         }/${movieId}`,
-        { method: verb }
+        { method: verb },
+        showError
       );
     } catch (err: any) {
       // authFetch has already logged-out on token failure; revert UI only if other error
@@ -425,9 +440,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_LIST_LOADING", list, movieId, value: true });
 
     try {
-      await authFetch(`/users/me/watchlist/${movieId}`, {
-        method: "DELETE",
-      });
+      await authFetch(
+        `/users/me/watchlist/${movieId}`,
+        {
+          method: "DELETE",
+        },
+        showError
+      );
 
       // Update user state - remove movie from watchlist
       dispatch({
@@ -455,9 +474,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_MOVIE_RATING", movieId, rating });
 
       try {
-        await authFetch(`/users/me/rating/${movieId}?rating=${rating}`, {
-          method: "PUT",
-        });
+        await authFetch(
+          `/users/me/rating/${movieId}?rating=${rating}`,
+          {
+            method: "PUT",
+          },
+          showError
+        );
       } catch (err: any) {
         // Revert optimistic update on error
         const existingRating = state.user.ratings.find(
@@ -499,9 +522,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "REMOVE_MOVIE_RATING", movieId });
 
       try {
-        await authFetch(`/users/me/rating/${movieId}`, {
-          method: "DELETE",
-        });
+        await authFetch(
+          `/users/me/rating/${movieId}`,
+          {
+            method: "DELETE",
+          },
+          showError
+        );
       } catch (err: any) {
         // Revert optimistic update on error
         dispatch({
@@ -549,7 +576,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const getFieldError = useCallback(
     (fieldName: string): string | undefined => {
-      console.log(state.profileFieldErrors);
       return state.profileFieldErrors.find((err) => err.field === fieldName)
         ?.message;
     },

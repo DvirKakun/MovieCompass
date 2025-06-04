@@ -23,14 +23,6 @@ export default function AuthPage() {
     if (isAuthenticated) navigate("/dashboard", { replace: true });
   }, [isAuthenticated, navigate]);
 
-  // useEffect(() => {
-  //   const params = new URLSearchParams(location.search);
-  //   const msg = params.get("msg");
-  //   if (msg) {
-  //     setError(msg);
-  //   }
-  // }, [location.search]);
-
   /* ③  Loading spinner while we *might* still be restoring a session. */
   if (isLoading) {
     return (

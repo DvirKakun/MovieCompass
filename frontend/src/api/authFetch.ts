@@ -1,19 +1,35 @@
-// src/api/authFetch.ts
 import { BACKEND_URL } from "../data/constants";
 import { callLogout } from "./logoutRegistry";
 
+let globalNavigate:
+  | ((path: string, options?: { replace?: boolean }) => void)
+  | null = null;
+
+export function setGlobalNavigate(
+  navigate: (path: string, options?: { replace?: boolean }) => void
+) {
+  globalNavigate = navigate;
+}
+
 export async function authFetch(
   path: string,
-  opts: RequestInit = {}
+  opts: RequestInit = {},
+  showError?: (text: string, duration?: number) => void
 ): Promise<Response> {
   const token = localStorage.getItem("access_token");
 
   if (!token) {
     callLogout();
 
-    window.location.replace(
-      "/auth?mode=login&msg=Please%20login%20to%20continue"
-    );
+    if (showError) {
+      showError("Please login to continue");
+    }
+
+    if (globalNavigate) {
+      globalNavigate("/auth?mode=login", { replace: true });
+    } else {
+      window.location.replace("/auth?mode=login");
+    }
 
     return new Promise(() => {});
   }
@@ -28,7 +44,15 @@ export async function authFetch(
   if (res.status === 401 || res.status === 403 || (await isTokenError(res))) {
     callLogout();
 
-    window.location.replace("/auth?mode=login&msg=Session%20expired");
+    if (showError) {
+      showError("Session expired. Please login again.");
+    }
+
+    if (globalNavigate) {
+      globalNavigate("/auth?mode=login", { replace: true });
+    } else {
+      window.location.replace("/auth?mode=login");
+    }
 
     return new Promise(() => {});
   }
