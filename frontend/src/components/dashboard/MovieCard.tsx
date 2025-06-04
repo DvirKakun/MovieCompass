@@ -20,7 +20,6 @@ interface MovieCardProps {
 
 export default memo(function MovieCard({ movie }: MovieCardProps) {
   const movieId = movie.id;
-  // const { openModal } = useMovieModal();
   const { openModal } = useMovieModalActions();
   const { toggleToFavorite, toggleToWatchlist } = useUserActions();
   const { user, listLoading } = useUserState();

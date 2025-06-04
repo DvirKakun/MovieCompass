@@ -22,15 +22,15 @@ import {
 } from "../../../contexts/MovieModalContext";
 
 export default memo(function MovieDetailModal() {
+  const { getGenreName } = useMovies();
+  const { isOpen, selectedMovie: movie } = useMovieModalState();
   const {
+    closeModal,
     fetchMovieTrailer,
     getTrailer,
     isTrailerLoading,
-    trailerError,
-    getGenreName,
-  } = useMovies();
-  const { isOpen, selectedMovie: movie } = useMovieModalState();
-  const { closeModal } = useMovieModalActions();
+    getTrailerError,
+  } = useMovieModalActions();
   const movieId = movie?.id!;
   const { toggleToFavorite, toggleToWatchlist, getUserRating } =
     useUserActions();
@@ -42,7 +42,7 @@ export default memo(function MovieDetailModal() {
   const [isInFavorites, setIsInFavorites] = useState(false);
   const trailer = movieId ? getTrailer(movieId) : undefined;
   const isLoadingTrailer = movieId ? isTrailerLoading(movieId) : false;
-  const trailerErr = movieId ? trailerError(movieId) : null;
+  const trailerErr = movieId ? getTrailerError(movieId) : null;
   const userRating = getUserRating(movieId);
 
   const isWLBusy = wlLoad.has(movieId);
@@ -50,6 +50,7 @@ export default memo(function MovieDetailModal() {
 
   // Fetch trailer when movie changes
   useEffect(() => {
+    console.log("TRAILER");
     if (isOpen) fetchMovieTrailer(movieId);
   }, [isOpen, movieId]);
 
@@ -125,9 +126,6 @@ export default memo(function MovieDetailModal() {
                       <div className="flex flex-col items-center text-center">
                         <AlertTriangle className="w-8 h-8 text-destructive/70 mb-2" />
                         <p className="text-destructive text-lg font-medium">
-                          Error loading trailer
-                        </p>
-                        <p className="text-secondary text-sm max-w-md px-4">
                           {trailerErr}
                         </p>
                       </div>

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { memo, useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu } from "lucide-react";
 import MovieRoller from "../components/dashboard/MovieRoller";
@@ -16,7 +16,7 @@ interface CategoryState {
   genreName: string;
 }
 
-export default function DashboardPage() {
+export default memo(function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("home");
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] =
@@ -197,4 +197,4 @@ export default function DashboardPage() {
       </div>
     </>
   );
-}
+});

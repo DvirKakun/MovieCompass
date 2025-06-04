@@ -42,7 +42,6 @@ export interface ProfileFieldError {
 export interface UserState {
   user: UserProfile | null;
   isLoading: boolean;
-  error: string | null;
   isAuthenticated: boolean;
   listLoading: Record<ListKind, Set<number>>;
   ratingLoading: Set<number>;
@@ -60,7 +59,6 @@ export type UserAction =
   | { type: "SET_USER"; payload: UserProfile }
   | { type: "CLEAR_USER" }
   | { type: "SET_LOADING"; payload: boolean }
-  | { type: "SET_ERROR"; payload: string | null }
   | {
       type: "SET_LIST_LOADING";
       list: ListKind;
@@ -81,4 +79,5 @@ export type UserAction =
       payload: { user: UserProfile; message: string };
     }
   | { type: "UPDATE_PROFILE_ERROR"; payload: ProfileFieldError[] }
+  | { type: "STOP_PROFILE_UPDATE_LOADING" }
   | { type: "CLEAR_PROFILE_MESSAGES" };

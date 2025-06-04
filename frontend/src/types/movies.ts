@@ -83,11 +83,6 @@ export interface MoviesState {
   filters: MovieFilters;
   filteredResults: Movie[];
 
-  // Trailers
-  trailers: Map<number, MovieTrailer>;
-  trailersLoading: Map<number, boolean>;
-  trailersError: Map<number, string>;
-
   // Cast
   casts: Map<number, CastMember[]>;
   castsLoading: Map<number, boolean>;

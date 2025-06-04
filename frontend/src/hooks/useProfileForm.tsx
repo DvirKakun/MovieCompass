@@ -3,12 +3,8 @@ import { useUserActions, useUserState } from "../contexts/UserContext";
 import type { UpdateUserProfile } from "../types/user";
 
 export function useProfileForm() {
-  const {
-    user,
-    profileUpdateLoading,
-    profileFieldErrors,
-    profileUpdateSuccess,
-  } = useUserState();
+  const { profileUpdateLoading, profileFieldErrors, profileUpdateSuccess } =
+    useUserState();
   const { updateUserProfile, clearProfileMessages, getFieldError } =
     useUserActions();
 
@@ -44,7 +40,6 @@ export function useProfileForm() {
       }
 
       await updateUserProfile(profileData);
-      console.log(user);
     },
     [updateUserProfile]
   );

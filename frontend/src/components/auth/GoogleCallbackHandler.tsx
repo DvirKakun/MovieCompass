@@ -1,10 +1,12 @@
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserActions } from "../../contexts/UserContext";
+import { useMessages } from "../../contexts/MessageContext";
 
 export function GoogleCallbackHandler() {
   const navigate = useNavigate();
-  const { fetchUserProfile, setError } = useUserActions();
+  const { fetchUserProfile } = useUserActions();
+  const { showError } = useMessages();
 
   useEffect(() => {
     const hashParams = new URLSearchParams(window.location.hash.substring(1));
@@ -15,10 +17,10 @@ export function GoogleCallbackHandler() {
       fetchUserProfile();
       setTimeout(() => navigate("/dashboard"), 0);
     } else {
-      setError("Something went wrong");
+      showError("Something went wrong");
       setTimeout(() => navigate("/auth?mode=login"), 0);
     }
-  }, [navigate, fetchUserProfile, setError]);
+  }, [navigate, fetchUserProfile]);
 
   return (
     <div className="flex items-center justify-center h-screen">

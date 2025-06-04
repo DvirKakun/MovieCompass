@@ -1,21 +1,20 @@
 // src/pages/AuthPage.tsx
 import { useEffect } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { AuthHeader } from "../components/auth/AuthHeader";
-import { AuthMessages } from "../components/auth/AuthMessages";
 import { AuthSidebar } from "../components/auth/AuthSidebar";
 import { AuthFormSection } from "../components/home/AuthFormSection";
 import { useUserActions, useUserState } from "../contexts/UserContext";
 
 export default function AuthPage() {
   const { isAuthenticated, isLoading } = useUserState();
-  const { fetchUserProfile, setError } = useUserActions();
+  const { fetchUserProfile } = useUserActions();
   const navigate = useNavigate();
-  const location = useLocation();
 
   /* ①  Fetch the profile **once** but only when a token is present.  */
   useEffect(() => {
     const token = localStorage.getItem("access_token");
+
     if (token) fetchUserProfile(); // ← no token ⇒ no network call
   }, [fetchUserProfile]);
 
@@ -24,13 +23,13 @@ export default function AuthPage() {
     if (isAuthenticated) navigate("/dashboard", { replace: true });
   }, [isAuthenticated, navigate]);
 
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const msg = params.get("msg");
-    if (msg) {
-      setError(msg);
-    }
-  }, [location.search]);
+  // useEffect(() => {
+  //   const params = new URLSearchParams(location.search);
+  //   const msg = params.get("msg");
+  //   if (msg) {
+  //     setError(msg);
+  //   }
+  // }, [location.search]);
 
   /* ③  Loading spinner while we *might* still be restoring a session. */
   if (isLoading) {
@@ -45,7 +44,6 @@ export default function AuthPage() {
   return (
     <div className="h-screen bg-background overflow-hidden">
       <AuthHeader />
-      <AuthMessages /> {/* shows state.error like “session expired” */}
       <div className="h-full flex">
         <AuthSidebar />
         <AuthFormSection />

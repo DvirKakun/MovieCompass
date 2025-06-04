@@ -14,7 +14,6 @@ import type {
   MoviesAction,
   MoviesResponse,
   MoviesState,
-  MovieTrailer,
   Review,
 } from "../types/movies";
 import { BACKEND_URL } from "../data/constants";
@@ -52,10 +51,6 @@ const initialState: MoviesState = {
     maxYear: new Date().getFullYear(),
   },
   filteredResults: [],
-
-  trailers: new Map(),
-  trailersLoading: new Map(),
-  trailersError: new Map(),
 
   casts: new Map(),
   castsLoading: new Map(),
@@ -233,58 +228,6 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         filteredResults: applyFilters(state.searchResults, state.filters),
       };
 
-    // Trailers
-    case "FETCH_TRAILER_START": {
-      const { movieId } = action.payload;
-      const trailers_loading_map = new Map(state.trailersLoading).set(
-        movieId,
-        true
-      );
-      const trailers_errors_map = new Map(state.trailersError);
-
-      trailers_loading_map.delete(movieId);
-
-      return {
-        ...state,
-        trailersLoading: trailers_loading_map,
-        trailersError: trailers_errors_map,
-      };
-    }
-
-    case "FETCH_TRAILER_SUCCESS": {
-      const { movieId, trailer } = action.payload;
-      const trailers_map = new Map(state.trailers).set(movieId, trailer);
-      const trailers_loading_map = new Map(state.trailersLoading).set(
-        movieId,
-        false
-      );
-
-      return {
-        ...state,
-        trailers: trailers_map,
-        trailersLoading: trailers_loading_map,
-      };
-    }
-
-    case "FETCH_TRAILER_ERROR": {
-      const { movieId, error } = action.payload;
-
-      const trailers_loading_map = new Map(state.trailersLoading).set(
-        movieId,
-        false
-      );
-      const trailers_error_map = new Map(state.trailersError).set(
-        movieId,
-        error
-      );
-
-      return {
-        ...state,
-        trailersLoading: trailers_loading_map,
-        trailersError: trailers_error_map,
-      };
-    }
-
     //Cast
     case "FETCH_CAST_START": {
       const { movieId } = action.payload;
@@ -456,9 +399,6 @@ interface MoviesContextType {
   // Popluar movies action
   fetchPopularPage: (explicitPage?: number) => Promise<void>;
 
-  // Trailers action
-  fetchMovieTrailer: (movieId: number) => Promise<void>;
-
   // Cast action
   fetchMovieCast: (id: number) => Promise<void>;
 
@@ -482,9 +422,6 @@ interface MoviesContextType {
   getMoviesByGenre: (genreId: number) => Movie[];
   getPopularMovies: () => Movie[];
   getMovieById: (id: number) => Movie | undefined;
-  getTrailer: (movieId: number) => MovieTrailer | undefined;
-  isTrailerLoading: (movieId: number) => boolean;
-  trailerError: (movieId: number) => string | null;
   getCast: (id: number) => CastMember[];
   isCastLoading: (id: number) => boolean;
   castError: (id: number) => string | null;
@@ -578,33 +515,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       dispatch({
         type: "FETCH_POPULAR_PAGE_ERROR",
         payload: message,
-      });
-    }
-  };
-  const fetchMovieTrailer = async (movieId: number) => {
-    // if we already have it, do nothing
-    if (state.trailers.has(movieId) || state.trailersLoading.get(movieId))
-      return;
-
-    dispatch({ type: "FETCH_TRAILER_START", payload: { movieId } });
-
-    try {
-      const res = await fetch(`${BACKEND_URL}/movies/${movieId}/trailer`);
-
-      if (!res.ok) throw new Error("Failed to fetch trailer");
-
-      const trailer = await res.json();
-
-      dispatch({
-        type: "FETCH_TRAILER_SUCCESS",
-        payload: { movieId, trailer },
-      });
-    } catch (error) {
-      let message = await getErrorMessage(error);
-
-      dispatch({
-        type: "FETCH_TRAILER_ERROR",
-        payload: { movieId, error: message },
       });
     }
   };
@@ -770,12 +680,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
 
   const getMovieById = (id: number) => state.fetchedMoviesById.get(id);
 
-  const getTrailer = (movieId: number) => state.trailers.get(movieId);
-  const isTrailerLoading = (movieId: number) =>
-    state.trailersLoading.get(movieId) ?? false;
-  const trailerError = (movieId: number) =>
-    state.trailersError.get(movieId) ?? null;
-
   const getCast = (id: number) => state.casts.get(id) ?? [];
   const isCastLoading = (id: number) => state.castsLoading.get(id) ?? false;
   const castError = (id: number) => state.castsError.get(id) ?? null;
@@ -786,7 +690,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       fetchGenres,
       fetchPopularPage,
       fetchGenrePage,
-      fetchMovieTrailer,
       fetchMovieCast,
       fetchReviewPage,
       setSearchQuery,
@@ -797,9 +700,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       getGenreName,
       getMoviesByGenre,
       getPopularMovies,
-      getTrailer,
-      isTrailerLoading,
-      trailerError,
       getCast,
       isCastLoading,
       castError,

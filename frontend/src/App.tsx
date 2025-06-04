@@ -23,59 +23,61 @@ import UserProfilePage from "./pages/UserProfilePage";
 import { MoviesProvider } from "./contexts/MoviesContext";
 import { MovieModalProvider } from "./contexts/MovieModalContext";
 import DashboardLayout from "./components/layout/DashboardLayout";
-import { RouteChangeMessageClearer } from "./components/auth/RouteChangeMessageClearer";
+import { MessageProvider } from "./contexts/MessageContext";
+import { GlobalMessages } from "./components/common/GlobalMessages";
 
 function App() {
   return (
     <Router>
       <AuthProvider>
-        {" "}
         {/* Wrap entire app */}
-        <UserProvider>
-          <MoviesProvider>
-            <RouteChangeMessageClearer />
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route
-                path="/auth/callback"
-                element={<GoogleCallbackHandler />}
-              />
-              <Route
-                path="/auth/forgot-password"
-                element={<ForgotPasswordPage />}
-              />
-              <Route
-                path="/auth/reset-password"
-                element={<ResetPasswordPage />}
-              />
-              <Route
-                path="/auth/verify-email"
-                element={<EmailVerificationPage />}
-              />
+        <MessageProvider>
+          <UserProvider>
+            <GlobalMessages />
+            <MoviesProvider>
+              <MovieModalProvider>
+                <Routes>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route
+                    path="/auth/callback"
+                    element={<GoogleCallbackHandler />}
+                  />
+                  <Route
+                    path="/auth/forgot-password"
+                    element={<ForgotPasswordPage />}
+                  />
+                  <Route
+                    path="/auth/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
+                  <Route
+                    path="/auth/verify-email"
+                    element={<EmailVerificationPage />}
+                  />
 
-              <Route
-                path="/dashboard"
-                element={
-                  <ProtectedRoute>
-                    <MovieModalProvider>
-                      <DashboardLayout />
-                    </MovieModalProvider>
-                  </ProtectedRoute>
-                }
-              >
-                <Route index element={<DashboardPage />} />
-                <Route path="search" element={<SearchPage />} />
-                <Route path="watchlist" element={<WatchlistPage />} />
-                <Route path="favorites" element={<FavoritesPage />} />
-                <Route path="ratings" element={<RatingsPage />} />
-                <Route path="profile" element={<UserProfilePage />} />
-              </Route>
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<DashboardPage />} />
+                    <Route path="search" element={<SearchPage />} />
+                    <Route path="watchlist" element={<WatchlistPage />} />
+                    <Route path="favorites" element={<FavoritesPage />} />
+                    <Route path="ratings" element={<RatingsPage />} />
+                    <Route path="profile" element={<UserProfilePage />} />
+                  </Route>
 
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-          </MoviesProvider>
-        </UserProvider>
+                  <Route path="*" element={<Navigate to="/" />} />
+                </Routes>
+              </MovieModalProvider>
+            </MoviesProvider>
+          </UserProvider>
+        </MessageProvider>
       </AuthProvider>
     </Router>
   );

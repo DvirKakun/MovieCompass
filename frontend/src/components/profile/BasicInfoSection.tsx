@@ -14,6 +14,7 @@ export function BasicInfoSection({
   user,
   getFieldError,
 }: BasicInfoSectionProps) {
+  console.log(getFieldError("first_name"));
   return (
     <Card>
       <CardHeader>

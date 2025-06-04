@@ -4,6 +4,7 @@ import type { AuthFormData, FormErrors } from "../types/auth";
 import { useAuthMode } from "./useAuthMode";
 import { BACKEND_URL } from "../data/constants";
 import { useUserActions } from "../contexts/UserContext";
+import { useMessages } from "../contexts/MessageContext";
 
 function transformBackendErrors(
   backendErrors: Array<{ field: string; message: string }>
@@ -33,6 +34,7 @@ export function useAuthSubmit() {
   const { state, dispatch } = useAuth();
   const { handleModeChange } = useAuthMode();
   const { fetchUserProfile } = useUserActions();
+  const { showError, showSuccess } = useMessages();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -88,43 +90,33 @@ export function useAuthSubmit() {
 
           dispatch({ type: "SET_ERRORS", payload: transformedErrors });
         } else {
-          dispatch({
-            type: "SET_ERRORS",
-            payload: { general: result.message || "Something went wrong" },
-          });
+          showError(result.message || "Something went wrong");
         }
+
+        return;
+      }
+
+      // ---------- SUCCESS ----------
+      if (state.isLogin) {
+        showSuccess("Login successful! Redirceting...", 2000);
+
+        const { access_token, user } = result;
+
+        localStorage.setItem("access_token", access_token);
+
+        if (user) fetchUserProfile();
+
+        setTimeout(() => navigate("/dashboard"), 1500);
       } else {
-        const message = state.isLogin
-          ? "Login successful!"
-          : "Account created successfully! Please check your email to verify your account.";
+        showSuccess(
+          "Account created! Check your email to verify your account.",
+          4000
+        );
 
-        dispatch({ type: "SET_SUCCESS_MESSAGE", payload: message });
-
-        if (state.isLogin) {
-          const { access_token, user } = result;
-
-          localStorage.setItem("access_token", access_token);
-
-          if (user) {
-            fetchUserProfile();
-          }
-
-          // Login successful - go to dashboard
-          setTimeout(() => {
-            navigate("/dashboard");
-          }, 1500);
-        } else {
-          // Signup successful - switch to login mode with verification prompt
-          setTimeout(() => {
-            handleModeChange("login");
-          }, 2000); // Give user time to read success message
-        }
+        setTimeout(() => handleModeChange("login"), 2500);
       }
     } catch (error) {
-      dispatch({
-        type: "SET_ERRORS",
-        payload: { general: "Network error. Please try again." },
-      });
+      showError("Network error. Please try again.");
     } finally {
       dispatch({ type: "SET_LOADING", payload: false });
     }

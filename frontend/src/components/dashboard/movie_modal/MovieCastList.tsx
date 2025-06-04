@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { User } from "lucide-react";
+import { AlertCircle, User } from "lucide-react";
 import { Skeleton } from "../../ui/skeleton";
 import { motion } from "framer-motion";
 import { useMovies } from "../../../contexts/MoviesContext";
@@ -15,8 +15,9 @@ export default function MovieCastList({ movieId }: MovieCastListProps) {
   const error = castError(movieId);
 
   useEffect(() => {
+    console.log("CAST");
     fetchMovieCast(movieId);
-  }, [movieId, fetchMovieCast]);
+  }, [movieId]);
 
   // Loading state
   if (isLoading) {
@@ -36,8 +37,11 @@ export default function MovieCastList({ movieId }: MovieCastListProps) {
   // Error state
   if (error) {
     return (
-      <div className="text-center py-6 text-secondary">
-        <p>{error}</p>
+      <div className="text-center py-6">
+        <div className="flex flex-col items-center space-y-3">
+          <AlertCircle className="w-8 h-8 text-destructive" />
+          <p className="text-destructive font-medium">{error}</p>
+        </div>
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { useReducer, useCallback } from "react";
 import type { ReactNode } from "react";
 import type {
   ListKind,
+  ProfileFieldError,
   ProfileUpdateResponse,
   UpdateUserProfile,
   UserAction,
@@ -13,12 +14,12 @@ import { registerLogout } from "../api/logoutRegistry";
 import { authFetch } from "../api/authFetch";
 import { createContext, useContext } from "use-context-selector";
 import type { Movie } from "../types/movies";
+import { useMessages } from "./MessageContext";
 
 // Initial state
 const initialState: UserState = {
   user: null,
   isLoading: false,
-  error: null,
   isAuthenticated: false,
   listLoading: { watchlist: new Set(), favoriteMovies: new Set() },
   ratingLoading: new Set(),
@@ -39,7 +40,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
         user: action.payload,
         isAuthenticated: true,
         isLoading: false,
-        error: null,
       };
     case "CLEAR_USER":
       return {
@@ -51,13 +51,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
         ...state,
         isLoading: action.payload,
       };
-    case "SET_ERROR":
-      return {
-        ...state,
-        error: action.payload,
-        isLoading: false,
-      };
-
     case "SET_LIST_LOADING": {
       const set = new Set(state.listLoading[action.list]);
       action.value ? set.add(action.movieId) : set.delete(action.movieId);
@@ -177,7 +170,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
         profileUpdateLoading: true,
         profileFieldErrors: [],
         profileUpdateSuccess: null,
-        error: null, // Clear general errors
       };
 
     case "UPDATE_PROFILE_SUCCESS":
@@ -187,20 +179,20 @@ function userReducer(state: UserState, action: UserAction): UserState {
         profileUpdateLoading: false,
         profileFieldErrors: [],
         profileUpdateSuccess: action.payload.message,
-        error: null,
       };
 
     case "UPDATE_PROFILE_ERROR":
-      // Separate field errors from general errors
-      const fieldErrors = action.payload.filter((err) => err.field);
-      const generalErrors = action.payload.filter((err) => !err.field);
-
       return {
         ...state,
         profileUpdateLoading: false,
-        profileFieldErrors: fieldErrors,
+        profileFieldErrors: action.payload,
         profileUpdateSuccess: null,
-        error: generalErrors.length > 0 ? generalErrors[0].message : null,
+      };
+
+    case "STOP_PROFILE_UPDATE_LOADING":
+      return {
+        ...state,
+        profileUpdateLoading: false,
       };
 
     case "CLEAR_PROFILE_MESSAGES":
@@ -208,7 +200,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
         ...state,
         profileFieldErrors: [],
         profileUpdateSuccess: null,
-        error: null,
       };
 
     default:
@@ -231,7 +222,6 @@ interface UserContextType {
   removeMovieRating: (movieId: number) => Promise<void>;
   getUserRating: (movieId: number) => number | null;
   isRatingLoading: (movieId: number) => boolean;
-  setError: (message: string) => void;
   clearProfileMessages: () => void;
   getFieldError: (fieldName: string) => string | undefined;
 }
@@ -244,15 +234,12 @@ const UserActionsContext = createContext<
 // Provider component
 export function UserProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(userReducer, initialState);
+  const { showError, showSuccess } = useMessages();
 
   // Logout user
   const logout = useCallback(() => {
     localStorage.removeItem("access_token");
     dispatch({ type: "CLEAR_USER" });
-  }, []);
-
-  const setError = useCallback((message: string) => {
-    dispatch({ type: "SET_ERROR", payload: message });
   }, []);
 
   registerLogout(logout);
@@ -282,10 +269,9 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "SET_USER", payload: user });
     } catch (err: any) {
       // authFetch already handled token logout/redirect — only network errors reach here
-      dispatch({
-        type: "SET_ERROR",
-        payload: err.message ?? "Network error. Please try again.",
-      });
+      showError(err.message ?? "Network error. Please try again.");
+    } finally {
+      dispatch({ type: "SET_LOADING", payload: false });
     }
   }, []);
 
@@ -331,28 +317,33 @@ export function UserProvider({ children }: { children: ReactNode }) {
             message: result.message,
           },
         });
+
+        showSuccess(result.message);
       } catch (error: any) {
         if (error instanceof Response) {
           try {
             const errorData = await error.json();
-            const errors = errorData.errors || [{ message: "Update failed" }];
+            const errors: ProfileFieldError[] = errorData.errors || [
+              { message: "Update failed" },
+            ];
+            const fieldErrors = errors.filter((error) => error.field);
+            const generalError = errors.find((error) => !error.field);
 
-            dispatch({
-              type: "UPDATE_PROFILE_ERROR",
-              payload: errors,
-            });
+            if (fieldErrors.length > 0) {
+              dispatch({ type: "UPDATE_PROFILE_ERROR", payload: fieldErrors });
+            }
+
+            if (generalError) {
+              showError(generalError.message);
+            }
           } catch {
-            dispatch({
-              type: "UPDATE_PROFILE_ERROR",
-              payload: [{ message: "Network error occurred" }],
-            });
+            showError("Network error occurred");
           }
         } else {
-          dispatch({
-            type: "UPDATE_PROFILE_ERROR",
-            payload: [{ message: error.message || "Update failed" }],
-          });
+          showError("Update profile failed");
         }
+      } finally {
+        dispatch({ type: "STOP_PROFILE_UPDATE_LOADING" });
       }
     },
     [state.user]
@@ -418,10 +409,8 @@ export function UserProvider({ children }: { children: ReactNode }) {
     } catch (err: any) {
       // authFetch has already logged-out on token failure; revert UI only if other error
       dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });
-      dispatch({
-        type: "SET_ERROR",
-        payload: err.message ?? "Could not update list",
-      });
+
+      showError("Failed to update");
     } finally {
       dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
     }
@@ -445,12 +434,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
         type: "REMOVE_FROM_WATCHLIST_SUCCESS",
         payload: movieId,
       });
-    } catch (error) {
+    } catch (error: any) {
       // Handle error - authFetch already handles token issues
-      dispatch({
-        type: "SET_ERROR",
-        payload: "Failed to remove from watchlist",
-      });
+
+      showError("Failed to remove from watchlist");
     } finally {
       // Remove from loading state
       dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
@@ -487,10 +474,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           dispatch({ type: "REMOVE_MOVIE_RATING", movieId });
         }
 
-        dispatch({
-          type: "SET_ERROR",
-          payload: err.message ?? "Failed to save rating",
-        });
+        showError("Failed to save rating");
       } finally {
         dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
       }
@@ -526,10 +510,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           rating: existingRating.rating,
         });
 
-        dispatch({
-          type: "SET_ERROR",
-          payload: err.message ?? "Failed to remove rating",
-        });
+        showError("Failed to remove rating");
       } finally {
         dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
       }
@@ -568,6 +549,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const getFieldError = useCallback(
     (fieldName: string): string | undefined => {
+      console.log(state.profileFieldErrors);
       return state.profileFieldErrors.find((err) => err.field === fieldName)
         ?.message;
     },
@@ -582,7 +564,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
           fetchAIRecommendations,
           updateUserProfile,
           logout,
-          setError,
           toggleToWatchlist,
           toggleToFavorite,
           removeFromWatchlist,

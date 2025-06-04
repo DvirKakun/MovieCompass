@@ -11,9 +11,11 @@ export async function authFetch(
   if (!token) {
     callLogout();
 
-    window.location.replace("/auth?mode=login");
+    window.location.replace(
+      "/auth?mode=login&msg=Please%20login%20to%20continue"
+    );
 
-    throw new Error("No token");
+    return new Promise(() => {});
   }
 
   const res = await fetch(`${BACKEND_URL}${path}`, {
@@ -28,7 +30,7 @@ export async function authFetch(
 
     window.location.replace("/auth?mode=login&msg=Session%20expired");
 
-    throw new Error("Session expired");
+    return new Promise(() => {});
   }
 
   return res; // other errors: let caller handle

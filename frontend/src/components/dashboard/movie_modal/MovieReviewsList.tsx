@@ -73,14 +73,7 @@ export default function MovieReviewsList({ movieId }: MovieReviewsListProps) {
       <div className="text-center py-6">
         <div className="flex flex-col items-center space-y-3">
           <AlertCircle className="w-8 h-8 text-destructive" />
-          <p className="text-destructive font-medium">Failed to load reviews</p>
-          <p className="text-secondary text-sm">{error}</p>
-          <button
-            onClick={() => fetchReviewPage(movieId, 1)}
-            className="px-4 py-2 bg-primary text-background rounded-lg hover:bg-cta_hover transition-colors text-sm"
-          >
-            Try Again
-          </button>
+          <p className="text-destructive font-medium">{error}</p>
         </div>
       </div>
     );
