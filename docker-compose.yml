@@ -12,7 +12,6 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
-    # working_dir: /ollama
     volumes:
       - ollama-models:/root/.ollama
 
@@ -26,9 +25,17 @@ services:
         condition: service_healthy
     env_file:
       - ./backend/.env
-    volumes:
-      - ./backend:/backend #TODO: Remove volumes - Just for development
-    # working_dir: /backend
+
+  frontend:
+    build: ./frontend
+    container_name: frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    env_file:
+      - ./frontend/.env
+    restart: always
 
 volumes:
   ollama-models:

@@ -1,4 +1,4 @@
-import { motion, scale } from "framer-motion";
+import { motion } from "framer-motion";
 import { Mail, ArrowRight, Send } from "lucide-react";
 import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";

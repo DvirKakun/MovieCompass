@@ -1,26 +1,3 @@
-# # Use a Python base image
-# FROM python:3.12.3-slim
-
-# # Set working directory inside the container
-# WORKDIR /backend
-
-# # Install dependencies
-# COPY requirements.txt .
-
-# RUN pip install --no-cache-dir --upgrade pip && \
-#     pip install --no-cache-dir -r requirements.txt
-
-# # Copy everything into the container
-# COPY . .
-
-# # Expose FastAPI on port 8000
-# EXPOSE 8000
-
-# # Command to run FastAPI
-# CMD ["uvicorn", "app.main:application", "--host", "0.0.0.0", "--port", "8000", "--reload"] 
-# #TODO: Remove --reload - Just for development
-
-
 # ─────────────────────────  base stage  ─────────────────────────
 FROM python:3.12.3-slim AS base
 WORKDIR /backend
@@ -53,6 +30,5 @@ COPY --from=test /backend/app /backend/app
 COPY --from=base /usr/local /usr/local
 
 EXPOSE 8000
-CMD ["uvicorn", "app.main:application", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "app.main:application", "--host", "0.0.0.0", "--port", "8000"]
 
-# ✱ keep --reload only for local dev; omit it in production
