@@ -123,7 +123,7 @@ export default function UserMenu({
       {isOpen && (
         <motion.div
           ref={menuRef}
-          className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-10"
+          className="absolute right-0 mt-2 w-48 bg-card border border-border rounded-md shadow-lg z-10 overflow-hidden"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -132,23 +132,28 @@ export default function UserMenu({
         >
           <div className="py-1">
             {menuItems.map((item, index) => (
-              <motion.button
-                key={index}
-                className="w-full text-left px-4 py-2 text-sm hover:bg-primary/10 flex items-center justify-between"
-                onClick={item.onClick}
-                whileHover={{ x: 5 }}
-                transition={{ duration: 0.2 }}
-              >
-                <div className="flex items-center">
-                  {item.icon}
-                  {item.label}
-                </div>
-                {typeof item.count === "number" && (
-                  <span className="bg-primary text-background text-xs px-2 py-1 rounded-full font-medium min-w-[20px] text-center">
-                    {item.count}
-                  </span>
-                )}
-              </motion.button>
+              <div key={index} className="relative overflow-hidden">
+                <motion.button
+                  className={`w-full text-left px-4 py-2 text-sm flex items-center justify-between transition-colors ${
+                    item.label === "Logout"
+                      ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
+                      : "text-foreground hover:bg-primary/10"
+                  }`}
+                  onClick={item.onClick}
+                  whileHover={{ x: 5 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div className="flex items-center">
+                    {item.icon}
+                    {item.label}
+                  </div>
+                  {typeof item.count === "number" && (
+                    <span className="bg-primary text-background text-xs px-2 py-1 rounded-full font-medium min-w-[20px] text-center">
+                      {item.count}
+                    </span>
+                  )}
+                </motion.button>
+              </div>
             ))}
           </div>
         </motion.div>

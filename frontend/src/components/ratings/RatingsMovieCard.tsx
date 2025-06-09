@@ -4,7 +4,6 @@ import {
   Play,
   Calendar,
   Star,
-  Loader2,
   Image as ImageIcon,
   Edit3,
   Trash2,
@@ -27,16 +26,15 @@ export default function RatingMovieCard({
   onRemove,
 }: RatingMovieCardProps) {
   const { getMovieById } = useMovies();
-  const { removeMovieRating, getUserRating, isRatingLoading } =
-    useUserActions();
+  const { removeMovieRating, getUserRating } = useUserActions();
   const { openModal } = useMovieModal();
   const [imageError, setImageError] = useState(false);
   const [showRatingEditor, setShowRatingEditor] = useState(false);
-  const [isRemovingRating, setIsRemoving] = useState(false);
+  // const [isRemovingRating, setIsRemoving] = useState(false);
 
   const movie = getMovieById(movieId);
   const userRating = getUserRating(movieId);
-  const isRemoving = isRatingLoading(movieId);
+  // const isRemoving = isRatingLoading(movieId);
 
   if (!movie) {
     return (
@@ -55,16 +53,19 @@ export default function RatingMovieCard({
     );
   }
 
-  const handleRemoveRating = async () => {
-    if (!userRating || isRemoving) return;
+  const handleRemoveRating = () => {
+    if (!userRating) return;
 
-    setIsRemoving(true);
-    try {
-      await removeMovieRating(movieId);
-      onRemove?.();
-    } finally {
-      setIsRemoving(false);
-    }
+    removeMovieRating(movieId);
+    onRemove?.();
+
+    // setIsRemoving(true);
+    // try {
+    //   await removeMovieRating(movieId);
+    //   onRemove?.();
+    // } finally {
+    //   setIsRemoving(false);
+    // }
   };
 
   const handleOpenModal = () => {
@@ -225,20 +226,17 @@ export default function RatingMovieCard({
                     variant="ghost"
                     size="sm"
                     onClick={handleRemoveRating}
-                    disabled={isRemovingRating}
+                    // disabled={isRemovingRating}
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                   >
-                    {isRemovingRating ? (
-                      <div className="flex items-center">
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Removing...
-                      </div>
+                    <Trash2 className="w-4 h-4 fill" />
+
+                    {/* {isRemovingRating ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove Rating
-                      </>
+                      <Trash2 className="w-4 h-4 fill" />
                     )}
+                    {isRemovingRating ? "Removing..." : "Remove"} */}
                   </Button>
                 </div>
               </div>

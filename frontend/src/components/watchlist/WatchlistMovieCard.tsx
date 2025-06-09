@@ -5,7 +5,7 @@ import { Badge } from "../ui/badge";
 import { motion } from "framer-motion";
 import { Calendar, Play, Star, Trash2, Image as ImageIcon } from "lucide-react";
 import { Button } from "../ui/button";
-import { useUserActions, useUserState } from "../../contexts/UserContext";
+import { useUserActions } from "../../contexts/UserContext";
 import { useState } from "react";
 
 interface WatchlistMovieCardProps {
@@ -18,17 +18,18 @@ export default function WatchlistMovieCard({
   onRemove,
 }: WatchlistMovieCardProps) {
   const { openModal } = useMovieModal();
-  const { removeFromWatchlist } = useUserActions();
-  const { listLoading } = useUserState();
+  const { toggleToWatchlist } = useUserActions();
+  // const { listLoading } = useUserState();
   const { getMovieById } = useMovies();
   const [imageError, setImageError] = useState(false);
   const movie = getMovieById(movieId)!;
 
-  const isRemoving = listLoading.watchlist.has(movieId);
+  // const isRemoving = listLoading.watchlist.has(movieId);
 
-  const handleRemove = async () => {
-    await removeFromWatchlist(movieId);
-    onRemove();
+  const handleRemove = () => {
+    toggleToWatchlist(movieId);
+    // await removeFromWatchlist(movieId);
+    onRemove?.();
   };
 
   const handleOpenModal = () => {
@@ -155,20 +156,17 @@ export default function WatchlistMovieCard({
                     variant="ghost"
                     size="sm"
                     onClick={handleRemove}
-                    disabled={isRemoving}
+                    // disabled={isRemoving}
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                   >
-                    {isRemoving ? (
-                      <div className="flex items-center">
-                        <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-destructive mr-2"></div>
-                        Removing...
-                      </div>
+                    <Trash2 className="w-4 h-4 fill" />
+
+                    {/* {isRemoving ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <>
-                        <Trash2 className="w-4 h-4 mr-2" />
-                        Remove
-                      </>
+                      <Trash2 className="w-4 h-4 fill" />
                     )}
+                    {isRemoving ? "Removing..." : "Remove"} */}
                   </Button>
                 </div>
               </div>

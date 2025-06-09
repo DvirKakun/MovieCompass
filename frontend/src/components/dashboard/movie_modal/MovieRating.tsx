@@ -9,12 +9,11 @@ interface MovieRatingProps {
 }
 
 export default function MovieRating({ movieId }: MovieRatingProps) {
-  const { getUserRating, setMovieRating, removeMovieRating, isRatingLoading } =
-    useUserActions();
+  const { getUserRating, setMovieRating, removeMovieRating } = useUserActions();
 
   const currentRating = getUserRating(movieId);
   const [hoveredRating, setHoveredRating] = useState(0);
-  const isLoading = isRatingLoading(movieId);
+  // const isLoading = isRatingLoading(movieId);
 
   // Reset hoveredRating when currentRating changes (including when it becomes null)
   useEffect(() => {
@@ -23,31 +22,31 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
     }
   }, [currentRating]);
 
-  const handleRating = async (selectedRating: number) => {
-    if (isLoading) return;
+  const handleRating = (selectedRating: number) => {
+    // if (isLoading) return;
 
     // If clicking on the same rating, don't clear it - that's what the remove button is for
-    await setMovieRating(movieId, selectedRating);
+    setMovieRating(movieId, selectedRating);
   };
 
-  const handleRemoveRating = async () => {
-    if (isLoading) return;
+  const handleRemoveRating = () => {
+    // if (isLoading) return;
 
     // Reset hoveredRating immediately when removing
     setHoveredRating(0);
-    await removeMovieRating(movieId);
+    removeMovieRating(movieId);
   };
 
   const handleMouseEnter = (star: number) => {
-    if (!isLoading) {
-      setHoveredRating(star);
-    }
+    // if (!isLoading) {
+    setHoveredRating(star);
+    // }
   };
 
   const handleMouseLeave = () => {
-    if (!isLoading) {
-      setHoveredRating(0);
-    }
+    // if (!isLoading) {
+    setHoveredRating(0);
+    // }
   };
 
   return (
@@ -59,7 +58,7 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
             variant="ghost"
             size="sm"
             onClick={handleRemoveRating}
-            disabled={isLoading}
+            // disabled={isLoading}
             className="text-muted-foreground hover:text-destructive h-auto p-1"
           >
             <X className="w-4 h-4" />
@@ -71,15 +70,16 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
         {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((star) => (
           <motion.button
             key={star}
-            className={`relative p-1 focus:outline-none ${
-              isLoading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
-            }`}
-            whileHover={!isLoading ? { scale: 1.1 } : {}}
-            whileTap={!isLoading ? { scale: 0.9 } : {}}
+            className={
+              `relative p-1 focus:outline-none`
+              // isLoading ? "cursor-not-allowed opacity-50" : "cursor-pointer"
+            }
+            // whileHover={!isLoading ? { scale: 1.1 } : {}}
+            // whileTap={!isLoading ? { scale: 0.9 } : {}}
             onClick={() => handleRating(star)}
             onMouseEnter={() => handleMouseEnter(star)}
             onMouseLeave={handleMouseLeave}
-            disabled={isLoading}
+            // disabled={isLoading}
           >
             <Star
               className={`w-6 h-6 transition-colors duration-100 ${
@@ -96,26 +96,29 @@ export default function MovieRating({ movieId }: MovieRatingProps) {
         ))}
 
         <span className="ml-2 text-secondary">
-          {isLoading ? (
-            <span className="text-muted-foreground">Saving...</span>
-          ) : currentRating ? (
-            <motion.span
-              key={currentRating}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="font-medium"
-            >
-              {currentRating}/10
-            </motion.span>
-          ) : hoveredRating > 0 ? (
-            <span className="text-muted-foreground">{hoveredRating}/10</span>
-          ) : (
-            <span className="text-muted-foreground">Rate</span>
-          )}
+          {
+            // isLoading ? (
+            //   <span className="text-muted-foreground">Saving...</span>
+            // ) :
+            currentRating ? (
+              <motion.span
+                key={currentRating}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="font-medium"
+              >
+                {currentRating}/10
+              </motion.span>
+            ) : hoveredRating > 0 ? (
+              <span className="text-muted-foreground">{hoveredRating}/10</span>
+            ) : (
+              <span className="text-muted-foreground">Rate</span>
+            )
+          }
         </span>
       </div>
 
-      {currentRating && !isLoading && (
+      {currentRating && (
         <motion.p
           className="text-sm text-primary"
           initial={{ opacity: 0 }}

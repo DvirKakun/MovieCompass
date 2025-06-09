@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, useMemo } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { motion } from "framer-motion";
 import {
   Filter,
@@ -19,6 +19,8 @@ export default function SearchResults() {
   const [showFilters, setShowFilters] = useState(false);
   const [allSearchResults, setAllSearchResults] = useState<any[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isResettingSearch, setIsResettingSearch] = useState(false);
+  const currentQueryRef = useRef<string>("");
 
   const {
     state: {
@@ -104,15 +106,24 @@ export default function SearchResults() {
     );
   }, [filters, searchHasMore, filteredResults.length, allSearchResults.length]);
 
-  // Optimized fetch function
+  // Optimized fetch function - only fetch next page if we're continuing the same search
   const fetchNextPage = useCallback(async () => {
+    // Don't fetch if:
+    // 1. No search query
+    // 2. Currently resetting search
+    // 3. No more results needed
+    // 4. Already loading
+    // 5. Query changed (we're starting a new search)
     if (
       !searchQuery.trim() ||
+      isResettingSearch ||
       !needsMoreResults ||
       searchLoading ||
-      isLoadingMore
-    )
+      isLoadingMore ||
+      currentQueryRef.current !== searchQuery
+    ) {
       return;
+    }
 
     setIsLoadingMore(true);
     try {
@@ -122,6 +133,7 @@ export default function SearchResults() {
     }
   }, [
     searchQuery,
+    isResettingSearch,
     needsMoreResults,
     searchLoading,
     isLoadingMore,
@@ -131,20 +143,38 @@ export default function SearchResults() {
   // Use infinite scroll hook with smart loading
   const { sentinelRef } = useInfiniteScroll({
     fetchFn: fetchNextPage,
-    hasMore: needsMoreResults,
-    isLoading: searchLoading || isLoadingMore,
+    hasMore:
+      needsMoreResults &&
+      !isResettingSearch &&
+      currentQueryRef.current === searchQuery,
+    isLoading: searchLoading || isLoadingMore || isResettingSearch,
     rootMargin: "400px",
   });
 
-  // Initial search when query changes
+  // Handle search query changes
   useEffect(() => {
     if (!searchQuery.trim()) return;
 
-    // Reset local state for new search
-    setAllSearchResults([]);
-    setIsLoadingMore(false);
-    fetchSearchPage(searchQuery, 1);
-  }, [searchQuery]);
+    // Check if this is a new search query
+    const isNewQuery = currentQueryRef.current !== searchQuery;
+
+    if (isNewQuery) {
+      // Set flags for new search
+      setIsResettingSearch(true);
+      currentQueryRef.current = searchQuery;
+
+      // Reset local state for new search
+      setAllSearchResults([]);
+      setIsLoadingMore(false);
+
+      // Fetch first page
+      fetchSearchPage(searchQuery, 1).finally(() => {
+        // Allow infinite scroll after initial fetch completes
+        setIsResettingSearch(false);
+      });
+    }
+    // If it's the same query, do nothing (prevent duplicate fetches)
+  }, [searchQuery, fetchSearchPage]);
 
   const currentYear = new Date().getFullYear();
 
@@ -162,7 +192,8 @@ export default function SearchResults() {
   // Show loading only for initial search or when we actually need more results
   const showLoadingIndicator =
     (searchLoading && allSearchResults.length === 0) ||
-    (isLoadingMore && needsMoreResults);
+    (isLoadingMore && needsMoreResults) ||
+    isResettingSearch;
 
   if (!searchQuery.trim()) {
     return (
@@ -185,7 +216,7 @@ export default function SearchResults() {
   }
 
   // Loading state for initial search
-  if (searchLoading && allSearchResults.length === 0) {
+  if ((searchLoading || isResettingSearch) && allSearchResults.length === 0) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="flex flex-col items-center space-y-4">
@@ -351,18 +382,24 @@ export default function SearchResults() {
         )}
 
         {/* End of results indicator */}
-        {!needsMoreResults && filteredResults.length > 0 && (
-          <div className="text-center py-8">
-            <p className="text-secondary text-sm">
-              {activeFiltersCount > 0
-                ? `Showing all ${filteredResults.length} movies that match your filters`
-                : "You've reached the end of search results"}
-            </p>
-          </div>
-        )}
+        {!needsMoreResults &&
+          filteredResults.length > 0 &&
+          !isResettingSearch && (
+            <div className="text-center py-8">
+              <p className="text-secondary text-sm">
+                {activeFiltersCount > 0
+                  ? `Showing all ${filteredResults.length} movies that match your filters`
+                  : "You've reached the end of search results"}
+              </p>
+            </div>
+          )}
 
         {/* Sentinel for infinite scroll - Only render when we need more results */}
-        {needsMoreResults && <div ref={sentinelRef} className="h-1" />}
+        {needsMoreResults &&
+          !isResettingSearch &&
+          currentQueryRef.current === searchQuery && (
+            <div ref={sentinelRef} className="h-1" />
+          )}
       </div>
     </div>
   );

@@ -1,18 +1,11 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import {
-  Heart,
-  Play,
-  Calendar,
-  Star,
-  Loader2,
-  Image as ImageIcon,
-} from "lucide-react";
+import { Play, Calendar, Star, Image as ImageIcon, Trash2 } from "lucide-react";
 import { Card, CardContent } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { useMovies } from "../../contexts/MoviesContext";
-import { useUserActions, useUserState } from "../../contexts/UserContext";
+import { useUserActions } from "../../contexts/UserContext";
 import { useMovieModal } from "../../contexts/MovieModalContext";
 import MovieRating from "../dashboard/movie_modal/MovieRating";
 
@@ -27,13 +20,12 @@ export default function FavoriteMovieCard({
 }: FavoriteMovieCardProps) {
   const { getMovieById } = useMovies();
   const { toggleToFavorite, getUserRating } = useUserActions();
-  const { listLoading } = useUserState();
   const { openModal } = useMovieModal();
   const [imageError, setImageError] = useState(false);
   const [showRating, setShowRating] = useState(false);
 
   const movie = getMovieById(movieId);
-  const isRemoving = listLoading.favoriteMovies.has(movieId);
+  // const isRemoving = listLoading.favoriteMovies.has(movieId);
   const userRating = getUserRating(movieId);
 
   if (!movie) {
@@ -53,7 +45,7 @@ export default function FavoriteMovieCard({
     );
   }
 
-  const handleRemove = async () => {
+  const handleRemove = () => {
     toggleToFavorite(movieId);
     onRemove?.();
   };
@@ -199,15 +191,17 @@ export default function FavoriteMovieCard({
                     variant="ghost"
                     size="sm"
                     onClick={handleRemove}
-                    disabled={isRemoving}
+                    // disabled={isRemoving}
                     className="text-destructive hover:text-destructive hover:bg-destructive/10 ml-auto"
                   >
-                    {isRemoving ? (
+                    <Trash2 className="w-4 h-4 fill" />
+
+                    {/* {isRemoving ? (
                       <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <Heart className="w-4 h-4 fill-current" />
+                      <Trash2 className="w-4 h-4 fill" />
                     )}
-                    {isRemoving ? "Removing..." : "Remove"}
+                    {isRemoving ? "Removing..." : "Remove"} */}
                   </Button>
                 </div>
               </div>

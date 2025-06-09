@@ -1,13 +1,5 @@
 import { memo } from "react";
-import {
-  Star,
-  Calendar,
-  Heart,
-  Bookmark,
-  Plus,
-  Check,
-  Loader2,
-} from "lucide-react";
+import { Star, Calendar, Heart, Bookmark, Plus, Check } from "lucide-react";
 import type { Movie } from "../../types/movies";
 import { useMovieModalActions } from "../../contexts/MovieModalContext";
 import MoviePlaceholder from "./MoviePlaceholder";
@@ -22,13 +14,10 @@ export default memo(function MovieCard({ movie }: MovieCardProps) {
   const movieId = movie.id;
   const { openModal } = useMovieModalActions();
   const { toggleToFavorite, toggleToWatchlist } = useUserActions();
-  const { user, listLoading } = useUserState();
+  const { user } = useUserState();
 
   // Check if this is a placeholder card
   const isPlaceholder = "placeholder" in movie && movie.placeholder;
-
-  const isWLBusy = listLoading.watchlist.has(movieId);
-  const isFavBusy = listLoading.favoriteMovies.has(movieId);
 
   const isInWatchlist = user?.watchlist.includes(movieId);
 
@@ -96,7 +85,6 @@ export default memo(function MovieCard({ movie }: MovieCardProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                disabled={isWLBusy}
                 className={`flex items-center ${
                   isInWatchlist
                     ? "bg-primary/20 text-primary border-primary"
@@ -104,9 +92,7 @@ export default memo(function MovieCard({ movie }: MovieCardProps) {
                 } transition-colors`}
                 onClick={handleToggleToWatchlist}
               >
-                {isWLBusy ? (
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                ) : isInWatchlist ? (
+                {isInWatchlist ? (
                   <Check className="w-3 h-3 mr-1" />
                 ) : (
                   <Plus className="w-3 h-3 mr-1" />
@@ -117,7 +103,6 @@ export default memo(function MovieCard({ movie }: MovieCardProps) {
               <Button
                 variant="secondary"
                 size="sm"
-                disabled={isFavBusy}
                 className={`flex items-center ${
                   isInFavorites
                     ? "bg-primary/20 text-primary border-primary"
@@ -125,9 +110,7 @@ export default memo(function MovieCard({ movie }: MovieCardProps) {
                 } transition-colors`}
                 onClick={handleAddToFavorites}
               >
-                {isFavBusy ? (
-                  <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                ) : isInFavorites ? (
+                {isInFavorites ? (
                   <Check className="w-3 h-3 mr-1" />
                 ) : (
                   <Plus className="w-3 h-3 mr-1" />

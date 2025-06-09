@@ -22,8 +22,6 @@ const initialState: UserState = {
   user: null,
   isLoading: false,
   isAuthenticated: false,
-  listLoading: { watchlist: new Set(), favoriteMovies: new Set() },
-  ratingLoading: new Set(),
   aiRecommendations: [],
   aiRecommendationsLoading: false,
   aiRecommendationsError: null,
@@ -52,14 +50,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
         ...state,
         isLoading: action.payload,
       };
-    case "SET_LIST_LOADING": {
-      const set = new Set(state.listLoading[action.list]);
-      action.value ? set.add(action.movieId) : set.delete(action.movieId);
-      return {
-        ...state,
-        listLoading: { ...state.listLoading, [action.list]: set },
-      };
-    }
     case "TOGGLE_MOVIE_IN_LIST": {
       if (!state.user) return state;
 
@@ -84,16 +74,6 @@ function userReducer(state: UserState, action: UserAction): UserState {
           watchlist: state.user.watchlist.filter((id) => id !== action.payload),
         },
       };
-    case "SET_RATING_LOADING": {
-      const set = new Set(state.ratingLoading);
-
-      action.value ? set.add(action.movieId) : set.delete(action.movieId);
-
-      return {
-        ...state,
-        ratingLoading: set,
-      };
-    }
 
     case "SET_MOVIE_RATING": {
       if (!state.user) return state;
@@ -218,11 +198,9 @@ interface UserContextType {
   logout: () => void;
   toggleToWatchlist: (id: number) => void;
   toggleToFavorite: (id: number) => void;
-  removeFromWatchlist: (movieId: number) => Promise<void>;
   setMovieRating: (movieId: number, rating: number) => Promise<void>;
   removeMovieRating: (movieId: number) => Promise<void>;
   getUserRating: (movieId: number) => number | null;
-  isRatingLoading: (movieId: number) => boolean;
   clearProfileMessages: () => void;
   getFieldError: (fieldName: string) => string | undefined;
 }
@@ -405,7 +383,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   async function toggleMovieOnServer(movieId: number, list: ListKind) {
     // optimistic UI
-    dispatch({ type: "SET_LIST_LOADING", list, movieId, value: true });
     dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });
 
     /* decide HTTP verb AFTER the optimistic flip (that’s the new state) */
@@ -426,49 +403,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
       dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });
 
       showError("Failed to update");
-    } finally {
-      dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
     }
   }
-
-  const removeFromWatchlist = async (movieId: number) => {
-    if (!state.user) return;
-
-    const list: ListKind = "watchlist";
-
-    // Add to loading state
-    dispatch({ type: "SET_LIST_LOADING", list, movieId, value: true });
-
-    try {
-      await authFetch(
-        `/users/me/watchlist/${movieId}`,
-        {
-          method: "DELETE",
-        },
-        showError
-      );
-
-      // Update user state - remove movie from watchlist
-      dispatch({
-        type: "REMOVE_FROM_WATCHLIST_SUCCESS",
-        payload: movieId,
-      });
-    } catch (error: any) {
-      // Handle error - authFetch already handles token issues
-
-      showError("Failed to remove from watchlist");
-    } finally {
-      // Remove from loading state
-      dispatch({ type: "SET_LIST_LOADING", list, movieId, value: false });
-    }
-  };
 
   const setMovieRating = useCallback(
     async (movieId: number, rating: number) => {
       if (!state.user) return;
-
-      // Set loading state
-      dispatch({ type: "SET_RATING_LOADING", movieId, value: true });
 
       // Optimistic update
       dispatch({ type: "SET_MOVIE_RATING", movieId, rating });
@@ -498,8 +438,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         }
 
         showError("Failed to save rating");
-      } finally {
-        dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
       }
     },
     [state.user]
@@ -514,9 +452,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       );
 
       if (!existingRating) return;
-
-      // Set loading state
-      dispatch({ type: "SET_RATING_LOADING", movieId, value: true });
 
       // Optimistic update
       dispatch({ type: "REMOVE_MOVIE_RATING", movieId });
@@ -538,8 +473,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         });
 
         showError("Failed to remove rating");
-      } finally {
-        dispatch({ type: "SET_RATING_LOADING", movieId, value: false });
       }
     },
     [state.user]
@@ -556,13 +489,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
       return rating ? rating.rating : null;
     },
     [state.user]
-  );
-
-  const isRatingLoading = useCallback(
-    (movieId: number): boolean => {
-      return state.ratingLoading.has(movieId);
-    },
-    [state.ratingLoading]
   );
 
   const toggleToWatchlist = (id: number) =>
@@ -592,11 +518,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
           logout,
           toggleToWatchlist,
           toggleToFavorite,
-          removeFromWatchlist,
+          // removeFromWatchlist,
           setMovieRating,
           removeMovieRating,
           getUserRating,
-          isRatingLoading,
           clearProfileMessages,
           getFieldError,
         }}

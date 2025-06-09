@@ -34,19 +34,13 @@ export default memo(function MovieDetailModal() {
   const movieId = movie?.id!;
   const { toggleToFavorite, toggleToWatchlist, getUserRating } =
     useUserActions();
-  const {
-    listLoading: { watchlist: wlLoad, favoriteMovies: favLoad },
-    user,
-  } = useUserState();
+  const { user } = useUserState();
   const [isInWatchlist, setIsInWatchlist] = useState(false);
   const [isInFavorites, setIsInFavorites] = useState(false);
   const trailer = movieId ? getTrailer(movieId) : undefined;
   const isLoadingTrailer = movieId ? isTrailerLoading(movieId) : false;
   const trailerErr = movieId ? getTrailerError(movieId) : null;
   const userRating = getUserRating(movieId);
-
-  const isWLBusy = wlLoad.has(movieId);
-  const isFavBusy = favLoad.has(movieId);
 
   // Fetch trailer when movie changes
   useEffect(() => {
@@ -206,7 +200,6 @@ export default memo(function MovieDetailModal() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isWLBusy}
                       className={`flex items-center ${
                         isInWatchlist
                           ? "border-primary text-primary"
@@ -214,9 +207,7 @@ export default memo(function MovieDetailModal() {
                       }`}
                       onClick={handleToggleToWatchlist}
                     >
-                      {isWLBusy ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : isInWatchlist ? (
+                      {isInWatchlist ? (
                         <Check className="w-4 h-4 mr-1" />
                       ) : (
                         <Plus className="w-4 h-4 mr-1" />
@@ -227,7 +218,6 @@ export default memo(function MovieDetailModal() {
                     <Button
                       variant="outline"
                       size="sm"
-                      disabled={isFavBusy}
                       className={`flex items-center ${
                         isInFavorites
                           ? "border-primary text-primary"
@@ -235,9 +225,7 @@ export default memo(function MovieDetailModal() {
                       }`}
                       onClick={handleAddToFavorites}
                     >
-                      {isFavBusy ? (
-                        <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                      ) : isInFavorites ? (
+                      {isInFavorites ? (
                         <Check className="w-4 h-4 mr-1" />
                       ) : (
                         <Plus className="w-4 h-4 mr-1" />

@@ -25,7 +25,29 @@ export default function SearchNavbar() {
     setSearchQuery(state.searchQuery || "");
   }, [state.searchQuery]);
 
+  // Function to execute search (used by both debounce and submit)
+  const executeSearch = (query: string) => {
+    // Clear any pending debounce
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
+    if (query.trim() === "") {
+      clearSearch();
+
+      return;
+    }
+
+    // Only execute if the query is different from current context query
+    if (query.trim() !== state.searchQuery) {
+      setSearchQueryContext(query.trim());
+      navigate("/dashboard/search");
+    }
+  };
+
   useEffect(() => {
+    // Clear existing timeout
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (searchQuery.trim() === "") {
@@ -34,25 +56,28 @@ export default function SearchNavbar() {
       return;
     }
 
+    // Set new timeout for debounce
     debounceRef.current = setTimeout(() => {
-      setSearchQueryContext(searchQuery.trim());
-      navigate("/dashboard/search");
+      executeSearch(searchQuery);
     }, 500);
 
     return () => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [searchQuery, navigate]);
+  }, [searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (searchQuery.trim()) {
-      setSearchQueryContext(searchQuery.trim());
-      navigate("/dashboard/search");
-    }
+    executeSearch(searchQuery);
   };
 
   const handleClearSearch = () => {
+    // Clear debounce when manually clearing
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+      debounceRef.current = null;
+    }
+
     setSearchQuery("");
     setSearchQueryContext("");
     clearSearch();

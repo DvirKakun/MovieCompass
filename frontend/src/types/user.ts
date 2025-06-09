@@ -43,8 +43,6 @@ export interface UserState {
   user: UserProfile | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  listLoading: Record<ListKind, Set<number>>;
-  ratingLoading: Set<number>;
   aiRecommendations: Movie[];
   aiRecommendationsLoading: boolean;
   aiRecommendationsError: string | null;

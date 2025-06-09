@@ -25,3 +25,23 @@ EXPOSE 5173
 
 # Start the application
 CMD ["serve", "-s", "dist", "-l", "5173"]
+
+# FROM node:18-alpine
+
+# # Set working directory
+# WORKDIR /frontend
+
+# # Copy package files first (for better Docker layer caching)
+# COPY package*.json ./
+
+# # Install dependencies (including dev dependencies)
+# RUN npm ci
+
+# # Copy source code
+# COPY . .
+
+# # Expose port 5173
+# EXPOSE 5173
+
+# # Start the development server
+# CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
