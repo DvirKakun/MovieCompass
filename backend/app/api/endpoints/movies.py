@@ -33,9 +33,22 @@ async def get_popular_movies(
 
 @router.get("/search", response_model=MovieResponse)
 async def search_movie(
-    query: str, page: int = Query(1, ge=1, description="Page number for pagination")
+    query: str,
+    page: int = Query(1, ge=1, description="Page number for pagination"),
+    genre: int = Query(None, description="Filter by genre ID"),
+    min_rating: float = Query(None, ge=0, le=10, description="Minimum rating"),
+    max_rating: float = Query(None, ge=0, le=10, description="Maximum rating"),
+    min_year: int = Query(None, ge=1900, description="Minimum release year"),
+    max_year: int = Query(None, description="Maximum release year"),
 ):
-    movies = await search_movies(query, page)
+    """
+    Search movies with optional filters
+    """
+
+    movies = await search_movies(
+        query=query,
+        page=page,
+    )
 
     return MovieResponse(movies=movies)
 

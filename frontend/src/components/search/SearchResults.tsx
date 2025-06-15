@@ -99,11 +99,7 @@ export default function SearchResults() {
     }
 
     // With filters: only fetch more if we have very few filtered results and more data is available
-    return (
-      searchHasMore &&
-      filteredResults.length < 20 &&
-      allSearchResults.length > 0
-    );
+    return searchHasMore && allSearchResults.length > 0;
   }, [filters, searchHasMore, filteredResults.length, allSearchResults.length]);
 
   // Optimized fetch function - only fetch next page if we're continuing the same search

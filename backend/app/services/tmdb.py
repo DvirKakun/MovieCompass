@@ -134,9 +134,7 @@ async def fetch_movie_trailer(movie_id: int) -> MovieTrailerResponse:
     )
 
 
-async def make_request(url: str, method: str = "GET"):  # , page: int = 1
-    # url += f"&page={page}"
-
+async def make_request(url: str, method: str = "GET"):
     async with aiohttp.ClientSession() as session:
         try:
             async with session.get(url) as response:
