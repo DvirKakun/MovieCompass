@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState, useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowLeft, Star, SortAsc, SortDesc } from "lucide-react";
+import {
+  ArrowLeft,
+  Star,
+  SortAsc,
+  SortDesc,
+  Filter,
+  ChevronDown,
+} from "lucide-react";
 import { Button } from "../components/ui/button";
 import { Badge } from "../components/ui/badge";
 import { Card, CardContent } from "../components/ui/card";
@@ -13,6 +20,9 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import RatingMovieCard from "../components/ratings/RatingsMovieCard";
+import FilterPanel, {
+  type MovieFilters,
+} from "../components/common/FilterPanel";
 import { useUserState } from "../contexts/UserContext";
 import { useMovies } from "../contexts/MoviesContext";
 import type { Movie } from "../types/movies";
@@ -23,11 +33,22 @@ type SortOrder = "asc" | "desc";
 export default function RatingsPage() {
   const navigate = useNavigate();
   const { user } = useUserState();
-  const { fetchMoviesByIds, state: moviesState } = useMovies();
+  const { fetchMoviesByIds, state: moviesState, getGenreName } = useMovies();
 
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
   const [sortBy, setSortBy] = useState<SortOption>("dateRated");
   const [sortOrder, setSortOrder] = useState<SortOrder>("desc");
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Filter states (local state for RatingsPage)
+  const currentYear = new Date().getFullYear();
+  const [filters, setFilters] = useState<MovieFilters>({
+    genre: null,
+    minRating: null,
+    maxRating: null,
+    minYear: null,
+    maxYear: null,
+  });
 
   const ratedMovieIds = user?.ratings.map((rating) => rating.movie_id) || [];
   const displayedRatings = ratedMovieIds.filter((id) => !removedMovies.has(id));
@@ -46,9 +67,34 @@ export default function RatingsPage() {
       .filter((movie): movie is Movie => movie !== undefined);
   }, [displayedRatings.join(","), moviesState.fetchedMoviesById]);
 
+  // Apply filters
+  const filteredMovies = useMemo(() => {
+    return ratedMovies.filter((movie) => {
+      // Genre filter
+      if (filters.genre !== null) {
+        const genreIds =
+          movie.genre_ids ?? movie.genres?.map((g) => g.id) ?? [];
+        if (!genreIds.includes(filters.genre)) return false;
+      }
+
+      // Rating filter
+      if (filters.minRating !== null && movie.vote_average < filters.minRating)
+        return false;
+      if (filters.maxRating !== null && movie.vote_average > filters.maxRating)
+        return false;
+
+      // Year filter
+      const movieYear = new Date(movie.release_date).getFullYear();
+      if (filters.minYear !== null && movieYear < filters.minYear) return false;
+      if (filters.maxYear !== null && movieYear > filters.maxYear) return false;
+
+      return true;
+    });
+  }, [ratedMovies, filters]);
+
   // Apply sorting
   const sortedMovies = useMemo(() => {
-    const sorted = [...ratedMovies].sort((a, b) => {
+    const sorted = [...filteredMovies].sort((a, b) => {
       let comparison = 0;
 
       switch (sortBy) {
@@ -83,7 +129,7 @@ export default function RatingsPage() {
     });
 
     return sorted;
-  }, [ratedMovies, sortBy, sortOrder, ratedMovieIds, user?.ratings]);
+  }, [filteredMovies, sortBy, sortOrder, ratedMovieIds, user?.ratings]);
 
   const handleMovieRemoved = (movieId: number) => {
     setRemovedMovies((prev) => new Set([...prev, movieId]));
@@ -95,6 +141,32 @@ export default function RatingsPage() {
       });
     }, 300);
   };
+
+  // Filter handlers (same as FavoritesPage)
+  const handleFilterChange = (newFilters: Partial<MovieFilters>) => {
+    setFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  const handleResetFilters = () => {
+    setFilters({
+      genre: null,
+      minRating: null,
+      maxRating: null,
+      minYear: null,
+      maxYear: null,
+    });
+  };
+
+  // Count active filters (same logic as FavoritesPage)
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === "genre" && value !== null) return true;
+    if (key === "minRating" && value !== null && value !== 0) return true;
+    if (key === "maxRating" && value !== null && value !== 10) return true;
+    if (key === "minYear" && value !== null && value !== 1900) return true;
+    if (key === "maxYear" && value !== null && value !== currentYear)
+      return true;
+    return false;
+  }).length;
 
   const averageRating = useMemo(() => {
     if (!user?.ratings.length) return 0;
@@ -133,8 +205,9 @@ export default function RatingsPage() {
                     </h1>
                     <div className="flex items-center gap-4 text-secondary">
                       <span>
-                        {sortedMovies.length} movie
-                        {sortedMovies.length !== 1 ? "s" : ""} rated
+                        {sortedMovies.length} of {displayedRatings.length} movie
+                        {displayedRatings.length !== 1 ? "s" : ""} rated
+                        {activeFiltersCount > 0 && " (filtered)"}
                       </span>
                       {user?.ratings.length && (
                         <>
@@ -181,6 +254,29 @@ export default function RatingsPage() {
                   </Button>
                 </div>
 
+                {/* Filter Toggle Button */}
+                <Button
+                  variant="outline"
+                  onClick={() => setShowFilters(!showFilters)}
+                  className="flex items-center gap-2"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filters</span>
+                  {activeFiltersCount > 0 && (
+                    <Badge
+                      variant="default"
+                      className="bg-primary text-background text-xs px-2 py-0.5"
+                    >
+                      {activeFiltersCount}
+                    </Badge>
+                  )}
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform ${
+                      showFilters ? "rotate-180" : ""
+                    }`}
+                  />
+                </Button>
+
                 {displayedRatings.length > 0 && (
                   <Badge
                     variant="secondary"
@@ -192,6 +288,17 @@ export default function RatingsPage() {
                 )}
               </div>
             </div>
+
+            {/* Filter Panel */}
+            <FilterPanel
+              showFilters={showFilters}
+              filters={filters}
+              onFilterChange={handleFilterChange}
+              onResetFilters={handleResetFilters}
+              activeFiltersCount={activeFiltersCount}
+              genres={moviesState.genres}
+              getGenreName={getGenreName}
+            />
 
             {/* Ratings Content */}
             <AnimatePresence mode="popLayout">
@@ -218,6 +325,28 @@ export default function RatingsPage() {
                       </p>
                       <Button onClick={() => navigate("/dashboard")}>
                         Browse Movies
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ) : sortedMovies.length === 0 ? (
+                <motion.div
+                  key="no-filtered-results"
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card className="border-dashed">
+                    <CardContent className="flex flex-col items-center justify-center py-12">
+                      <Filter className="w-12 h-12 text-muted-foreground mb-4" />
+                      <h3 className="text-lg font-semibold text-foreground mb-2">
+                        No Movies Match Your Filters
+                      </h3>
+                      <p className="text-secondary text-center mb-4">
+                        Try adjusting your filters to see more results
+                      </p>
+                      <Button variant="outline" onClick={handleResetFilters}>
+                        Clear All Filters
                       </Button>
                     </CardContent>
                   </Card>

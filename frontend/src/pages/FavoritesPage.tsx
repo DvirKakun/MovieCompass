@@ -20,10 +20,12 @@ import {
   SelectValue,
 } from "../components/ui/select";
 import FavoriteMovieCard from "../components/favorites/FavoriteMovieCard";
-import FilterPanel from "../components/common/FilterPanel";
+import FilterPanel, {
+  type MovieFilters,
+} from "../components/common/FilterPanel";
 import { useUserState } from "../contexts/UserContext";
 import { useMovies } from "../contexts/MoviesContext";
-import type { Movie, MovieFilters } from "../types/movies";
+import type { Movie } from "../types/movies";
 
 type SortOption = "dateAdded" | "title" | "rating" | "year";
 type SortOrder = "asc" | "desc";
@@ -31,7 +33,7 @@ type SortOrder = "asc" | "desc";
 export default function FavoritesPage() {
   const navigate = useNavigate();
   const { user } = useUserState();
-  const { fetchMoviesByIds, state: moviesState } = useMovies();
+  const { fetchMoviesByIds, state: moviesState, getGenreName } = useMovies();
 
   const [removedMovies, setRemovedMovies] = useState<Set<number>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
@@ -42,10 +44,10 @@ export default function FavoritesPage() {
   const currentYear = new Date().getFullYear();
   const [filters, setFilters] = useState<MovieFilters>({
     genre: null,
-    minRating: 0,
-    maxRating: 10,
-    minYear: 1900,
-    maxYear: currentYear,
+    minRating: null,
+    maxRating: null,
+    minYear: null,
+    maxYear: null,
   });
 
   const favoriteIds = user?.favoriteMovies || [];
@@ -132,6 +134,7 @@ export default function FavoritesPage() {
     }, 300);
   };
 
+  // Filter handlers (same as SearchResults)
   const handleFilterChange = (newFilters: Partial<MovieFilters>) => {
     setFilters((prev) => ({ ...prev, ...newFilters }));
   };
@@ -139,14 +142,14 @@ export default function FavoritesPage() {
   const handleResetFilters = () => {
     setFilters({
       genre: null,
-      minRating: 0,
-      maxRating: 10,
-      minYear: 1900,
-      maxYear: currentYear,
+      minRating: null,
+      maxRating: null,
+      minYear: null,
+      maxYear: null,
     });
   };
 
-  // Count active filters
+  // Count active filters (same logic as SearchResults)
   const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
     if (key === "genre" && value !== null) return true;
     if (key === "minRating" && value !== null && value !== 0) return true;
@@ -271,7 +274,8 @@ export default function FavoritesPage() {
               onFilterChange={handleFilterChange}
               onResetFilters={handleResetFilters}
               activeFiltersCount={activeFiltersCount}
-              useContextFilters={false}
+              genres={moviesState.genres}
+              getGenreName={getGenreName}
             />
 
             {/* Favorites Content */}

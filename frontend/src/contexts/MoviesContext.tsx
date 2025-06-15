@@ -10,7 +10,6 @@ import type {
   CastMember,
   GenreResponse,
   Movie,
-  MovieFilters,
   MoviesAction,
   MoviesResponse,
   MoviesState,
@@ -42,15 +41,6 @@ const initialState: MoviesState = {
   searchError: null,
   searchCurrentPage: 1,
   searchHasMore: true,
-
-  filters: {
-    genre: null,
-    minRating: 0,
-    maxRating: 10,
-    minYear: 1900,
-    maxYear: new Date().getFullYear(),
-  },
-  filteredResults: [],
 
   casts: new Map(),
   castsLoading: new Map(),
@@ -99,15 +89,14 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         genresError: action.payload,
       };
 
-    //Popular
-
+    // Popular Movies
     case "FETCH_POPULAR_PAGE_START":
       return { ...state, popularLoading: true, popularError: null };
 
     case "FETCH_POPULAR_PAGE_SUCCESS": {
       const { movies, page, hasMore } = action.payload;
 
-      // dedupe
+      // Deduplicate movies
       const ids = new Set(state.popularMovies.map((m) => m.id));
       const merged = [
         ...state.popularMovies,
@@ -126,7 +115,7 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
     case "FETCH_POPULAR_PAGE_ERROR":
       return { ...state, popularLoading: false, popularError: action.payload };
 
-    // Movie actions
+    // Genre Movies
     case "FETCH_GENRE_PAGE_START":
       return {
         ...state,
@@ -185,7 +174,6 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
       return {
         ...state,
         searchResults: merged,
-        filteredResults: applyFilters(merged, state.filters),
         searchCurrentPage: page,
         searchHasMore: hasMore,
         searchLoading: false,
@@ -205,30 +193,7 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         searchError: null,
       };
 
-    // Filters
-    case "SET_FILTERS":
-      const newFilters = { ...state.filters, ...action.payload };
-
-      return {
-        ...state,
-        filters: newFilters,
-        filteredResults: applyFilters(state.searchResults, newFilters),
-      };
-
-    case "RESET_FILTERS":
-      return {
-        ...state,
-        filters: initialState.filters,
-        filteredResults: state.searchResults,
-      };
-
-    case "APPLY_FILTERS":
-      return {
-        ...state,
-        filteredResults: applyFilters(state.searchResults, state.filters),
-      };
-
-    //Cast
+    // Cast
     case "FETCH_CAST_START": {
       const { movieId } = action.payload;
       const cast_loading_map = new Map(state.castsLoading).set(movieId, true);
@@ -308,7 +273,7 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
       };
     }
 
-    //Movies by id actions
+    // Movies by ID
     case "FETCH_MOVIES_BY_IDS_START":
       return { ...state, fetchedMoviesLoading: true, fetchedMoviesError: null };
 
@@ -331,49 +296,12 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
   }
 }
 
-function applyFilters(movies: Movie[], filters: MovieFilters): Movie[] {
-  return movies.filter((movie) => {
-    // Genre filter
-    if (filters.genre !== null) {
-      const genreIds =
-        movie.genre_ids ?? movie.genres?.map((genre) => genre.id) ?? [];
-
-      if (!genreIds.includes(filters.genre)) {
-        return false;
-      }
-    }
-
-    // Rating filter
-    if (filters.minRating !== null && movie.vote_average < filters.minRating) {
-      return false;
-    }
-
-    if (filters.maxRating !== null && movie.vote_average > filters.maxRating) {
-      return false;
-    }
-
-    // Year filter
-    const movieYear = new Date(movie.release_date).getFullYear();
-
-    if (filters.minYear !== null && movieYear < filters.minYear) {
-      return false;
-    }
-
-    if (filters.maxYear !== null && movieYear > filters.maxYear) {
-      return false;
-    }
-
-    return true;
-  });
-}
-
 async function getErrorMessage(error: any) {
   let message = "Unknown error";
 
   if (error instanceof Response) {
     try {
       const errData = await error.json();
-
       message = errData.errors?.[0]?.message || message;
     } catch {
       message = "Failed to parse error response";
@@ -393,29 +321,23 @@ interface MoviesContextType {
   // Genre actions
   fetchGenres: () => Promise<void>;
 
-  // Movie roller actions
+  // Movie actions
   fetchGenrePage: (genreId: number, explicitPage?: number) => Promise<void>;
-
-  // Popluar movies action
   fetchPopularPage: (explicitPage?: number) => Promise<void>;
 
-  // Cast action
+  // Cast actions
   fetchMovieCast: (id: number) => Promise<void>;
 
-  // Reviews action
+  // Reviews actions
   fetchReviewPage: (movieId: number, explicitPage?: number) => Promise<void>;
 
-  // Fetch movies by id action
+  // Movies by ID actions
   fetchMoviesByIds: (ids: number[]) => Promise<void>;
 
   // Search actions
   setSearchQuery: (query: string) => void;
   fetchSearchPage: (query: string, explicitPage?: number) => Promise<void>;
   clearSearch: () => void;
-
-  // Filter actions
-  setFilters: (filters: Partial<MovieFilters>) => void;
-  resetFilters: () => void;
 
   // Helper functions
   getGenreName: (genreId: number) => string;
@@ -429,7 +351,6 @@ interface MoviesContextType {
 
 const MoviesContext = createContext<MoviesContextType | undefined>(undefined);
 
-// Provider component
 interface MoviesProviderProps {
   children: ReactNode;
 }
@@ -448,11 +369,9 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       }
 
       const genres_data: GenreResponse = await response.json();
-
       dispatch({ type: "FETCH_GENRES_SUCCESS", payload: genres_data.genres });
     } catch (error) {
       let message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_GENRES_ERROR",
         payload: message,
@@ -460,7 +379,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
-  // Movies actions
+  // Genre movies actions
   const fetchGenrePage = async (genreId: number, explicitPage?: number) => {
     dispatch({ type: "FETCH_GENRE_PAGE_START" });
 
@@ -483,7 +402,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       });
     } catch (error) {
       let message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_GENRE_PAGE_ERROR",
         payload: message,
@@ -491,7 +409,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
-  // Fetch popular movies
+  // Popular movies actions
   const fetchPopularPage = async (explicitPage?: number) => {
     dispatch({ type: "FETCH_POPULAR_PAGE_START" });
 
@@ -511,7 +429,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       });
     } catch (error) {
       let message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_POPULAR_PAGE_ERROR",
         payload: message,
@@ -519,6 +436,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
+  // Cast actions
   const fetchMovieCast = async (movieId: number) => {
     if (state.casts.has(movieId) || state.castsLoading.get(movieId)) return;
 
@@ -536,7 +454,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       });
     } catch (error) {
       let message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_CAST_ERROR",
         payload: { movieId, error: message },
@@ -552,7 +469,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   const fetchSearchPage = async (query: string, explicitPage?: number) => {
     if (!query.trim()) {
       dispatch({ type: "CLEAR_SEARCH" });
-
       return;
     }
 
@@ -578,14 +494,18 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       });
     } catch (error) {
       let message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_SEARCH_PAGE_ERROR",
-        payload: await getErrorMessage(message),
+        payload: message,
       });
     }
   };
 
+  const clearSearch = () => {
+    dispatch({ type: "CLEAR_SEARCH" });
+  };
+
+  // Reviews actions
   const fetchReviewPage = async (movieId: number, explicitPage?: number) => {
     dispatch({ type: "FETCH_REVIEWS_PAGE_START", payload: { movieId } });
 
@@ -608,7 +528,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       });
     } catch (error) {
       const message = await getErrorMessage(error);
-
       dispatch({
         type: "FETCH_REVIEWS_PAGE_ERROR",
         payload: { movieId, error: message },
@@ -616,9 +535,10 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     }
   };
 
+  // Movies by ID actions
   const fetchMoviesByIds = useCallback(
     async (ids: number[]) => {
-      /* remove those we already have */
+      // Remove IDs we already have
       const idsToFetch = ids.filter((id) => !state.fetchedMoviesById.has(id));
       if (idsToFetch.length === 0) return;
 
@@ -626,7 +546,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
 
       try {
         const params = new URLSearchParams();
-
         idsToFetch.forEach((id) => params.append("ids", id.toString()));
 
         const res = await fetch(`${BACKEND_URL}/movies?${params.toString()}`);
@@ -635,14 +554,13 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
 
         const movies: Movie[] = await res.json();
 
-        /* merge into a new Map to keep ref stable */
+        // Merge into a new Map to keep ref stable
         const merged = new Map(state.fetchedMoviesById);
         movies.forEach((movie) => merged.set(movie.id, movie));
 
         dispatch({ type: "FETCH_MOVIES_BY_IDS_SUCCESS", payload: merged });
       } catch (error) {
         const message = await getErrorMessage(error);
-
         dispatch({
           type: "FETCH_MOVIES_BY_IDS_ERROR",
           payload: message,
@@ -651,19 +569,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     },
     [state.fetchedMoviesById]
   );
-
-  const clearSearch = () => {
-    dispatch({ type: "CLEAR_SEARCH" });
-  };
-
-  // Filter actions
-  const setFilters = (filters: Partial<MovieFilters>) => {
-    dispatch({ type: "SET_FILTERS", payload: filters });
-  };
-
-  const resetFilters = () => {
-    dispatch({ type: "RESET_FILTERS" });
-  };
 
   // Helper functions
   const getGenreName = (genreId: number): string => {
@@ -695,8 +600,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       setSearchQuery,
       fetchSearchPage,
       clearSearch,
-      setFilters,
-      resetFilters,
       getGenreName,
       getMoviesByGenre,
       getPopularMovies,
@@ -706,7 +609,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       fetchMoviesByIds,
       getMovieById,
     }),
-    [state]
+    [state, fetchMoviesByIds]
   );
 
   return (

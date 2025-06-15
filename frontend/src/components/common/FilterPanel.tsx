@@ -12,8 +12,21 @@ import {
 } from "../ui/select";
 import { Slider } from "../ui/slider";
 import { Label } from "../ui/label";
-import { useMovies } from "../../contexts/MoviesContext";
-import type { MovieFilters } from "../../types/movies";
+
+// Define the filter interface
+export interface MovieFilters {
+  genre: number | null;
+  minRating: number | null;
+  maxRating: number | null;
+  minYear: number | null;
+  maxYear: number | null;
+}
+
+// Genre interface
+export interface Genre {
+  id: number;
+  name: string;
+}
 
 interface FilterPanelProps {
   showFilters: boolean;
@@ -21,7 +34,10 @@ interface FilterPanelProps {
   onFilterChange: (filters: Partial<MovieFilters>) => void;
   onResetFilters: () => void;
   activeFiltersCount: number;
-  useContextFilters?: boolean;
+
+  // Required props for genre functionality
+  genres: Genre[];
+  getGenreName: (genreId: number) => string;
 }
 
 export default function FilterPanel({
@@ -30,41 +46,10 @@ export default function FilterPanel({
   onFilterChange,
   onResetFilters,
   activeFiltersCount,
-  useContextFilters = false,
+  genres,
+  getGenreName,
 }: FilterPanelProps) {
-  const moviesContext = useMovies();
-
-  // Use context filters for SearchResults, or local filters for FavoritesPage
-  const {
-    state: { genres },
-    setFilters: setContextFilters,
-    resetFilters: resetContextFilters,
-    getGenreName,
-  } = moviesContext;
-
   const currentYear = new Date().getFullYear();
-
-  // Handle filter changes - either local or context-based
-  const handleFilterChange = (newFilters: Partial<MovieFilters>) => {
-    if (useContextFilters) {
-      setContextFilters(newFilters);
-    } else {
-      onFilterChange(newFilters);
-    }
-  };
-
-  const handleResetFilters = () => {
-    if (useContextFilters) {
-      resetContextFilters();
-    } else {
-      onResetFilters();
-    }
-  };
-
-  // Use context filters for SearchResults, local filters for others
-  const currentFilters = useContextFilters
-    ? moviesContext.state.filters
-    : filters;
 
   return (
     <AnimatePresence>
@@ -86,12 +71,12 @@ export default function FilterPanel({
                     </Label>
                     <Select
                       value={
-                        currentFilters.genre !== null
-                          ? currentFilters.genre.toString()
+                        filters.genre !== null
+                          ? filters.genre.toString()
                           : "all"
                       }
                       onValueChange={(value) =>
-                        handleFilterChange({
+                        onFilterChange({
                           genre: value === "all" ? null : parseInt(value),
                         })
                       }
@@ -111,9 +96,9 @@ export default function FilterPanel({
                         ))}
                       </SelectContent>
                     </Select>
-                    {currentFilters.genre && (
+                    {filters.genre && (
                       <Badge variant="outline" className="text-xs">
-                        {getGenreName(currentFilters.genre)}
+                        {getGenreName(filters.genre)}
                       </Badge>
                     )}
                   </div>
@@ -121,19 +106,19 @@ export default function FilterPanel({
                   {/* Rating Filter */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium text-foreground">
-                      Rating: {currentFilters.minRating ?? 0} -{" "}
-                      {currentFilters.maxRating ?? 10}
+                      Rating: {filters.minRating ?? 0} -{" "}
+                      {filters.maxRating ?? 10}
                     </Label>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs text-secondary">
-                          <span>Min: {currentFilters.minRating ?? 0}</span>
-                          <span>Max: {currentFilters.maxRating ?? 10}</span>
+                          <span>Min: {filters.minRating ?? 0}</span>
+                          <span>Max: {filters.maxRating ?? 10}</span>
                         </div>
                         <Slider
-                          value={[currentFilters.minRating ?? 0]}
+                          value={[filters.minRating ?? 0]}
                           onValueChange={([value]) =>
-                            handleFilterChange({ minRating: value })
+                            onFilterChange({ minRating: value })
                           }
                           max={10}
                           min={0}
@@ -141,9 +126,9 @@ export default function FilterPanel({
                           className="w-full"
                         />
                         <Slider
-                          value={[currentFilters.maxRating ?? 10]}
+                          value={[filters.maxRating ?? 10]}
                           onValueChange={([value]) =>
-                            handleFilterChange({ maxRating: value })
+                            onFilterChange({ maxRating: value })
                           }
                           max={10}
                           min={0}
@@ -157,21 +142,19 @@ export default function FilterPanel({
                   {/* Year Filter */}
                   <div className="space-y-3">
                     <Label className="text-sm font-medium text-foreground">
-                      Release Year: {currentFilters.minYear ?? 1900} -{" "}
-                      {currentFilters.maxYear ?? currentYear}
+                      Release Year: {filters.minYear ?? 1900} -{" "}
+                      {filters.maxYear ?? currentYear}
                     </Label>
                     <div className="space-y-4">
                       <div className="space-y-2">
                         <div className="flex justify-between text-xs text-secondary">
-                          <span>From: {currentFilters.minYear ?? 1900}</span>
-                          <span>
-                            To: {currentFilters.maxYear ?? currentYear}
-                          </span>
+                          <span>From: {filters.minYear ?? 1900}</span>
+                          <span>To: {filters.maxYear ?? currentYear}</span>
                         </div>
                         <Slider
-                          value={[currentFilters.minYear ?? 1900]}
+                          value={[filters.minYear ?? 1900]}
                           onValueChange={([value]) =>
-                            handleFilterChange({ minYear: value })
+                            onFilterChange({ minYear: value })
                           }
                           max={currentYear}
                           min={1900}
@@ -179,9 +162,9 @@ export default function FilterPanel({
                           className="w-full"
                         />
                         <Slider
-                          value={[currentFilters.maxYear ?? currentYear]}
+                          value={[filters.maxYear ?? currentYear]}
                           onValueChange={([value]) =>
-                            handleFilterChange({ maxYear: value })
+                            onFilterChange({ maxYear: value })
                           }
                           max={currentYear}
                           min={1900}
@@ -199,7 +182,7 @@ export default function FilterPanel({
                     </Label>
                     <Button
                       variant="outline"
-                      onClick={handleResetFilters}
+                      onClick={onResetFilters}
                       className="w-full"
                       disabled={activeFiltersCount === 0}
                     >
@@ -208,46 +191,45 @@ export default function FilterPanel({
                     </Button>
                     {activeFiltersCount > 0 && (
                       <div className="flex flex-wrap gap-1">
-                        {currentFilters.genre && (
+                        {filters.genre && (
                           <Badge
                             variant="secondary"
                             className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
-                            onClick={() => handleFilterChange({ genre: null })}
+                            onClick={() => onFilterChange({ genre: null })}
                           >
-                            {getGenreName(currentFilters.genre)} ×
+                            {getGenreName(filters.genre)} ×
                           </Badge>
                         )}
-                        {((currentFilters.minRating ?? 0) !== 0 ||
-                          (currentFilters.maxRating ?? 10) !== 10) && (
+                        {((filters.minRating ?? 0) !== 0 ||
+                          (filters.maxRating ?? 10) !== 10) && (
                           <Badge
                             variant="secondary"
                             className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
                             onClick={() =>
-                              handleFilterChange({
+                              onFilterChange({
                                 minRating: 0,
                                 maxRating: 10,
                               })
                             }
                           >
-                            Rating: {currentFilters.minRating ?? 0}-
-                            {currentFilters.maxRating ?? 10} ×
+                            Rating: {filters.minRating ?? 0}-
+                            {filters.maxRating ?? 10} ×
                           </Badge>
                         )}
-                        {((currentFilters.minYear ?? 1900) !== 1900 ||
-                          (currentFilters.maxYear ?? currentYear) !==
-                            currentYear) && (
+                        {((filters.minYear ?? 1900) !== 1900 ||
+                          (filters.maxYear ?? currentYear) !== currentYear) && (
                           <Badge
                             variant="secondary"
                             className="text-xs cursor-pointer hover:bg-destructive/10 hover:text-destructive"
                             onClick={() =>
-                              handleFilterChange({
+                              onFilterChange({
                                 minYear: 1900,
                                 maxYear: currentYear,
                               })
                             }
                           >
-                            Year: {currentFilters.minYear ?? 1900}-
-                            {currentFilters.maxYear ?? currentYear} ×
+                            Year: {filters.minYear ?? 1900}-
+                            {filters.maxYear ?? currentYear} ×
                           </Badge>
                         )}
                       </div>

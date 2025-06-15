@@ -13,7 +13,7 @@ import { Button } from "../ui/button";
 import { Card, CardContent } from "../ui/card";
 import { Badge } from "../ui/badge";
 import { useInfiniteScroll } from "../../hooks/useInfiniteScroll";
-import FilterPanel from "../common/FilterPanel";
+import FilterPanel, { type MovieFilters } from "../common/FilterPanel";
 
 export default function SearchResults() {
   const [showFilters, setShowFilters] = useState(false);
@@ -22,6 +22,15 @@ export default function SearchResults() {
   const [isResettingSearch, setIsResettingSearch] = useState(false);
   const currentQueryRef = useRef<string>("");
 
+  // Local filter state management
+  const [searchFilters, setSearchFilters] = useState<MovieFilters>({
+    genre: null,
+    minRating: null,
+    maxRating: null,
+    minYear: null,
+    maxYear: null,
+  });
+
   const {
     state: {
       searchQuery,
@@ -29,13 +38,13 @@ export default function SearchResults() {
       searchHasMore,
       searchLoading,
       searchError,
-      filters,
+      genres,
     },
     fetchSearchPage,
-    resetFilters,
+    getGenreName,
   } = useMovies();
 
-  // Keep track of all fetched results locally to avoid re-filtering massive arrays
+  // Keep track of all fetched results locally
   useEffect(() => {
     setAllSearchResults(searchResults);
   }, [searchResults]);
@@ -48,11 +57,11 @@ export default function SearchResults() {
 
     // Check if any filters are active
     const hasActiveFilters =
-      filters.genre !== null ||
-      (filters.minRating !== null && filters.minRating !== 0) ||
-      (filters.maxRating !== null && filters.maxRating !== 10) ||
-      (filters.minYear !== null && filters.minYear !== 1900) ||
-      (filters.maxYear !== null && filters.maxYear !== currentYear);
+      searchFilters.genre !== null ||
+      (searchFilters.minRating !== null && searchFilters.minRating !== 0) ||
+      (searchFilters.maxRating !== null && searchFilters.maxRating !== 10) ||
+      (searchFilters.minYear !== null && searchFilters.minYear !== 1900) ||
+      (searchFilters.maxYear !== null && searchFilters.maxYear !== currentYear);
 
     // If no filters, return all results
     if (!hasActiveFilters) {
@@ -62,37 +71,45 @@ export default function SearchResults() {
     // Apply filters efficiently
     return allSearchResults.filter((movie) => {
       // Genre filter
-      if (filters.genre !== null) {
+      if (searchFilters.genre !== null) {
         const genreIds =
           movie.genre_ids ?? movie.genres?.map((g: any) => g.id) ?? [];
 
-        if (!genreIds.includes(filters.genre)) return false;
+        if (!genreIds.includes(searchFilters.genre)) return false;
       }
 
       // Rating filter
-      if (filters.minRating !== null && movie.vote_average < filters.minRating)
+      if (
+        searchFilters.minRating !== null &&
+        movie.vote_average < searchFilters.minRating
+      )
         return false;
-      if (filters.maxRating !== null && movie.vote_average > filters.maxRating)
+      if (
+        searchFilters.maxRating !== null &&
+        movie.vote_average > searchFilters.maxRating
+      )
         return false;
 
       // Year filter
       const movieYear = new Date(movie.release_date).getFullYear();
-      if (filters.minYear !== null && movieYear < filters.minYear) return false;
-      if (filters.maxYear !== null && movieYear > filters.maxYear) return false;
+      if (searchFilters.minYear !== null && movieYear < searchFilters.minYear)
+        return false;
+      if (searchFilters.maxYear !== null && movieYear > searchFilters.maxYear)
+        return false;
 
       return true;
     });
-  }, [allSearchResults, filters]);
+  }, [allSearchResults, searchFilters]);
 
   // Smart fetch logic - only show loading when we need more filtered results
   const needsMoreResults = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const hasActiveFilters =
-      filters.genre !== null ||
-      (filters.minRating !== null && filters.minRating !== 0) ||
-      (filters.maxRating !== null && filters.maxRating !== 10) ||
-      (filters.minYear !== null && filters.minYear !== 1900) ||
-      (filters.maxYear !== null && filters.maxYear !== currentYear);
+      searchFilters.genre !== null ||
+      (searchFilters.minRating !== null && searchFilters.minRating !== 0) ||
+      (searchFilters.maxRating !== null && searchFilters.maxRating !== 10) ||
+      (searchFilters.minYear !== null && searchFilters.minYear !== 1900) ||
+      (searchFilters.maxYear !== null && searchFilters.maxYear !== currentYear);
 
     if (!hasActiveFilters) {
       return searchHasMore; // No filters, use backend pagination
@@ -100,7 +117,49 @@ export default function SearchResults() {
 
     // With filters: only fetch more if we have very few filtered results and more data is available
     return searchHasMore && allSearchResults.length > 0;
-  }, [filters, searchHasMore, filteredResults.length, allSearchResults.length]);
+  }, [
+    searchFilters,
+    searchHasMore,
+    filteredResults.length,
+    allSearchResults.length,
+  ]);
+
+  // Count active filters
+  const currentYear = new Date().getFullYear();
+  const activeFiltersCount = Object.entries(searchFilters).filter(
+    ([key, value]) => {
+      if (key === "genre" && value !== null) return true;
+      if (key === "minRating" && value !== null && value !== 0) return true;
+      if (key === "maxRating" && value !== null && value !== 10) return true;
+      if (key === "minYear" && value !== null && value !== 1900) return true;
+      if (key === "maxYear" && value !== null && value !== currentYear)
+        return true;
+      return false;
+    }
+  ).length;
+
+  // Handle filter changes
+  const handleFilterChange = (newFilters: Partial<MovieFilters>) => {
+    setSearchFilters((prev) => ({ ...prev, ...newFilters }));
+  };
+
+  // Reset filters
+  const handleResetFilters = () => {
+    setSearchFilters({
+      genre: null,
+      minRating: null,
+      maxRating: null,
+      minYear: null,
+      maxYear: null,
+    });
+  };
+
+  // Reset filters when starting a new search
+  useEffect(() => {
+    if (currentQueryRef.current !== searchQuery && searchQuery.trim()) {
+      handleResetFilters();
+    }
+  }, [searchQuery]);
 
   // Optimized fetch function - only fetch next page if we're continuing the same search
   const fetchNextPage = useCallback(async () => {
@@ -171,19 +230,6 @@ export default function SearchResults() {
     }
     // If it's the same query, do nothing (prevent duplicate fetches)
   }, [searchQuery, fetchSearchPage]);
-
-  const currentYear = new Date().getFullYear();
-
-  // Count active filters
-  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
-    if (key === "genre" && value !== null) return true;
-    if (key === "minRating" && value !== null && value !== 0) return true;
-    if (key === "maxRating" && value !== null && value !== 10) return true;
-    if (key === "minYear" && value !== null && value !== 1900) return true;
-    if (key === "maxYear" && value !== null && value !== currentYear)
-      return true;
-    return false;
-  }).length;
 
   // Show loading only for initial search or when we actually need more results
   const showLoadingIndicator =
@@ -291,11 +337,12 @@ export default function SearchResults() {
       {/* Filter Panel */}
       <FilterPanel
         showFilters={showFilters}
-        filters={filters}
-        onFilterChange={() => {}} // Not used when useContextFilters=true
-        onResetFilters={() => {}} // Not used when useContextFilters=true
+        filters={searchFilters}
+        onFilterChange={handleFilterChange}
+        onResetFilters={handleResetFilters}
         activeFiltersCount={activeFiltersCount}
-        useContextFilters={true}
+        genres={genres}
+        getGenreName={getGenreName}
       />
 
       {/* Search Results Grid */}
@@ -318,7 +365,7 @@ export default function SearchResults() {
                 </div>
                 <Button
                   variant="outline"
-                  onClick={resetFilters}
+                  onClick={handleResetFilters}
                   className="mt-4"
                 >
                   Clear All Filters

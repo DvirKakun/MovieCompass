@@ -79,10 +79,6 @@ export interface MoviesState {
   searchHasMore: boolean;
   searchCurrentPage: number;
 
-  // Filters
-  filters: MovieFilters;
-  filteredResults: Movie[];
-
   // Cast
   casts: Map<number, CastMember[]>;
   castsLoading: Map<number, boolean>;
