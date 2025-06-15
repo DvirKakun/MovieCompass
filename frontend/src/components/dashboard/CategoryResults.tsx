@@ -41,6 +41,7 @@ export default function CategoryResults({
     maxYear: null,
   });
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [localFetchingState, setLocalFetchingState] = useState(false);
 
   const {
     state,
@@ -55,7 +56,9 @@ export default function CategoryResults({
   const hasMore = genreId
     ? state.hasMoreByGenre.get(genreId) ?? true
     : state.popularHasMore;
-  const isLoading = state.moviesLoading || state.popularLoading;
+
+  // ❌ FIX: Don't rely on global loading state - use local state instead
+  const isLoading = localFetchingState;
   const hasError = state.moviesError || state.popularError;
 
   // Apply filters locally (same logic as SearchResults)
@@ -110,7 +113,7 @@ export default function CategoryResults({
     });
   }, [allMovies, categoryFilters]);
 
-  // Smart fetch logic - auto-fetch when filters reduce results (same as SearchResults)
+  // Smart fetch logic - EXACTLY like SearchResults
   const needsMoreResults = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const hasActiveFilters =
@@ -121,15 +124,29 @@ export default function CategoryResults({
       (categoryFilters.maxYear !== null &&
         categoryFilters.maxYear !== currentYear);
 
-    if (!hasActiveFilters) {
-      return hasMore; // No filters, use backend pagination
-    }
+    const result = !hasActiveFilters
+      ? hasMore
+      : hasMore && allMovies.length > 0;
 
-    // With filters: only fetch more if we have very few filtered results and more data is available
-    return hasMore && allMovies.length > 0;
-  }, [categoryFilters, hasMore, filteredMovies.length, allMovies.length]);
+    console.log("CategoryResults needsMoreResults:", {
+      genreId,
+      categoryName,
+      hasActiveFilters,
+      hasMore,
+      allMoviesLength: allMovies.length,
+      filteredMoviesLength: filteredMovies.length,
+      result,
+    });
 
-  console.log(needsMoreResults);
+    return result;
+  }, [
+    categoryFilters,
+    hasMore,
+    allMovies.length,
+    filteredMovies.length,
+    genreId,
+    categoryName,
+  ]);
 
   // Count active filters
   const currentYear = new Date().getFullYear();
@@ -147,45 +164,75 @@ export default function CategoryResults({
   // Load first page on mount only if no movies exist
   useEffect(() => {
     if (allMovies.length === 0) {
-      if (genreId !== null) {
-        fetchGenrePage(genreId, 1);
-      } else {
-        fetchPopularPage(1);
-      }
-    }
-  }, [genreId]); // Only depend on genreId to avoid repeated calls
+      setLocalFetchingState(true);
+      const fetchPromise =
+        genreId !== null ? fetchGenrePage(genreId, 1) : fetchPopularPage(1);
 
-  // Fetch next page function (same logic as SearchResults)
+      fetchPromise.finally(() => {
+        setLocalFetchingState(false);
+      });
+    }
+  }, [genreId, fetchGenrePage, fetchPopularPage, allMovies.length]);
+
+  // Fetch next page function - EXACTLY like SearchResults
   const fetchNextPage = useCallback(async () => {
-    if (!needsMoreResults || isLoading || isLoadingMore) {
+    // Don't fetch if:
+    // 1. No more results needed
+    // 2. Already loading locally or globally
+    // 3. Currently loading more
+    if (!needsMoreResults || isLoading || isLoadingMore || localFetchingState) {
+      console.log("CategoryResults: Fetch blocked", {
+        needsMoreResults,
+        isLoading,
+        isLoadingMore,
+        localFetchingState,
+        genreId,
+        categoryName,
+      });
       return;
     }
 
+    console.log("CategoryResults: Starting fetch", {
+      genreId,
+      categoryName,
+      allMoviesLength: allMovies.length,
+      hasMore,
+    });
+
     setIsLoadingMore(true);
+    setLocalFetchingState(true);
     try {
       if (genreId !== null) {
         await fetchGenrePage(genreId);
       } else {
         await fetchPopularPage();
       }
+      console.log("CategoryResults: Fetch completed successfully");
+    } catch (error) {
+      console.error("CategoryResults: Fetch failed", error);
     } finally {
       setIsLoadingMore(false);
+      setLocalFetchingState(false);
     }
   }, [
     needsMoreResults,
     isLoading,
     isLoadingMore,
+    localFetchingState,
     genreId,
     fetchGenrePage,
     fetchPopularPage,
+    categoryName,
+    allMovies.length,
+    hasMore,
   ]);
 
-  // Use infinite scroll hook with smart loading (same as SearchResults)
+  // Use infinite scroll hook - EXACTLY like SearchResults
   const { sentinelRef } = useInfiniteScroll({
     fetchFn: fetchNextPage,
     hasMore: needsMoreResults,
-    isLoading: isLoading || isLoadingMore,
-    rootMargin: "400px", // Triggers before user reaches bottom for auto-fetch
+    isLoading: isLoading || isLoadingMore || localFetchingState, // Include local state
+    rootMargin: "400px",
   });
 
   // Handle filter changes
@@ -375,65 +422,51 @@ export default function CategoryResults({
             </CardContent>
           </Card>
         ) : (
-          <>
-            <motion.div
-              className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
-              initial="hidden"
-              animate="visible"
-              variants={{
-                hidden: { opacity: 0 },
-                visible: {
-                  opacity: 1,
-                  transition: {
-                    staggerChildren: 0.05,
-                  },
-                },
-              }}
-            >
-              {filteredMovies.map((movie, index) => (
-                <motion.div
-                  key={`${movie.id}-${index}`}
-                  variants={{
-                    hidden: { opacity: 0, y: 20 },
-                    visible: { opacity: 1, y: 0 },
-                  }}
-                  transition={{ duration: 0.3, ease: "easeOut" }}
-                >
-                  <MovieCard movie={movie} />
-                </motion.div>
-              ))}
-            </motion.div>
-
-            {/* Smart Loading Indicator - Only show when actually beneficial */}
-            {((isLoading && filteredMovies.length > 0) ||
-              (isLoadingMore && needsMoreResults)) && (
-              <div className="flex items-center justify-center py-8">
-                <div className="flex items-center space-x-3">
-                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
-                  <p className="text-secondary">
-                    {allMovies.length === 0
-                      ? `Loading ${categoryName.toLowerCase()}...`
-                      : "Loading more movies..."}
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* End of results indicator */}
-            {!needsMoreResults && filteredMovies.length > 0 && (
-              <div className="text-center py-8">
-                <p className="text-secondary text-sm">
-                  {activeFiltersCount > 0
-                    ? `Showing all ${filteredMovies.length} movies that match your filters`
-                    : `You've reached the end of ${categoryName.toLowerCase()}`}
-                </p>
-              </div>
-            )}
-
-            {/* Sentinel for infinite scroll - triggers auto-fetch */}
-            {needsMoreResults && <div ref={sentinelRef} className="h-1" />}
-          </>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4"
+          >
+            {filteredMovies.map((movie, index) => (
+              <motion.div
+                key={`${movie.id}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.03, duration: 0.3 }}
+              >
+                <MovieCard movie={movie} />
+              </motion.div>
+            ))}
+          </motion.div>
         )}
+
+        {/* Smart Loading Indicator - Only show when actually beneficial */}
+        {isLoadingMore && needsMoreResults && (
+          <div className="flex items-center justify-center py-8">
+            <div className="flex items-center space-x-3">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+              <p className="text-secondary">
+                {allMovies.length === 0
+                  ? `Loading ${categoryName.toLowerCase()}...`
+                  : "Loading more movies..."}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* End of results indicator */}
+        {!needsMoreResults && filteredMovies.length > 0 && (
+          <div className="text-center py-8">
+            <p className="text-secondary text-sm">
+              {activeFiltersCount > 0
+                ? `Showing all ${filteredMovies.length} movies that match your filters`
+                : `You've reached the end of ${categoryName.toLowerCase()}`}
+            </p>
+          </div>
+        )}
+
+        {/* Sentinel for infinite scroll - Only render when we need more results */}
+        {needsMoreResults && <div ref={sentinelRef} className="h-1" />}
       </div>
     </div>
   );
