@@ -40,8 +40,8 @@ export default function FeaturesHeader() {
       </h2>
 
       <p className="text-xl text-secondary max-w-3xl mx-auto leading-relaxed">
-        Discover, download, and enjoy movies like never before with our
-        comprehensive suite of tools designed for true movie enthusiasts.
+        Discover, and enjoy movies like never before with our comprehensive
+        suite of tools designed for true movie enthusiasts.
       </p>
     </motion.div>
   );

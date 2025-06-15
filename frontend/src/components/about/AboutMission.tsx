@@ -21,7 +21,6 @@ export default function AboutMission() {
           connects you with over 500,000 titles across all genres and decades.
         </p>
         <p className="text-lg text-secondary leading-relaxed">
-          Founded in 2024 by a team of passionate developers and cinephiles,
           MovieCompass was born from the desire to create the ultimate movie
           discovery platform. We believe that everyone deserves to find their
           next favorite film, regardless of their taste or preference.

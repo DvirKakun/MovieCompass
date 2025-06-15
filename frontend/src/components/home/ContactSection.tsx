@@ -1,5 +1,4 @@
 import ContactHeader from "../contact/ContactHeader";
-import ContactMethods from "../contact/ContactMethods";
 import ContactCTA from "../contact/ContactCTA";
 
 export default function ContactSection() {
@@ -11,9 +10,6 @@ export default function ContactSection() {
       <div className="max-w-7xl mx-auto px-4 md:px-12">
         {/* Section Header */}
         <ContactHeader />
-
-        {/* Contact Methods Grid */}
-        <ContactMethods />
 
         {/* Main Contact CTA */}
         <ContactCTA

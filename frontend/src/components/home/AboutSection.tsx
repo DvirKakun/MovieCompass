@@ -1,7 +1,5 @@
 import AboutHeader from "../about/AboutHeader";
-import AboutStats from "../about/AboutStats";
 import AboutContent from "../about/AboutContent";
-import AboutFeatures from "../about/AboutFeatures";
 
 export default function AboutSection() {
   return (
@@ -13,14 +11,8 @@ export default function AboutSection() {
         {/* Section Header */}
         <AboutHeader />
 
-        {/* Stats Grid */}
-        <AboutStats />
-
         {/* Main Content Grid */}
         <AboutContent />
-
-        {/* Features Grid */}
-        <AboutFeatures />
       </div>
     </section>
   );

@@ -1,7 +1,6 @@
 import { motion } from "framer-motion";
 import FeatureCard from "../features/FeatureCard";
 import FeaturesHeader from "../features/FeaturesHeader";
-import ReviewsSection from "./ReviewsSection";
 import { features } from "../../data/features";
 
 export default function FeaturesSection() {
@@ -39,9 +38,6 @@ export default function FeaturesSection() {
             />
           ))}
         </motion.div>
-
-        {/* Reviews Feature - Special Section */}
-        <ReviewsSection />
       </div>
     </section>
   );
