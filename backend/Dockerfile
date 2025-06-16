@@ -18,8 +18,8 @@ COPY app/ ./app
 COPY tests/ ./tests
 
 # run tests during build → fails build if tests fail
-# RUN python -m pytest tests/endpoints/ -v --tb=short --disable-warnings || exit 1
-# RUN python -m pytest tests/services/ -v --tb=short --disable-warnings || exit 1
+RUN python -m pytest tests/endpoints/ -v --tb=short --disable-warnings || exit 1
+RUN python -m pytest tests/services/ -v --tb=short --disable-warnings || exit 1
 RUN python -m pytest tests/integration/ -v --tb=short --disable-warnings || exit 1
 
 # ────────────────────────  runtime stage  ───────────────────────
