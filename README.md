@@ -451,49 +451,68 @@ VITE_BACKEND_URL=http://localhost:8000
 | `GOOGLE_CLIENT_SECRET`    | ⚠️ OAuth    | Google OAuth client secret | [Google Cloud Console](https://console.cloud.google.com/)                |
 | `EMAIL_PASSWORD`          | 🔧 Optional | Gmail app password         | [Gmail App Passwords](https://support.google.com/accounts/answer/185833) |
 
-### Running the Application
+## Running the Application
 
-1. **Start all services**
+### **1. MongoDB Setup (Required)**
 
-   ```bash
-   docker-compose up --build
-   ```
+Since this project uses **MongoDB Atlas**, you need to:
 
-2. **Access the application**
+- Create a MongoDB Atlas account at [MongoDB Atlas](https://www.mongodb.com/atlas)
+- Create a cluster and get your connection string
+- Add the connection string to your `backend/.env` file as `MONGO_CONNECTION_STRING`
 
-   - **Frontend**: http://localhost:5173
-   - **Backend API**: http://localhost:8000
-   - **API Documentation**: http://localhost:8000/docs
+**Note**: The docker-compose setup does **NOT** include a local MongoDB container. You must use MongoDB Atlas or set up your own MongoDB container separately.
 
-3. **First-time setup**
-   ```bash
-   # Pull Mistral model for AI recommendations (runs automatically on first AI request)
-   docker exec moviecompass-ollama ollama pull mistral:latest
-   ```
+### **2. Start all services**
+
+```bash
+docker-compose up --build
+```
+
+### **3. Wait for Ollama Model Download**
+
+**Important**: After running `docker-compose up --build`, the Ollama container will start but the **Mistral model needs to be downloaded**. This process can take several minutes depending on your internet connection.
+
+You can monitor the download progress by checking the Ollama container logs:
+
+```bash
+docker logs ollama -f
+```
+
+The **AI recommendations feature will not work** until the Mistral model is fully downloaded and available.
+
+### **4. Access the application**
+
+- **Frontend**: http://localhost:5173
+- **Backend API**: http://localhost:8000
+- **API Documentation**: http://localhost:8000/docs
 
 The application will automatically:
 
 - Build and start the React frontend on port 5173
 - Launch the FastAPI backend on port 8000
-- Set up MongoDB (if using local container)
-- Initialize Ollama with Mistral for AI recommendations
+- Initialize Ollama container and begin downloading Mistral model for AI recommendations
 - Configure all necessary services and dependencies
+
+**Note**: MongoDB is not included in the docker-compose setup. You must configure your own MongoDB Atlas connection or local MongoDB instance.
 
 ## API Documentation
 
-### Authentication Endpoints
+### **Authentication Endpoints**
 
-| Method | Endpoint                | Description               | Auth Required |
-| ------ | ----------------------- | ------------------------- | ------------- |
-| `POST` | `/auth/signup`          | Create new user account   | ❌            |
-| `POST` | `/auth/token`           | Login with credentials    | ❌            |
-| `GET`  | `/auth/google/login`    | Initiate Google OAuth     | ❌            |
-| `GET`  | `/auth/google/callback` | Google OAuth callback     | ❌            |
-| `POST` | `/auth/forgot-password` | Request password reset    | ❌            |
-| `POST` | `/auth/reset-password`  | Reset password with token | ❌            |
-| `GET`  | `/auth/verify-email`    | Verify email address      | ❌            |
+| Method | Endpoint                    | Description                 | Auth Required |
+| ------ | --------------------------- | --------------------------- | ------------- |
+| `POST` | `/auth/signup`              | Create new user account     | ❌            |
+| `POST` | `/auth/token`               | Login with credentials      | ❌            |
+| `GET`  | `/auth/google/login`        | Initiate Google OAuth       | ❌            |
+| `GET`  | `/auth/google/callback`     | Google OAuth callback       | ❌            |
+| `POST` | `/auth/forgot-password`     | Request password reset      | ❌            |
+| `POST` | `/auth/reset-password`      | Reset password with token   | ❌            |
+| `GET`  | `/auth/verify-email`        | Verify email address        | ❌            |
+| `POST` | `/auth/resend-verification` | Resend email verification   | ❌            |
+| `GET`  | `/auth/verify-reset-token`  | Verify password reset token | ❌            |
 
-### User Management
+### **User Management**
 
 | Method   | Endpoint                         | Description              | Auth Required |
 | -------- | -------------------------------- | ------------------------ | ------------- |
@@ -507,7 +526,7 @@ The application will automatically:
 | `DELETE` | `/users/me/rating/{movie_id}`    | Remove rating            | ✅            |
 | `POST`   | `/users/me/recommendations`      | Get AI recommendations   | ✅            |
 
-### Movie Data
+### **Movie Data**
 
 | Method | Endpoint                     | Description          | Auth Required |
 | ------ | ---------------------------- | -------------------- | ------------- |
@@ -515,7 +534,7 @@ The application will automatically:
 | `GET`  | `/movies/popular`            | Get popular movies   | ❌            |
 | `GET`  | `/movies/genre/{genre_id}`   | Get movies by genre  | ❌            |
 | `GET`  | `/movies/search`             | Search movies        | ❌            |
-| `GET`  | `/movies/{movie_id}`         | Get movie details    | ❌            |
+| `GET`  | `/movies/`                   | Get movies by IDs    | ❌            |
 | `GET`  | `/movies/{movie_id}/cast`    | Get movie cast       | ❌            |
 | `GET`  | `/movies/{movie_id}/reviews` | Get movie reviews    | ❌            |
 | `GET`  | `/movies/{movie_id}/trailer` | Get movie trailer    | ❌            |
@@ -553,12 +572,11 @@ curl -X PUT "http://localhost:8000/users/me/watchlist/550" \
 1. **Sign Up**: Create an account with email and password
 2. **Email Verification**: Check your email and click the verification link
 3. **Login**: Access your account with credentials or Google OAuth
-4. **Profile Setup**: Complete your profile information
 
 ### 2. Discovering Movies
 
 - **Browse Popular**: Explore trending and popular movies
-- **Search**: Find specific movies, actors, or genres
+- **Search**: Find specific movies
 - **Filter**: Use advanced filters for rating, year, and genre
 - **Categories**: Browse by specific movie genres
 
@@ -583,7 +601,6 @@ The AI recommendation system analyzes your:
 - Favorite movies
 - Watchlist preferences
 - Rating patterns
-- Genre preferences
 
 To get better recommendations:
 
@@ -619,63 +636,39 @@ To get better recommendations:
    docker run -d --name mongodb -p 27017:27017 mongo:7.0
    ```
 
-### Code Quality
+## Testing
+
+The project includes **comprehensive backend testing** that runs automatically during the Docker build process. Tests are executed before the backend container starts using:
 
 ```bash
-# Frontend linting and formatting
-cd frontend
-npm run lint
-npm run format
+# Endpoint tests
+RUN python -m pytest tests/endpoints/ -v --tb=short --disable-warnings || exit 1
 
-# Backend code formatting
-cd backend
-black app/
-isort app/
+# Service tests
+RUN python -m pytest tests/services/ -v --tb=short --disable-warnings || exit 1
+
+# Integration tests
+RUN python -m pytest tests/integration/ -v --tb=short --disable-warnings || exit 1
 ```
 
-### Testing
+**Note**: There are currently **no frontend tests** implemented. Only backend testing is available.
+
+### **Running Tests Manually**
+
+If you want to run tests manually during development:
 
 ```bash
-# Frontend tests
-cd frontend
-npm run test
-
-# Backend tests
+# Navigate to backend directory
 cd backend
+
+# Run all tests
 pytest
+
+# Run specific test categories
+pytest tests/endpoints/ -v
+pytest tests/services/ -v
+pytest tests/integration/ -v
 ```
-
-## Deployment
-
-### Production Deployment
-
-1. **Environment Configuration**
-
-   - Set production URLs in environment variables
-   - Use production MongoDB connection
-   - Configure HTTPS for security
-   - Set up proper CORS origins
-
-2. **Docker Production Build**
-
-   ```bash
-   docker-compose -f docker-compose.prod.yml up --build -d
-   ```
-
-3. **Environment Variables for Production**
-   ```bash
-   FRONTEND_URL="https://your-frontend-domain.com"
-   MONGO_CONNECTION_STRING="your_production_mongodb_connection"
-   ```
-
-### Security Considerations
-
-- Use strong secret keys (64+ characters)
-- Enable HTTPS in production
-- Implement rate limiting
-- Regular security updates
-- Monitor API usage
-- Secure MongoDB with authentication
 
 ## Contributing
 
@@ -701,11 +694,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Contact
 
-**Project Maintainer**: [Your Name]
+**Project Maintainer**: Dvir Kakun
 
 - Email: moviecompassservice@gmail.com
-- GitHub: [@yourusername](https://github.com/yourusername)
-- Project Link: [https://github.com/yourusername/MovieCompass](https://github.com/yourusername/MovieCompass)
+- GitHub: [DvirKakun](https://github.com/DvirKakun)
+- Project Link: [https://github.com/DvirKakun/MovieCompass](https://github.com/DvirKakun/MovieCompass)
 
 ---
 
