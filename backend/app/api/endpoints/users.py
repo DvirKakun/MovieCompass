@@ -4,7 +4,10 @@ from app.schemas.user import User, UpdateUserProfile, UserResponse
 from app.schemas.movie import MovieResponse
 from app.api.dependencies import get_current_user
 from app.services.tmdb import fetch_movie_details, search_movies
-from app.services.ollama_recommender import generate_movie_recommendations
+from app.services.ollama_recommender import (
+    generate_enhanced_movie_recommendations,
+    generate_movie_recommendations,
+)
 from app.services.user import (
     add_movie_to_favorites,
     remove_movie_from_favorites,
@@ -34,25 +37,84 @@ def patch_me(
     return user_response
 
 
+# @router.post("/me/recommendations", response_model=MovieResponse)
+# async def recommend_movies(current_user: User = Depends(get_current_user)):
+#     favorite_movies = current_user.favorite_movies
+
+#     favorite_movies_names = await asyncio.gather(
+#         *(fetch_movie_details(movie_id) for movie_id in favorite_movies)
+#     )
+#     favorite_movies_names = [movie.title for movie in favorite_movies_names]
+
+#     recommendations = await generate_movie_recommendations(favorite_movies_names)
+#     match_movies = [
+#         res[0]
+#         for res in await asyncio.gather(
+#             *(search_movies(movie) for movie in recommendations)
+#         )
+#         if res
+#     ]
+
+#     return MovieResponse(movies=match_movies)
+
+
 @router.post("/me/recommendations", response_model=MovieResponse)
 async def recommend_movies(current_user: User = Depends(get_current_user)):
-    favorite_movies = current_user.favorite_movies
+    """
+    Generate enhanced movie recommendations based on user's complete profile:
+    - Favorite movies
+    - Watchlist
+    - Rating history (with emphasis on highly-rated films)
+    """
 
-    favorite_movies_names = await asyncio.gather(
-        *(fetch_movie_details(movie_id) for movie_id in favorite_movies)
-    )
-    favorite_movies_names = [movie.title for movie in favorite_movies_names]
+    # Use the enhanced recommendation function
 
-    recommendations = await generate_movie_recommendations(favorite_movies_names)
-    match_movies = [
-        res[0]
-        for res in await asyncio.gather(
-            *(search_movies(movie) for movie in recommendations)
-        )
-        if res
-    ]
+    try:
+        # Generate recommendations using all user data
+        recommendations = await generate_enhanced_movie_recommendations(current_user)
 
-    return MovieResponse(movies=match_movies)
+        if not recommendations:
+            # Fallback to basic recommendations if enhanced fails
+            if current_user.favorite_movies:
+                favorite_movies_names = await asyncio.gather(
+                    *(
+                        fetch_movie_details(movie_id)
+                        for movie_id in current_user.favorite_movies
+                    )
+                )
+                favorite_movies_names = [movie.title for movie in favorite_movies_names]
+
+                recommendations = await generate_movie_recommendations(
+                    favorite_movies_names
+                )
+            else:
+                # Return empty response if no data available
+                return MovieResponse(movies=[])
+
+        # Search for movies and return results
+        match_movies = []
+
+        for movie_title in recommendations:
+            try:
+                search_results = await search_movies(movie_title)
+
+                if search_results:
+                    # Take the first (most relevant) result
+                    match_movies.append(search_results[0])
+
+                    # Limit to prevent too many API calls
+                    if len(match_movies) >= 20:
+                        break
+            except Exception as e:
+                print(f"Error searching for movie '{movie_title}': {e}")
+                continue
+
+        return MovieResponse(movies=match_movies)
+
+    except Exception as e:
+        print(f"Error generating recommendations: {e}")
+        # Return empty response on error
+        return MovieResponse(movies=[])
 
 
 @router.put("/me/favorite/{movie_id}")
