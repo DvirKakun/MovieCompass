@@ -37,27 +37,6 @@ def patch_me(
     return user_response
 
 
-# @router.post("/me/recommendations", response_model=MovieResponse)
-# async def recommend_movies(current_user: User = Depends(get_current_user)):
-#     favorite_movies = current_user.favorite_movies
-
-#     favorite_movies_names = await asyncio.gather(
-#         *(fetch_movie_details(movie_id) for movie_id in favorite_movies)
-#     )
-#     favorite_movies_names = [movie.title for movie in favorite_movies_names]
-
-#     recommendations = await generate_movie_recommendations(favorite_movies_names)
-#     match_movies = [
-#         res[0]
-#         for res in await asyncio.gather(
-#             *(search_movies(movie) for movie in recommendations)
-#         )
-#         if res
-#     ]
-
-#     return MovieResponse(movies=match_movies)
-
-
 @router.post("/me/recommendations", response_model=MovieResponse)
 async def recommend_movies(current_user: User = Depends(get_current_user)):
     """
