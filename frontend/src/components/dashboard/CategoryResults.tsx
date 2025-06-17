@@ -128,16 +128,6 @@ export default function CategoryResults({
       ? hasMore
       : hasMore && allMovies.length > 0;
 
-    console.log("CategoryResults needsMoreResults:", {
-      genreId,
-      categoryName,
-      hasActiveFilters,
-      hasMore,
-      allMoviesLength: allMovies.length,
-      filteredMoviesLength: filteredMovies.length,
-      result,
-    });
-
     return result;
   }, [
     categoryFilters,
@@ -181,23 +171,8 @@ export default function CategoryResults({
     // 2. Already loading locally or globally
     // 3. Currently loading more
     if (!needsMoreResults || isLoading || isLoadingMore || localFetchingState) {
-      console.log("CategoryResults: Fetch blocked", {
-        needsMoreResults,
-        isLoading,
-        isLoadingMore,
-        localFetchingState,
-        genreId,
-        categoryName,
-      });
       return;
     }
-
-    console.log("CategoryResults: Starting fetch", {
-      genreId,
-      categoryName,
-      allMoviesLength: allMovies.length,
-      hasMore,
-    });
 
     setIsLoadingMore(true);
     setLocalFetchingState(true);
@@ -207,7 +182,6 @@ export default function CategoryResults({
       } else {
         await fetchPopularPage();
       }
-      console.log("CategoryResults: Fetch completed successfully");
     } catch (error) {
       console.error("CategoryResults: Fetch failed", error);
     } finally {

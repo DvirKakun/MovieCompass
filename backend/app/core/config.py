@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     GOOGLE_AUTHORIZATION_ENDPOINT: str
     GOOGLE_TOKEN_ENDPOINT: str
     GOOGLE_USERINFO_ENDPOINT: str
-    DEPLOYMENT_URL: str
     EMAIL_FROM: str
     EMAIL_USERNAME: str
     EMAIL_PASSWORD: str

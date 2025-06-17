@@ -8,7 +8,7 @@
       "module": "uvicorn",
       "cwd": "${workspaceFolder}/backend",
       "args": [
-        "app.main:application", // <-- adjust this path
+        "app.main:application", // adjust this path if needed
         "--reload",
         "--host",
         "127.0.0.1",
@@ -17,6 +17,21 @@
       ],
       "jinja": true,
       "console": "integratedTerminal"
+    },
+    {
+      "name": "Vite + Chrome Debug",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/frontend/src",
+      "breakOnLoad": true,
+      "sourceMaps": true
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack (Backend + Frontend)",
+      "configurations": ["Python: Uvicorn (FastAPI)", "Vite + Chrome Debug"]
     }
   ]
 }

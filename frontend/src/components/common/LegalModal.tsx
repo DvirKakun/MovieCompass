@@ -62,7 +62,7 @@ const LegalModal: React.FC<LegalModalProps> = ({
         <div className="mt-8 pt-6 border-t">
           <div className="flex justify-between items-center">
             <p className="text-sm text-muted-foreground">
-              Questions? Contact us at legal@movievault.com
+              Questions? Contact us at moviecompassservice@gmail.com
             </p>
             <Button onClick={onClose} variant="outline">
               Close

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { BACKEND_URL } from "../../data/constants";
 
 interface AuthVerificationAlertProps {
   show: boolean;
@@ -43,16 +44,13 @@ export function AuthVerificationAlert({ show }: AuthVerificationAlertProps) {
 
     setIsResending(true);
     try {
-      const response = await fetch(
-        "http://localhost:8000/auth/resend-verification",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ email: email.trim() }),
-        }
-      );
+      const response = await fetch(`${BACKEND_URL}/auth/resend-verification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email: email.trim() }),
+      });
 
       const result = await response.json();
 

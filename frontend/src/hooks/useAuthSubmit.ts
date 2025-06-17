@@ -83,7 +83,6 @@ export function useAuthSubmit() {
       });
 
       const result = await response.json();
-
       if (!response.ok) {
         if (result.errors) {
           const transformedErrors = transformBackendErrors(result.errors);

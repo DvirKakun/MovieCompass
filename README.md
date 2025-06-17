@@ -162,9 +162,31 @@ MovieCompass/
 │   │   ├── exceptions.py
 │   │   └── main.py
 │   ├── tests
+│   │   ├── endpoints
+│   │   │   ├── test_auth.py
+│   │   │   ├── test_movies.py
+│   │   │   └── tests_users.py
 │   │   ├── integration
-│   │   └── unit
-│   │       └── test_auth_service.py
+│   │   │   ├── conftest.py
+│   │   │   ├── test_auth_flow.py
+│   │   │   ├── test_email_service_integration.py
+│   │   │   ├── test_email_verification_flow.py
+│   │   │   ├── test_movie_discovery.py
+│   │   │   ├── test_movie_favorites.py
+│   │   │   ├── test_password_reset.py
+│   │   │   ├── test_profile_management.py
+│   │   │   ├── test_tmdb_integration.py
+│   │   │   ├── test_token_expiration.py
+│   │   │   └── test_watchlist_ratings.py
+│   │   ├── services
+│   │   │   ├── test_auth_service.py
+│   │   │   ├── test_email_service.py
+│   │   │   ├── test_recommender_service.py
+│   │   │   ├── test_scheduler_service.py
+│   │   │   ├── test_security_service.py
+│   │   │   ├── test_tmdb_service.py
+│   │   │   └── test_user_service.py
+│   │   └── __init__.py
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── frontend
@@ -185,10 +207,8 @@ MovieCompass/
 │   │   ├── components
 │   │   │   ├── about
 │   │   │   │   ├── AboutContent.tsx
-│   │   │   │   ├── AboutFeatures.tsx
 │   │   │   │   ├── AboutHeader.tsx
 │   │   │   │   ├── AboutMission.tsx
-│   │   │   │   ├── AboutStats.tsx
 │   │   │   │   └── AboutTMDBIntegration.tsx
 │   │   │   ├── auth
 │   │   │   │   ├── AuthFooter.tsx
@@ -206,14 +226,14 @@ MovieCompass/
 │   │   │   │   ├── GoogleCallbackHandler.tsx
 │   │   │   │   └── ProtectedRoute.tsx
 │   │   │   ├── common
+│   │   │   │   ├── CategoryFilterPanel.tsx
 │   │   │   │   ├── FilterPanel.tsx
 │   │   │   │   ├── GlobalMessages.tsx
+│   │   │   │   ├── LegalModal.tsx
 │   │   │   │   └── SignUpButton.tsx
 │   │   │   ├── contact
 │   │   │   │   ├── ContactCTA.tsx
-│   │   │   │   ├── ContactHeader.tsx
-│   │   │   │   ├── ContactMethodCard.tsx
-│   │   │   │   └── ContactMethods.tsx
+│   │   │   │   └── ContactHeader.tsx
 │   │   │   ├── dashboard
 │   │   │   │   ├── movie_modal
 │   │   │   │   │   ├── MovieCastList.tsx
@@ -242,8 +262,7 @@ MovieCompass/
 │   │   │   │   ├── AuthFormSection.tsx
 │   │   │   │   ├── ContactSection.tsx
 │   │   │   │   ├── FeaturesSection.tsx
-│   │   │   │   ├── HeroSection.tsx
-│   │   │   │   └── ReviewsSection.tsx
+│   │   │   │   └── HeroSection.tsx
 │   │   │   ├── layout
 │   │   │   │   ├── DashboardLayout.tsx
 │   │   │   │   └── MainLayout.tsx
@@ -255,10 +274,6 @@ MovieCompass/
 │   │   │   │   └── PasswordSection.tsx
 │   │   │   ├── ratings
 │   │   │   │   └── RatingsMovieCard.tsx
-│   │   │   ├── reviews
-│   │   │   │   ├── FloatingReviewCard.tsx
-│   │   │   │   ├── ReviewCard.tsx
-│   │   │   │   └── ReviewStats.tsx
 │   │   │   ├── search
 │   │   │   │   ├── SearchNavbar.tsx
 │   │   │   │   └── SearchResults.tsx
@@ -283,11 +298,9 @@ MovieCompass/
 │   │   │   ├── MoviesContext.tsx
 │   │   │   └── UserContext.tsx
 │   │   ├── data
-│   │   │   ├── about_features.ts
-│   │   │   ├── about_stats.ts
 │   │   │   ├── constants.ts
-│   │   │   ├── contact_info.ts
-│   │   │   └── features.ts
+│   │   │   ├── features.ts
+│   │   │   └── legalContent.tsx
 │   │   ├── hooks
 │   │   │   ├── useAuthContent.ts
 │   │   │   ├── useAuthMode.ts
@@ -337,7 +350,8 @@ MovieCompass/
 │   ├── __init__.py
 │   └── entrypoint.sh
 ├── README.md
-└── docker-compose.yml
+├── docker-compose.yml
+└── package-lock.json
 ```
 
 ## Getting Started
@@ -357,7 +371,7 @@ Before you begin, ensure you have the following installed:
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/yourusername/MovieCompass.git
+   git clone https://github.com/DvirKakun/MovieCompass.git
    cd MovieCompass
    ```
 
@@ -391,7 +405,7 @@ EMAIL_ACCESS_TOKEN_EXPIRE_HOURS=1
 MONGO_CONNECTION_STRING="mongodb+srv://username:password@cluster.mongodb.net/?retryWrites=true&w=majority"
 
 # Option 2: Use Local MongoDB Container
-# MONGO_CONNECTION_STRING="mongodb://mongo:27017"
+MONGO_CONNECTION_STRING="mongodb://mongo:27017"
 
 MONGO_DATABASE_NAME="movie_compass_database"
 MONGO_COLLECTION_NAME="Users"
@@ -405,7 +419,6 @@ GOOGLE_TOKEN_ENDPOINT="https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_ENDPOINT="https://www.googleapis.com/oauth2/v3/userinfo"
 
 # Application URLs
-DEPLOYMENT_URL="http://localhost:8000"
 FRONTEND_URL="http://localhost:5173"
 
 # Email Configuration (Optional - for notifications)
@@ -651,7 +664,6 @@ pytest
 
 3. **Environment Variables for Production**
    ```bash
-   DEPLOYMENT_URL="https://your-domain.com"
    FRONTEND_URL="https://your-frontend-domain.com"
    MONGO_CONNECTION_STRING="your_production_mongodb_connection"
    ```
