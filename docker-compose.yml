@@ -39,5 +39,11 @@ services:
       - ./frontend/.env
     restart: always
 
+  api-py:
+    build: ./Torrent-Api-py
+    container_name: torrent-api-py
+    ports:
+      - "8009:8009"
+
 volumes:
   ollama-models:

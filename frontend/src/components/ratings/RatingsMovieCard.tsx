@@ -14,7 +14,7 @@ import { Badge } from "../ui/badge";
 import { useMovies } from "../../contexts/MoviesContext";
 import { useUserActions } from "../../contexts/UserContext";
 import { useMovieModal } from "../../contexts/MovieModalContext";
-import MovieRating from "../dashboard/movie_modal/MovieRating";
+import MovieRating from "../common/movie_modal/MovieRating";
 
 interface RatingMovieCardProps {
   movieId: number;
