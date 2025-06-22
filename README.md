@@ -438,6 +438,7 @@ OLLAMA_SERVER_ENDPOINT="http://ollama:11434/v1"
 ```bash
 # Backend API URL
 VITE_BACKEND_URL=http://localhost:8000
+VITE_TORRENTS_URL=http://localhost:8009
 ```
 
 #### Environment Variables Guide

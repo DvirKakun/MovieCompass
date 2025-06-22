@@ -17,7 +17,7 @@ import type {
   TorrentResponse,
   TorrentResult,
 } from "../types/movies";
-import { BACKEND_URL } from "../data/constants";
+import { BACKEND_URL, TORRENTS_URL } from "../data/constants";
 
 const initialState: MoviesState = {
   genres: [],
@@ -639,7 +639,7 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     try {
       const encodedMovieName = encodeURIComponent(movie.title);
       const res = await fetch(
-        `http://localhost:8009/api/v1/all/search?query=${encodedMovieName}&limit=0`
+        `${TORRENTS_URL}/api/v1/all/search?query=${encodedMovieName}&limit=0`
       );
 
       if (!res.ok) {
