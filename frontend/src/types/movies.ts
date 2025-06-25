@@ -51,6 +51,25 @@ export interface CastMember {
   profile_path: string | null;
 }
 
+export interface TorrentResult {
+  name: string;
+  size: string;
+  seeders: string;
+  leechers: string;
+  category: string;
+  magnet: string;
+  torrent: string;
+  url: string;
+  date: string;
+  downloads: string;
+}
+
+export interface TorrentResponse {
+  data: TorrentResult[];
+  time: number;
+  total: number;
+}
+
 export interface MoviesState {
   // Genres
   genres: Genre[];
@@ -95,6 +114,11 @@ export interface MoviesState {
   fetchedMoviesById: Map<number, Movie>;
   fetchedMoviesLoading: boolean;
   fetchedMoviesError: string | null;
+
+  // Torrents
+  torrents: Map<number, TorrentResult[]>;
+  torrentsLoading: Map<number, boolean>;
+  torrentsError: Map<number, string>;
 }
 
 export type MoviesAction =
@@ -183,4 +207,15 @@ export type MoviesAction =
   // Movies by id actions
   | { type: "FETCH_MOVIES_BY_IDS_START" }
   | { type: "FETCH_MOVIES_BY_IDS_SUCCESS"; payload: Map<number, Movie> }
-  | { type: "FETCH_MOVIES_BY_IDS_ERROR"; payload: string };
+  | { type: "FETCH_MOVIES_BY_IDS_ERROR"; payload: string }
+
+  // Torrent actions
+  | { type: "FETCH_TORRENTS_START"; payload: { movieId: number } }
+  | {
+      type: "FETCH_TORRENTS_SUCCESS";
+      payload: { movieId: number; torrents: TorrentResult[] };
+    }
+  | {
+      type: "FETCH_TORRENTS_ERROR";
+      payload: { movieId: number; error: string };
+    };
