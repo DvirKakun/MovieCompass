@@ -32,6 +32,12 @@
 
 MovieCompass is a full-stack movie discovery platform that leverages AI to provide personalized movie recommendations. Built with modern web technologies, it offers an intuitive interface for discovering, managing, and rating movies from The Movie Database (TMDB).
 
+[![Watch the MovieCompass demo on YouTube](https://img.youtube.com/vi/TGv8HDpFMIg/0.jpg)](https://www.youtube.com/watch?v=TGv8HDpFMIg)
+
+**Demo:** https://www.youtube.com/watch?v=TGv8HDpFMIg
+
+> Click the thumbnail (or the link) to watch a full walkthrough of all features in action.
+
 ### Architecture Overview
 
 ```
