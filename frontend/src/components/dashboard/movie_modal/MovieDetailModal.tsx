@@ -20,7 +20,6 @@ import {
   useMovieModalActions,
   useMovieModalState,
 } from "../../../contexts/MovieModalContext";
-import { TorrentsButton } from "../torrents_modal/TorrentsButton";
 
 export default memo(function MovieDetailModal() {
   const { getGenreName } = useMovies();
@@ -233,8 +232,6 @@ export default memo(function MovieDetailModal() {
                       )}
                       Favorite
                     </Button>
-
-                    <TorrentsButton movie={movie} />
                   </div>
                 </div>
 

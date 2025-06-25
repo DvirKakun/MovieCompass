@@ -92,6 +92,13 @@ async def get_movie_trailer(movie_id: int):
     return trailer
 
 
+# @router.get("/{movie_id}", response_model=Movie)
+# async def get_movie(movie_id: int):
+#     movie = await fetch_movie_details(movie_id)
+
+#     return movie
+
+
 @router.get("/", response_model=List[Movie])
 async def get_movies_by_ids(
     ids: List[int] = Query(..., description="List of TMDB movie IDs")

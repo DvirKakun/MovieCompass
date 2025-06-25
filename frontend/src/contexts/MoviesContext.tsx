@@ -14,10 +14,8 @@ import type {
   MoviesResponse,
   MoviesState,
   Review,
-  TorrentResponse,
-  TorrentResult,
 } from "../types/movies";
-import { BACKEND_URL, TORRENTS_URL } from "../data/constants";
+import { BACKEND_URL } from "../data/constants";
 
 const initialState: MoviesState = {
   genres: [],
@@ -57,10 +55,6 @@ const initialState: MoviesState = {
   fetchedMoviesById: new Map(),
   fetchedMoviesLoading: false,
   fetchedMoviesError: null,
-
-  torrents: new Map(),
-  torrentsLoading: new Map(),
-  torrentsError: new Map(),
 };
 
 function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
@@ -297,51 +291,6 @@ function moviesReducer(state: MoviesState, action: MoviesAction): MoviesState {
         fetchedMoviesError: action.payload,
       };
 
-    // Torrents
-    case "FETCH_TORRENTS_START": {
-      const { movieId } = action.payload;
-      const torrentsLoading = new Map(state.torrentsLoading).set(movieId, true);
-      const torrentsError = new Map(state.torrentsError);
-
-      torrentsError.delete(movieId);
-
-      return {
-        ...state,
-        torrentsLoading,
-        torrentsError,
-      };
-    }
-
-    case "FETCH_TORRENTS_SUCCESS": {
-      const { movieId, torrents } = action.payload;
-      const torrentsMap = new Map(state.torrents).set(movieId, torrents);
-      const torrentsLoading = new Map(state.torrentsLoading).set(
-        movieId,
-        false
-      );
-
-      return {
-        ...state,
-        torrents: torrentsMap,
-        torrentsLoading,
-      };
-    }
-
-    case "FETCH_TORRENTS_ERROR": {
-      const { movieId, error } = action.payload;
-      const torrentsLoading = new Map(state.torrentsLoading).set(
-        movieId,
-        false
-      );
-      const torrentsError = new Map(state.torrentsError).set(movieId, error);
-
-      return {
-        ...state,
-        torrentsLoading,
-        torrentsError,
-      };
-    }
-
     default:
       return state;
   }
@@ -390,9 +339,6 @@ interface MoviesContextType {
   fetchSearchPage: (query: string, explicitPage?: number) => Promise<void>;
   clearSearch: () => void;
 
-  // Torrent actions
-  fetchTorrents: (movie: Movie) => Promise<void>;
-
   // Helper functions
   getGenreName: (genreId: number) => string;
   getMoviesByGenre: (genreId: number) => Movie[];
@@ -401,10 +347,6 @@ interface MoviesContextType {
   getCast: (id: number) => CastMember[];
   isCastLoading: (id: number) => boolean;
   castError: (id: number) => string | null;
-
-  getTorrents: (movieId: number) => TorrentResult[];
-  isTorrentsLoading: (movieId: number) => boolean;
-  getTorrentsError: (movieId: number) => string | null;
 }
 
 const MoviesContext = createContext<MoviesContextType | undefined>(undefined);
@@ -628,57 +570,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
     [state.fetchedMoviesById]
   );
 
-  // Torrent actions
-  const fetchTorrents = async (movie: Movie) => {
-    if (state.torrents.has(movie.id) || state.torrentsLoading.get(movie.id)) {
-      return;
-    }
-
-    dispatch({ type: "FETCH_TORRENTS_START", payload: { movieId: movie.id } });
-
-    try {
-      const encodedMovieName = encodeURIComponent(movie.title);
-      const res = await fetch(
-        `${TORRENTS_URL}/api/v1/all/search?query=${encodedMovieName}&limit=0`
-      );
-
-      if (!res.ok) {
-        throw new Error("Failed to fetch torrents");
-      }
-
-      const data: TorrentResponse = await res.json();
-
-      // Ensure data.data is an array and handle missing fields with fallbacks
-      const torrents = Array.isArray(data.data) ? data.data : [];
-
-      // Map the response to only include the fields we need with safe defaults
-      const mappedTorrents: TorrentResult[] = torrents.map((torrent: any) => ({
-        name: torrent.name || "Unknown",
-        size: torrent.size || "Unknown",
-        seeders: torrent.seeders || "0",
-        leechers: torrent.leechers || "0",
-        category: torrent.category || "Unknown",
-        magnet: torrent.magnet || "",
-        torrent: torrent.torrent || "",
-        url: torrent.url || "",
-        date: torrent.date || "Unknown",
-        downloads: torrent.downloads || "0",
-      }));
-
-      dispatch({
-        type: "FETCH_TORRENTS_SUCCESS",
-        payload: { movieId: movie.id, torrents: mappedTorrents },
-      });
-    } catch (error) {
-      let message = await getErrorMessage(error);
-
-      dispatch({
-        type: "FETCH_TORRENTS_ERROR",
-        payload: { movieId: movie.id, error: message },
-      });
-    }
-  };
-
   // Helper functions
   const getGenreName = (genreId: number): string => {
     return state.genreMap.get(genreId) || "Unknown Genre";
@@ -698,12 +589,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
   const isCastLoading = (id: number) => state.castsLoading.get(id) ?? false;
   const castError = (id: number) => state.castsError.get(id) ?? null;
 
-  const getTorrents = (movieId: number) => state.torrents.get(movieId) ?? [];
-  const isTorrentsLoading = (movieId: number) =>
-    state.torrentsLoading.get(movieId) ?? false;
-  const getTorrentsError = (movieId: number) =>
-    state.torrentsError.get(movieId) ?? null;
-
   const contextValue: MoviesContextType = useMemo(
     () => ({
       state,
@@ -712,7 +597,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       fetchGenrePage,
       fetchMovieCast,
       fetchReviewPage,
-      fetchTorrents,
       setSearchQuery,
       fetchSearchPage,
       clearSearch,
@@ -724,9 +608,6 @@ export function MoviesProvider({ children }: MoviesProviderProps) {
       castError,
       fetchMoviesByIds,
       getMovieById,
-      getTorrents,
-      isTorrentsLoading,
-      getTorrentsError,
     }),
     [state, fetchMoviesByIds]
   );
