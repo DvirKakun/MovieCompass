@@ -2,21 +2,39 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Python: Uvicorn (FastAPI)",
+      "name": "Backend: FastAPI Debug",
       "type": "debugpy",
       "request": "launch",
       "module": "uvicorn",
-      "cwd": "${workspaceFolder}/backend",
       "args": [
-        "app.main:application", // adjust this path if needed
+        "app.main:application",
         "--reload",
         "--host",
         "127.0.0.1",
         "--port",
         "8000"
       ],
-      "jinja": true,
-      "console": "integratedTerminal"
+      "cwd": "${workspaceFolder}/backend",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/backend/.env",
+      "python": "${workspaceFolder}/backend/venv/bin/python"
+    },
+    {
+      "name": "Torrent-API: FastAPI Debug",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "uvicorn",
+      "args": [
+        "main:app",
+        "--reload",
+        "--host",
+        "127.0.0.1",
+        "--port",
+        "8009"
+      ],
+      "cwd": "${workspaceFolder}/Torrent-Api-py",
+      "console": "integratedTerminal",
+      "python": "${workspaceFolder}/Torrent-Api-py/venv/bin/python"
     },
     {
       "name": "Vite + Chrome Debug",
@@ -30,8 +48,12 @@
   ],
   "compounds": [
     {
-      "name": "Debug Full Stack (Backend + Frontend)",
-      "configurations": ["Python: Uvicorn (FastAPI)", "Vite + Chrome Debug"]
+      "name": "Debug Full Stack (All Services)",
+      "configurations": ["Backend: FastAPI Debug", "Torrent-API: FastAPI Debug", "Vite + Chrome Debug"]
+    },
+    {
+      "name": "Debug Backend Services",
+      "configurations": ["Backend: FastAPI Debug", "Torrent-API: FastAPI Debug"]
     }
   ]
 }

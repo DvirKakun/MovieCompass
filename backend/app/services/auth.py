@@ -39,6 +39,13 @@ async def authenticate_google_user(code: str) -> UserTokenResponse:
 
 
 def authenticate_user(username: str, plain_password: str) -> UserTokenResponse:
+    if username is None or plain_password is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"field": "username", "message": "Incorrect username or password"},
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
     user = get_user(username)
 
     if not verify_password(plain_password, user.hashed_password):

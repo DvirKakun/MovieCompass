@@ -14,9 +14,11 @@ async def get_search_combo(query: str, limit: Optional[int] = 0):
     start_time = time.time()
     query = query.lower()
     all_sites = check_if_site_available("1337x")
-    sites_list = list(all_sites.keys())
+    excluded_sites = {"magnetdl", "tgx", "libgen", "zooqle"}
+    sites_list = [site for site in all_sites.keys() if site not in excluded_sites]
     tasks = []
     COMBO = {"data": []}
+    print(sites_list)
     total_torrents_overall = 0
     for site in sites_list:
         limit = (
@@ -50,10 +52,13 @@ async def get_all_trending(limit: Optional[int] = 0):
     start_time = time.time()
     # * just getting all_sites dictionary
     all_sites = check_if_site_available("1337x")
+    excluded_sites = {"magnetdl", "tgx", "libgen", "zooqle"}
     sites_list = [
         site
         for site in all_sites.keys()
-        if all_sites[site]["trending_available"] and all_sites[site]["website"]
+        if all_sites[site]["trending_available"]
+        and all_sites[site]["website"]
+        and site not in excluded_sites
     ]
     tasks = []
     COMBO = {"data": []}
@@ -92,10 +97,13 @@ async def get_all_recent(limit: Optional[int] = 0):
     start_time = time.time()
     # just getting all_sites dictionary
     all_sites = check_if_site_available("1337x")
+    excluded_sites = {"magnetdl", "tgx", "libgen", "zooqle"}
     sites_list = [
         site
         for site in all_sites.keys()
-        if all_sites[site]["recent_available"] and all_sites[site]["website"]
+        if all_sites[site]["recent_available"]
+        and all_sites[site]["website"]
+        and site not in excluded_sites
     ]
     tasks = []
     COMBO = {"data": []}
