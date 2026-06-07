@@ -215,6 +215,22 @@ mark{background:var(--q); color:#000; padding:0 2px; border-radius:3px}
 </li>
 <li><a href="#16-design-patterns-deep-dive">16. Design Patterns Deep Dive</a></li>
 <li><a href="#17-architecture-system-design-questions">17. Architecture &amp; System-Design Questions</a></li>
+<li><a href="#18-core-syntax-language-features-explained">18. Core Syntax &amp; Language Features (explained)</a><ul>
+<li><a href="#typescript-javascript">TypeScript / JavaScript</a></li>
+<li><a href="#react">React</a></li>
+<li><a href="#python-backend">Python (backend)</a></li>
+</ul>
+</li>
+<li><a href="#19-code-walkthrough-line-by-line">19. Code Walkthrough — Line by Line</a><ul>
+<li><a href="#a-authfetch-the-authenticated-fetch-wrapper-apiauthfetchts">A. authFetch — the authenticated fetch wrapper (api/authFetch.ts)</a></li>
+<li><a href="#b-the-reducer-map-cache-dedupe-moviescontexttsx">B. The reducer Map-cache + dedupe (MoviesContext.tsx)</a></li>
+<li><a href="#c-optimistic-update-with-rollback-usercontexttsx">C. Optimistic update with rollback (UserContext.tsx)</a></li>
+<li><a href="#d-useinfinitescroll-hooksuseinfinitescrolltsx">D. useInfiniteScroll (hooks/useInfiniteScroll.tsx)</a></li>
+<li><a href="#e-jwt-create-verify-servicessecuritypy">E. JWT create + verify (services/security.py)</a></li>
+<li><a href="#f-atomic-rating-upsert-servicesuserpy">F. Atomic rating upsert (services/user.py)</a></li>
+<li><a href="#g-the-recommendation-pipeline-servicesollama_recommenderpy-endpointsuserspy">G. The recommendation pipeline (services/ollama_recommender.py + endpoints/users.py)</a></li>
+</ul>
+</li>
 <li><a href="#final-tips">Final tips</a></li>
 </ul>
 </li>
@@ -250,6 +266,8 @@ questions interviewers ask</strong> — each with a model answer grounded in <em
 <li><a href="#15-why-stack">Why This Stack? — Technology Justifications</a></li>
 <li><a href="#16-patterns">Design Patterns Deep Dive</a></li>
 <li><a href="#17-system-design">Architecture &amp; System-Design Questions</a></li>
+<li><a href="#18-syntax">Core Syntax &amp; Language Features (explained)</a></li>
+<li><a href="#19-walkthrough">Code Walkthrough — Line by Line</a></li>
 </ol>
 <hr />
 <p><a name="1-pitch"></a></p>
@@ -1230,6 +1248,340 @@ could still race at the network layer; I'd debounce them and/or key requests so 
 <code>?page=N</code>, and the backend forwards it to TMDB. <code>hasMore</code> is inferred from whether a page returned any
 results. The cache merges + dedupes pages. A more robust approach for large/changing datasets would be
 <strong>cursor-based</strong> pagination, but page-based is fine for TMDB's model."</p>
+</blockquote>
+<hr />
+<p><a name="18-syntax"></a></p>
+<h2 id="18-core-syntax-language-features-explained">18. Core Syntax &amp; Language Features (explained)</h2>
+<p>This section explains the <strong>language features and syntax</strong> your code leans on, so when an interviewer
+points at a line and asks "what does this do?", you have a crisp answer. Grouped by language.</p>
+<h3 id="typescript-javascript">TypeScript / JavaScript</h3>
+<p><strong>Optional chaining <code>?.</code></strong></p>
+<pre><code class="language-ts">errData.errors?.[0]?.message
+</code></pre>
+<blockquote>
+<p>"Safely reads a deeply nested value. If <code>errors</code> is <code>undefined</code>/<code>null</code>, the whole expression
+short-circuits to <code>undefined</code> instead of throwing <code>Cannot read property '0' of undefined</code>. The
+<code>?.[0]</code> form is optional chaining on an array index."</p>
+</blockquote>
+<p><strong>Nullish coalescing <code>??</code></strong></p>
+<pre><code class="language-ts">state.castsLoading.get(movieId) ?? false
+</code></pre>
+<blockquote>
+<p>"Returns the right side only when the left is <code>null</code> or <code>undefined</code>. Unlike <code>||</code>, it does <strong>not</strong>
+treat <code>0</code>, <code>''</code>, or <code>false</code> as 'empty' — important here because a legit <code>false</code> should be kept, not
+replaced."</p>
+</blockquote>
+<p><strong>Spread <code>...</code> for immutable updates</strong></p>
+<pre><code class="language-ts">return { ...state, popularLoading: true };
+[...prevMovies, ...movies.filter(...)]
+new Map(state.casts).set(id, value)
+</code></pre>
+<blockquote>
+<p>"Reducers must return <strong>new</strong> references so React detects the change. Object spread copies the old
+state and overrides specific keys; array spread builds a new array; <code>new Map(old)</code> shallow-clones a
+Map. I never mutate state in place."</p>
+</blockquote>
+<p><strong>Destructuring</strong></p>
+<pre><code class="language-ts">const { movies, page, hasMore } = action.payload;
+const { access_token, user } = result;
+</code></pre>
+<blockquote>
+<p>"Pulls fields out of an object/array into local variables in one line — used heavily in reducers and
+API response handling."</p>
+</blockquote>
+<p><strong>Discriminated unions (typed reducer actions)</strong></p>
+<pre><code class="language-ts">type MoviesAction =
+  | { type: &quot;FETCH_POPULAR_PAGE_SUCCESS&quot;; payload: { movies: Movie[]; page: number; hasMore: boolean } }
+  | { type: &quot;FETCH_CAST_ERROR&quot;; payload: { movieId: number; error: string } };
+</code></pre>
+<blockquote>
+<p>"Each variant shares a literal <code>type</code> field (the <em>discriminant</em>). Inside <code>switch (action.type)</code>,
+TypeScript <strong>narrows</strong> the payload to the matching shape, so the compiler knows the exact fields
+available in each <code>case</code>. This is the backbone of type-safe reducers."</p>
+</blockquote>
+<p><strong>Generics</strong></p>
+<pre><code class="language-ts">const MoviesContext = createContext&lt;MoviesContextType | undefined&gt;(undefined);
+const ids = new Set&lt;number&gt;(...);
+</code></pre>
+<blockquote>
+<p>"<code>&lt;T&gt;</code> parameterizes a type. <code>createContext&lt;T|undefined&gt;</code> makes the context value strongly typed;
+<code>Set&lt;number&gt;</code> guarantees only numbers go in. My <code>useMovies()</code> hook then narrows <code>T|undefined</code> to <code>T</code>
+by throwing if the context is missing."</p>
+</blockquote>
+<p><strong><code>async</code>/<code>await</code> + <code>try/catch/finally</code></strong></p>
+<pre><code class="language-ts">try { const res = await authFetch(...); ... }
+catch (err) { showError(...) }
+finally { dispatch({ type:&quot;SET_LOADING&quot;, payload:false }) }
+</code></pre>
+<blockquote>
+<p>"<code>await</code> pauses the async function until the Promise settles, letting me write asynchronous code
+linearly. <code>finally</code> always runs — perfect for turning off loading spinners whether the call
+succeeded or failed."</p>
+</blockquote>
+<p><strong><code>type</code> vs <code>interface</code> and <code>import type</code></strong></p>
+<pre><code class="language-ts">import type { Movie, MoviesAction } from &quot;../types/movies&quot;;
+</code></pre>
+<blockquote>
+<p>"<code>import type</code> imports only the type, which the bundler <strong>erases</strong> at build time (required by
+<code>verbatimModuleSyntax</code>). I use <code>interface</code> for object shapes I might extend and <code>type</code> for unions
+like the action types."</p>
+</blockquote>
+<p><strong>Non-null assertion <code>!</code></strong></p>
+<pre><code class="language-ts">state.user!.watchlist
+document.getElementById(&quot;root&quot;)!
+</code></pre>
+<blockquote>
+<p>"Tells the compiler 'I know this isn't null here.' I use it sparingly when I've already guarded
+(<code>if (!state.user) return</code>) but TS can't prove it across an async boundary. It's a known smell — it
+bypasses the null check, so I only use it where I've verified the invariant."</p>
+</blockquote>
+<p><strong>Array methods</strong></p>
+<pre><code class="language-ts">movies.filter(m =&gt; !ids.has(m.id))     // dedupe
+ratings.find(r =&gt; r.movie_id === id)   // lookup
+action.payload.forEach(g =&gt; map.set(g.id, g.name))  // build map
+</code></pre>
+<blockquote>
+<p>"Functional, non-mutating array operations — <code>filter</code> for dedup during pagination, <code>find</code> for rating
+lookups, <code>forEach</code> to populate the genre Map. They read declaratively and avoid manual index loops."</p>
+</blockquote>
+<h3 id="react">React</h3>
+<p><strong><code>useReducer</code></strong></p>
+<pre><code class="language-ts">const [state, dispatch] = useReducer(moviesReducer, initialState);
+</code></pre>
+<blockquote>
+<p>"Manages complex state via a pure <code>(state, action) =&gt; newState</code> function. I dispatch typed actions;
+the reducer is the single place state transitions happen — predictable and testable."</p>
+</blockquote>
+<p><strong><code>useCallback</code> / <code>useMemo</code></strong></p>
+<pre><code class="language-ts">const fetchMoviesByIds = useCallback(async (ids) =&gt; {...}, [state.fetchedMoviesById]);
+const contextValue = useMemo(() =&gt; ({ state, fetchGenres, ... }), [state, fetchMoviesByIds]);
+</code></pre>
+<blockquote>
+<p>"<code>useCallback</code> memoizes a function's identity across renders (so consumers relying on stable refs
+don't re-render); <code>useMemo</code> memoizes a computed value (the context object). Both take a dependency
+array — they recompute only when a dep changes."</p>
+</blockquote>
+<p><strong><code>useEffect</code> + cleanup</strong></p>
+<pre><code class="language-ts">useEffect(() =&gt; {
+  observer.observe(el);
+  return () =&gt; observer.disconnect();   // cleanup on unmount / dep change
+}, [hasMore, isLoading, isFetching]);
+</code></pre>
+<blockquote>
+<p>"Runs side effects after render. The returned function is the <strong>cleanup</strong>, run before the next effect
+and on unmount — here it disconnects the IntersectionObserver to avoid leaks."</p>
+</blockquote>
+<p><strong><code>useRef</code></strong></p>
+<pre><code class="language-ts">const sentinelRef = useRef&lt;HTMLDivElement|null&gt;(null);
+const fetchedRef = useRef(false);
+</code></pre>
+<blockquote>
+<p>"A mutable container that persists across renders <strong>without</strong> triggering a re-render. I use it for DOM
+node references (the scroll sentinel) and for a 'have I already fetched?' flag that shouldn't cause
+renders."</p>
+</blockquote>
+<p><strong>Context provider/consumer</strong></p>
+<pre><code class="language-ts">&lt;MoviesContext.Provider value={contextValue}&gt;{children}&lt;/MoviesContext.Provider&gt;
+export function useMovies(){ const c = useContext(MoviesContext); if(!c) throw...; return c; }
+</code></pre>
+<blockquote>
+<p>"Provider injects a value into the subtree; the custom hook reads it and throws a helpful error if
+used outside the provider — which also narrows the type from <code>T|undefined</code> to <code>T</code>."</p>
+</blockquote>
+<h3 id="python-backend">Python (backend)</h3>
+<p><strong>Decorators</strong></p>
+<pre><code class="language-python">@router.post(&quot;/token&quot;, response_model=UserTokenResponse)
+@field_validator(&quot;password&quot;, &quot;new_password&quot;, mode=&quot;before&quot;, check_fields=False)
+</code></pre>
+<blockquote>
+<p>"A decorator wraps a function to add behavior. <code>@router.post(...)</code> registers the route + declares the
+response schema (which drives validation and OpenAPI docs). <code>@field_validator</code> registers a Pydantic
+validator for named fields."</p>
+</blockquote>
+<p><strong>Type hints + <code>Optional</code> / <code>List</code></strong></p>
+<pre><code class="language-python">def find_user_by_id(user_id: str) -&gt; Optional[User]:
+favorite_movies: List[int] = []
+</code></pre>
+<blockquote>
+<p>"Python type hints. <code>Optional[User]</code> is <code>User | None</code>; <code>List[int]</code> is a list of ints. FastAPI and
+Pydantic <em>use these at runtime</em> for validation and serialization — they're not just documentation."</p>
+</blockquote>
+<p><strong><code>async def</code> + <code>await</code> + <code>asyncio.gather</code></strong></p>
+<pre><code class="language-python">tasks = [fetch_movie_details(mid) for mid in movie_ids]
+movies = await asyncio.gather(*tasks, return_exceptions=True)
+</code></pre>
+<blockquote>
+<p>"Defines a coroutine. <code>asyncio.gather(*tasks)</code> runs many coroutines <strong>concurrently</strong> and waits for
+all — turning N sequential network calls into N parallel ones. <code>return_exceptions=True</code> means one
+failure doesn't cancel the rest; I filter out the failures afterward."</p>
+</blockquote>
+<p><strong>Pydantic <code>BaseModel</code> + <code>ConfigDict</code></strong></p>
+<pre><code class="language-python">class UserCreate(SharedValidators):
+    email: EmailStr
+    model_config = ConfigDict(extra=&quot;forbid&quot;)
+</code></pre>
+<blockquote>
+<p>"Declarative schema. <code>EmailStr</code> validates email format. <code>extra='forbid'</code> rejects any field not in the
+model (security — no mass-assignment). <code>Field(default_factory=lambda: str(uuid4()))</code> generates an ID
+if none is supplied."</p>
+</blockquote>
+<p><strong>Dict unpacking <code>**</code></strong></p>
+<pre><code class="language-python">Movie(**movie_data)
+{**db_updates_username, **db_updates_password, **db_updates_profile}
+</code></pre>
+<blockquote>
+<p>"<code>**</code> unpacks a dict into keyword arguments — <code>Movie(**data)</code> constructs the model from a dict. The
+second form merges several dicts into one (later keys win)."</p>
+</blockquote>
+<p><strong>FastAPI <code>Depends</code> + <code>Query</code></strong></p>
+<pre><code class="language-python">current_user: User = Depends(get_current_user)
+page: int = Query(1, ge=1)
+</code></pre>
+<blockquote>
+<p>"<code>Depends</code> is dependency injection — FastAPI resolves <code>get_current_user</code> and injects the result.
+<code>Query(1, ge=1)</code> declares a query param with a default of 1 and a 'greater-or-equal 1' constraint,
+auto-returning 422 on violation."</p>
+</blockquote>
+<p><strong>MongoDB operators</strong></p>
+<pre><code class="language-python">users_collection.find_one_and_update({&quot;id&quot;: uid}, {&quot;$addToSet&quot;: {&quot;favorite_movies&quot;: mid}}, return_document=AFTER)
+{&quot;$pull&quot;: {&quot;ratings&quot;: {&quot;movie_id&quot;: mid}}}
+{&quot;$set&quot;: {&quot;ratings.$.rating&quot;: value}}   # positional operator
+</code></pre>
+<blockquote>
+<p>"<code>$addToSet</code> adds to an array only if absent (no duplicates); <code>$pull</code> removes matching elements;
+<code>$set</code> with the positional <code>$</code> updates the array element matched by the query. <code>find_one_and_update</code>
+with <code>ReturnDocument.AFTER</code> returns the <strong>updated</strong> document in one atomic round-trip."</p>
+</blockquote>
+<hr />
+<p><a name="19-walkthrough"></a></p>
+<h2 id="19-code-walkthrough-line-by-line">19. Code Walkthrough — Line by Line</h2>
+<p>Be ready to <em>narrate</em> your most important files. For each, here's the "what + why" an interviewer wants.</p>
+<h3 id="a-authfetch-the-authenticated-fetch-wrapper-apiauthfetchts">A. <code>authFetch</code> — the authenticated fetch wrapper (<code>api/authFetch.ts</code>)</h3>
+<pre><code class="language-ts">export async function authFetch(path, opts = {}, showError?) {
+  const token = localStorage.getItem(&quot;access_token&quot;);        // 1
+  if (!token) { callLogout(); showError?.(...); redirect(); return new Promise(()=&gt;{}); } // 2
+  const res = await fetch(`${BACKEND_URL}${path}`, {          // 3
+    ...opts,
+    headers: { ...opts.headers, Authorization: `Bearer ${token}` },
+  });
+  if (res.ok) return res;                                     // 4
+  if (res.status === 401 || res.status === 403 || (await isTokenError(res))) { // 5
+    callLogout(); showError?.(&quot;Session expired...&quot;); redirect(); return new Promise(()=&gt;{});
+  }
+  return res;                                                 // 6
+}
+</code></pre>
+<ol>
+<li>Read the JWT from localStorage.</li>
+<li><strong>No token</strong> → log out, optionally toast, redirect to login, and return a <strong>never-resolving promise</strong>
+   so the caller's <code>await</code> halts (see §7 — I'd refactor this to throw).</li>
+<li>Do the real request, <strong>spreading caller options</strong> and <strong>injecting the <code>Authorization: Bearer</code> header</strong>.</li>
+<li>Happy path — return the response.</li>
+<li><strong>Auth failure</strong> (401/403 or a backend <code>{field:"token"}</code> error) → same logout/redirect flow.</li>
+<li><strong>Other errors</strong> (404/500) → return the response and let the caller handle it (e.g. show a field error).</li>
+</ol>
+<blockquote>
+<p>"This is the single choke-point for authenticated requests: token injection + centralized
+session-expiry handling, so no component repeats that logic."</p>
+</blockquote>
+<h3 id="b-the-reducer-map-cache-dedupe-moviescontexttsx">B. The reducer Map-cache + dedupe (<code>MoviesContext.tsx</code>)</h3>
+<pre><code class="language-ts">case &quot;FETCH_POPULAR_PAGE_SUCCESS&quot;: {
+  const { movies, page, hasMore } = action.payload;
+  const ids = new Set(state.popularMovies.map(m =&gt; m.id));      // existing ids
+  const merged = [...state.popularMovies, ...movies.filter(m =&gt; !ids.has(m.id))]; // append new only
+  return { ...state, popularMovies: merged, popularCurrentPage: page, popularHasMore: hasMore, popularLoading: false };
+}
+</code></pre>
+<blockquote>
+<p>"On each page load I build a <code>Set</code> of ids I already have (O(1) lookups), filter the incoming page to
+only new movies, and append. This prevents duplicate cards from overlapping TMDB pages — which would
+also break React's <code>key</code> uniqueness. The per-genre and per-movie caches use <code>new Map(old).set(k, v)</code>
+for the same immutable-update reason."</p>
+</blockquote>
+<h3 id="c-optimistic-update-with-rollback-usercontexttsx">C. Optimistic update with rollback (<code>UserContext.tsx</code>)</h3>
+<pre><code class="language-ts">async function toggleMovieOnServer(movieId, list) {
+  dispatch({ type: &quot;TOGGLE_MOVIE_IN_LIST&quot;, list, movieId });   // 1 optimistic flip
+  const listAfter = list === &quot;watchlist&quot; ? state.user!.watchlist : state.user!.favoriteMovies;
+  const verb = listAfter.includes(movieId) ? &quot;DELETE&quot; : &quot;PUT&quot;;  // 2 choose verb
+  try {
+    await authFetch(`/users/me/${list===&quot;watchlist&quot;?&quot;watchlist&quot;:&quot;favorite&quot;}/${movieId}`, { method: verb }, showError);
+  } catch {
+    dispatch({ type: &quot;TOGGLE_MOVIE_IN_LIST&quot;, list, movieId });  // 3 revert on failure
+    showError(&quot;Failed to update&quot;);
+  }
+}
+</code></pre>
+<ol>
+<li><strong>Flip the UI first</strong> so the toggle feels instant.</li>
+<li>Decide PUT vs DELETE. <em>(Honest caveat: <code>state.user</code> here is the snapshot from before the dispatch —
+   a stale-closure subtlety I'd clean up; see §4.)</em></li>
+<li>If the request fails, <strong>dispatch the same toggle again to undo it</strong> and surface an error.</li>
+</ol>
+<blockquote>
+<p>"Optimistic UI for perceived speed, with a guaranteed rollback path so the UI never lies about server
+state for long."</p>
+</blockquote>
+<h3 id="d-useinfinitescroll-hooksuseinfinitescrolltsx">D. <code>useInfiniteScroll</code> (<code>hooks/useInfiniteScroll.tsx</code>)</h3>
+<pre><code class="language-ts">observerRef.current = new IntersectionObserver(([entry]) =&gt; {
+  if (entry.isIntersecting) {
+    observerRef.current?.unobserve(el);              // stop watching during fetch
+    loadNextPage().finally(() =&gt; observerRef.current?.observe(el)); // re-watch after
+  }
+}, { rootMargin });                                   // rootMargin &quot;600px&quot; → prefetch early
+observerRef.current.observe(el);
+return () =&gt; observerRef.current?.disconnect();       // cleanup
+</code></pre>
+<blockquote>
+<p>"A sentinel <code>&lt;div&gt;</code> sits at the bottom of the list. When it enters the viewport (with a 600px margin,
+so I fetch <em>before</em> the user reaches the end), I unobserve it, load the next page, then re-observe.
+<code>loadNextPage</code> also guards on <code>isFetching/isLoading/hasMore</code> to prevent duplicate requests. Cleanup
+disconnects the observer to avoid leaks. I chose IntersectionObserver over scroll listeners because
+it's async and off the main thread."</p>
+</blockquote>
+<h3 id="e-jwt-create-verify-servicessecuritypy">E. JWT create + verify (<code>services/security.py</code>)</h3>
+<pre><code class="language-python">def create_access_token(data: dict, expires_delta=None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
+    to_encode.update({&quot;exp&quot;: expire})                                  # standard exp claim
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)  # HS256 sign
+
+def verify_user_token(token: str):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get(&quot;sub&quot;)
+        if not user_id: raise HTTPException(400, ...)
+    except JWTError: raise HTTPException(400, &quot;Invalid or expired token&quot;)
+    return user_id
+</code></pre>
+<blockquote>
+<p>"I sign a JWT with the user id in the <code>sub</code> claim and an <code>exp</code> expiry, using HS256 (symmetric — the
+same <code>SECRET_KEY</code> signs and verifies). <code>jwt.decode</code> validates the signature <em>and</em> expiry; an invalid
+or expired token raises <code>JWTError</code>, which I translate into a clean 400. The token is stateless — the
+server stores nothing, which is what makes the backend horizontally scalable."</p>
+</blockquote>
+<h3 id="f-atomic-rating-upsert-servicesuserpy">F. Atomic rating upsert (<code>services/user.py</code>)</h3>
+<pre><code class="language-python">existing = users_collection.find_one({&quot;id&quot;: user.id, &quot;ratings.movie_id&quot;: mid})
+if existing:
+    users_collection.find_one_and_update(
+        {&quot;id&quot;: user.id, &quot;ratings.movie_id&quot;: mid},
+        {&quot;$set&quot;: {&quot;ratings.$.rating&quot;: new_rating}})   # update the matched array element
+else:
+    users_collection.find_one_and_update(
+        {&quot;id&quot;: user.id}, {&quot;$addToSet&quot;: {&quot;ratings&quot;: entry}})  # add new entry
+</code></pre>
+<blockquote>
+<p>"If the user already rated this movie, I match the array element by <code>ratings.movie_id</code> and update just
+that element with the <strong>positional <code>$</code></strong>. Otherwise I <code>$addToSet</code> a new rating. Both are single atomic
+DB operations — I never load the array into Python and write it back, which would be racy."</p>
+</blockquote>
+<h3 id="g-the-recommendation-pipeline-servicesollama_recommenderpy-endpointsuserspy">G. The recommendation pipeline (<code>services/ollama_recommender.py</code> + <code>endpoints/users.py</code>)</h3>
+<blockquote>
+<p>"Resolve the user's favorite/watchlist/rated movie IDs into titles → bucket ratings into
+high/medium/low → build a prompt that emphasizes favorites and high ratings and lists movies to avoid
+→ run a <code>pydantic-ai</code> Agent against Mistral (temp 0.2 for consistency) → parse the JSON array (regex
+fallback for malformed output) → dedupe and cap at 20 → back in the endpoint, search TMDB for each
+title to convert names into real movie objects. The whole thing is wrapped in try/except with a
+favorites-based fallback and finally an empty list, so it degrades gracefully and never 500s."</p>
 </blockquote>
 <hr />
 <h2 id="final-tips">Final tips</h2>

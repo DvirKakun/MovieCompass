@@ -26,6 +26,8 @@
 15. [Why This Stack? — Technology Justifications](#15-why-stack)
 16. [Design Patterns Deep Dive](#16-patterns)
 17. [Architecture & System-Design Questions](#17-system-design)
+18. [Core Syntax & Language Features (explained)](#18-syntax)
+19. [Code Walkthrough — Line by Line](#19-walkthrough)
 
 ---
 
@@ -818,6 +820,346 @@ a frontend role, showing this thinking sets you apart.
 > `?page=N`, and the backend forwards it to TMDB. `hasMore` is inferred from whether a page returned any
 > results. The cache merges + dedupes pages. A more robust approach for large/changing datasets would be
 > **cursor-based** pagination, but page-based is fine for TMDB's model."
+
+---
+
+<a name="18-syntax"></a>
+## 18. Core Syntax & Language Features (explained)
+
+This section explains the **language features and syntax** your code leans on, so when an interviewer
+points at a line and asks "what does this do?", you have a crisp answer. Grouped by language.
+
+### TypeScript / JavaScript
+
+**Optional chaining `?.`**
+```ts
+errData.errors?.[0]?.message
+```
+> "Safely reads a deeply nested value. If `errors` is `undefined`/`null`, the whole expression
+> short-circuits to `undefined` instead of throwing `Cannot read property '0' of undefined`. The
+> `?.[0]` form is optional chaining on an array index."
+
+**Nullish coalescing `??`**
+```ts
+state.castsLoading.get(movieId) ?? false
+```
+> "Returns the right side only when the left is `null` or `undefined`. Unlike `||`, it does **not**
+> treat `0`, `''`, or `false` as 'empty' — important here because a legit `false` should be kept, not
+> replaced."
+
+**Spread `...` for immutable updates**
+```ts
+return { ...state, popularLoading: true };
+[...prevMovies, ...movies.filter(...)]
+new Map(state.casts).set(id, value)
+```
+> "Reducers must return **new** references so React detects the change. Object spread copies the old
+> state and overrides specific keys; array spread builds a new array; `new Map(old)` shallow-clones a
+> Map. I never mutate state in place."
+
+**Destructuring**
+```ts
+const { movies, page, hasMore } = action.payload;
+const { access_token, user } = result;
+```
+> "Pulls fields out of an object/array into local variables in one line — used heavily in reducers and
+> API response handling."
+
+**Discriminated unions (typed reducer actions)**
+```ts
+type MoviesAction =
+  | { type: "FETCH_POPULAR_PAGE_SUCCESS"; payload: { movies: Movie[]; page: number; hasMore: boolean } }
+  | { type: "FETCH_CAST_ERROR"; payload: { movieId: number; error: string } };
+```
+> "Each variant shares a literal `type` field (the *discriminant*). Inside `switch (action.type)`,
+> TypeScript **narrows** the payload to the matching shape, so the compiler knows the exact fields
+> available in each `case`. This is the backbone of type-safe reducers."
+
+**Generics**
+```ts
+const MoviesContext = createContext<MoviesContextType | undefined>(undefined);
+const ids = new Set<number>(...);
+```
+> "`<T>` parameterizes a type. `createContext<T|undefined>` makes the context value strongly typed;
+> `Set<number>` guarantees only numbers go in. My `useMovies()` hook then narrows `T|undefined` to `T`
+> by throwing if the context is missing."
+
+**`async`/`await` + `try/catch/finally`**
+```ts
+try { const res = await authFetch(...); ... }
+catch (err) { showError(...) }
+finally { dispatch({ type:"SET_LOADING", payload:false }) }
+```
+> "`await` pauses the async function until the Promise settles, letting me write asynchronous code
+> linearly. `finally` always runs — perfect for turning off loading spinners whether the call
+> succeeded or failed."
+
+**`type` vs `interface` and `import type`**
+```ts
+import type { Movie, MoviesAction } from "../types/movies";
+```
+> "`import type` imports only the type, which the bundler **erases** at build time (required by
+> `verbatimModuleSyntax`). I use `interface` for object shapes I might extend and `type` for unions
+> like the action types."
+
+**Non-null assertion `!`**
+```ts
+state.user!.watchlist
+document.getElementById("root")!
+```
+> "Tells the compiler 'I know this isn't null here.' I use it sparingly when I've already guarded
+> (`if (!state.user) return`) but TS can't prove it across an async boundary. It's a known smell — it
+> bypasses the null check, so I only use it where I've verified the invariant."
+
+**Array methods**
+```ts
+movies.filter(m => !ids.has(m.id))     // dedupe
+ratings.find(r => r.movie_id === id)   // lookup
+action.payload.forEach(g => map.set(g.id, g.name))  // build map
+```
+> "Functional, non-mutating array operations — `filter` for dedup during pagination, `find` for rating
+> lookups, `forEach` to populate the genre Map. They read declaratively and avoid manual index loops."
+
+### React
+
+**`useReducer`**
+```ts
+const [state, dispatch] = useReducer(moviesReducer, initialState);
+```
+> "Manages complex state via a pure `(state, action) => newState` function. I dispatch typed actions;
+> the reducer is the single place state transitions happen — predictable and testable."
+
+**`useCallback` / `useMemo`**
+```ts
+const fetchMoviesByIds = useCallback(async (ids) => {...}, [state.fetchedMoviesById]);
+const contextValue = useMemo(() => ({ state, fetchGenres, ... }), [state, fetchMoviesByIds]);
+```
+> "`useCallback` memoizes a function's identity across renders (so consumers relying on stable refs
+> don't re-render); `useMemo` memoizes a computed value (the context object). Both take a dependency
+> array — they recompute only when a dep changes."
+
+**`useEffect` + cleanup**
+```ts
+useEffect(() => {
+  observer.observe(el);
+  return () => observer.disconnect();   // cleanup on unmount / dep change
+}, [hasMore, isLoading, isFetching]);
+```
+> "Runs side effects after render. The returned function is the **cleanup**, run before the next effect
+> and on unmount — here it disconnects the IntersectionObserver to avoid leaks."
+
+**`useRef`**
+```ts
+const sentinelRef = useRef<HTMLDivElement|null>(null);
+const fetchedRef = useRef(false);
+```
+> "A mutable container that persists across renders **without** triggering a re-render. I use it for DOM
+> node references (the scroll sentinel) and for a 'have I already fetched?' flag that shouldn't cause
+> renders."
+
+**Context provider/consumer**
+```ts
+<MoviesContext.Provider value={contextValue}>{children}</MoviesContext.Provider>
+export function useMovies(){ const c = useContext(MoviesContext); if(!c) throw...; return c; }
+```
+> "Provider injects a value into the subtree; the custom hook reads it and throws a helpful error if
+> used outside the provider — which also narrows the type from `T|undefined` to `T`."
+
+### Python (backend)
+
+**Decorators**
+```python
+@router.post("/token", response_model=UserTokenResponse)
+@field_validator("password", "new_password", mode="before", check_fields=False)
+```
+> "A decorator wraps a function to add behavior. `@router.post(...)` registers the route + declares the
+> response schema (which drives validation and OpenAPI docs). `@field_validator` registers a Pydantic
+> validator for named fields."
+
+**Type hints + `Optional` / `List`**
+```python
+def find_user_by_id(user_id: str) -> Optional[User]:
+favorite_movies: List[int] = []
+```
+> "Python type hints. `Optional[User]` is `User | None`; `List[int]` is a list of ints. FastAPI and
+> Pydantic *use these at runtime* for validation and serialization — they're not just documentation."
+
+**`async def` + `await` + `asyncio.gather`**
+```python
+tasks = [fetch_movie_details(mid) for mid in movie_ids]
+movies = await asyncio.gather(*tasks, return_exceptions=True)
+```
+> "Defines a coroutine. `asyncio.gather(*tasks)` runs many coroutines **concurrently** and waits for
+> all — turning N sequential network calls into N parallel ones. `return_exceptions=True` means one
+> failure doesn't cancel the rest; I filter out the failures afterward."
+
+**Pydantic `BaseModel` + `ConfigDict`**
+```python
+class UserCreate(SharedValidators):
+    email: EmailStr
+    model_config = ConfigDict(extra="forbid")
+```
+> "Declarative schema. `EmailStr` validates email format. `extra='forbid'` rejects any field not in the
+> model (security — no mass-assignment). `Field(default_factory=lambda: str(uuid4()))` generates an ID
+> if none is supplied."
+
+**Dict unpacking `**`**
+```python
+Movie(**movie_data)
+{**db_updates_username, **db_updates_password, **db_updates_profile}
+```
+> "`**` unpacks a dict into keyword arguments — `Movie(**data)` constructs the model from a dict. The
+> second form merges several dicts into one (later keys win)."
+
+**FastAPI `Depends` + `Query`**
+```python
+current_user: User = Depends(get_current_user)
+page: int = Query(1, ge=1)
+```
+> "`Depends` is dependency injection — FastAPI resolves `get_current_user` and injects the result.
+> `Query(1, ge=1)` declares a query param with a default of 1 and a 'greater-or-equal 1' constraint,
+> auto-returning 422 on violation."
+
+**MongoDB operators**
+```python
+users_collection.find_one_and_update({"id": uid}, {"$addToSet": {"favorite_movies": mid}}, return_document=AFTER)
+{"$pull": {"ratings": {"movie_id": mid}}}
+{"$set": {"ratings.$.rating": value}}   # positional operator
+```
+> "`$addToSet` adds to an array only if absent (no duplicates); `$pull` removes matching elements;
+> `$set` with the positional `$` updates the array element matched by the query. `find_one_and_update`
+> with `ReturnDocument.AFTER` returns the **updated** document in one atomic round-trip."
+
+---
+
+<a name="19-walkthrough"></a>
+## 19. Code Walkthrough — Line by Line
+
+Be ready to *narrate* your most important files. For each, here's the "what + why" an interviewer wants.
+
+### A. `authFetch` — the authenticated fetch wrapper (`api/authFetch.ts`)
+```ts
+export async function authFetch(path, opts = {}, showError?) {
+  const token = localStorage.getItem("access_token");        // 1
+  if (!token) { callLogout(); showError?.(...); redirect(); return new Promise(()=>{}); } // 2
+  const res = await fetch(`${BACKEND_URL}${path}`, {          // 3
+    ...opts,
+    headers: { ...opts.headers, Authorization: `Bearer ${token}` },
+  });
+  if (res.ok) return res;                                     // 4
+  if (res.status === 401 || res.status === 403 || (await isTokenError(res))) { // 5
+    callLogout(); showError?.("Session expired..."); redirect(); return new Promise(()=>{});
+  }
+  return res;                                                 // 6
+}
+```
+1. Read the JWT from localStorage.
+2. **No token** → log out, optionally toast, redirect to login, and return a **never-resolving promise**
+   so the caller's `await` halts (see §7 — I'd refactor this to throw).
+3. Do the real request, **spreading caller options** and **injecting the `Authorization: Bearer` header**.
+4. Happy path — return the response.
+5. **Auth failure** (401/403 or a backend `{field:"token"}` error) → same logout/redirect flow.
+6. **Other errors** (404/500) → return the response and let the caller handle it (e.g. show a field error).
+
+> "This is the single choke-point for authenticated requests: token injection + centralized
+> session-expiry handling, so no component repeats that logic."
+
+### B. The reducer Map-cache + dedupe (`MoviesContext.tsx`)
+```ts
+case "FETCH_POPULAR_PAGE_SUCCESS": {
+  const { movies, page, hasMore } = action.payload;
+  const ids = new Set(state.popularMovies.map(m => m.id));      // existing ids
+  const merged = [...state.popularMovies, ...movies.filter(m => !ids.has(m.id))]; // append new only
+  return { ...state, popularMovies: merged, popularCurrentPage: page, popularHasMore: hasMore, popularLoading: false };
+}
+```
+> "On each page load I build a `Set` of ids I already have (O(1) lookups), filter the incoming page to
+> only new movies, and append. This prevents duplicate cards from overlapping TMDB pages — which would
+> also break React's `key` uniqueness. The per-genre and per-movie caches use `new Map(old).set(k, v)`
+> for the same immutable-update reason."
+
+### C. Optimistic update with rollback (`UserContext.tsx`)
+```ts
+async function toggleMovieOnServer(movieId, list) {
+  dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });   // 1 optimistic flip
+  const listAfter = list === "watchlist" ? state.user!.watchlist : state.user!.favoriteMovies;
+  const verb = listAfter.includes(movieId) ? "DELETE" : "PUT";  // 2 choose verb
+  try {
+    await authFetch(`/users/me/${list==="watchlist"?"watchlist":"favorite"}/${movieId}`, { method: verb }, showError);
+  } catch {
+    dispatch({ type: "TOGGLE_MOVIE_IN_LIST", list, movieId });  // 3 revert on failure
+    showError("Failed to update");
+  }
+}
+```
+1. **Flip the UI first** so the toggle feels instant.
+2. Decide PUT vs DELETE. *(Honest caveat: `state.user` here is the snapshot from before the dispatch —
+   a stale-closure subtlety I'd clean up; see §4.)*
+3. If the request fails, **dispatch the same toggle again to undo it** and surface an error.
+
+> "Optimistic UI for perceived speed, with a guaranteed rollback path so the UI never lies about server
+> state for long."
+
+### D. `useInfiniteScroll` (`hooks/useInfiniteScroll.tsx`)
+```ts
+observerRef.current = new IntersectionObserver(([entry]) => {
+  if (entry.isIntersecting) {
+    observerRef.current?.unobserve(el);              // stop watching during fetch
+    loadNextPage().finally(() => observerRef.current?.observe(el)); // re-watch after
+  }
+}, { rootMargin });                                   // rootMargin "600px" → prefetch early
+observerRef.current.observe(el);
+return () => observerRef.current?.disconnect();       // cleanup
+```
+> "A sentinel `<div>` sits at the bottom of the list. When it enters the viewport (with a 600px margin,
+> so I fetch *before* the user reaches the end), I unobserve it, load the next page, then re-observe.
+> `loadNextPage` also guards on `isFetching/isLoading/hasMore` to prevent duplicate requests. Cleanup
+> disconnects the observer to avoid leaks. I chose IntersectionObserver over scroll listeners because
+> it's async and off the main thread."
+
+### E. JWT create + verify (`services/security.py`)
+```python
+def create_access_token(data: dict, expires_delta=None):
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + (expires_delta or timedelta(minutes=15))
+    to_encode.update({"exp": expire})                                  # standard exp claim
+    return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)  # HS256 sign
+
+def verify_user_token(token: str):
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        user_id = payload.get("sub")
+        if not user_id: raise HTTPException(400, ...)
+    except JWTError: raise HTTPException(400, "Invalid or expired token")
+    return user_id
+```
+> "I sign a JWT with the user id in the `sub` claim and an `exp` expiry, using HS256 (symmetric — the
+> same `SECRET_KEY` signs and verifies). `jwt.decode` validates the signature *and* expiry; an invalid
+> or expired token raises `JWTError`, which I translate into a clean 400. The token is stateless — the
+> server stores nothing, which is what makes the backend horizontally scalable."
+
+### F. Atomic rating upsert (`services/user.py`)
+```python
+existing = users_collection.find_one({"id": user.id, "ratings.movie_id": mid})
+if existing:
+    users_collection.find_one_and_update(
+        {"id": user.id, "ratings.movie_id": mid},
+        {"$set": {"ratings.$.rating": new_rating}})   # update the matched array element
+else:
+    users_collection.find_one_and_update(
+        {"id": user.id}, {"$addToSet": {"ratings": entry}})  # add new entry
+```
+> "If the user already rated this movie, I match the array element by `ratings.movie_id` and update just
+> that element with the **positional `$`**. Otherwise I `$addToSet` a new rating. Both are single atomic
+> DB operations — I never load the array into Python and write it back, which would be racy."
+
+### G. The recommendation pipeline (`services/ollama_recommender.py` + `endpoints/users.py`)
+> "Resolve the user's favorite/watchlist/rated movie IDs into titles → bucket ratings into
+> high/medium/low → build a prompt that emphasizes favorites and high ratings and lists movies to avoid
+> → run a `pydantic-ai` Agent against Mistral (temp 0.2 for consistency) → parse the JSON array (regex
+> fallback for malformed output) → dedupe and cap at 20 → back in the endpoint, search TMDB for each
+> title to convert names into real movie objects. The whole thing is wrapped in try/except with a
+> favorites-based fallback and finally an empty list, so it degrades gracefully and never 500s."
 
 ---
 
