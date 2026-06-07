@@ -1,0 +1,1282 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MovieCompass — Interview Prep</title>
+<style>
+:root{
+  --bg:#0f1115; --panel:#161922; --panel2:#1c2030; --text:#e6e8ee; --muted:#9aa3b2;
+  --accent:#6ea8fe; --accent2:#7ee787; --border:#262b38; --code:#0b0d12;
+  --q:#ffd866; --warn:#ff7b72; --shadow:0 8px 30px rgba(0,0,0,.35);
+}
+[data-theme="light"]{
+  --bg:#f6f7f9; --panel:#ffffff; --panel2:#f0f2f6; --text:#1c2128; --muted:#5b6675;
+  --accent:#1f6feb; --accent2:#1a7f37; --border:#e1e4e8; --code:#f3f4f7;
+  --q:#9a6700; --warn:#cf222e; --shadow:0 6px 24px rgba(0,0,0,.08);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:16px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+.layout{display:grid; grid-template-columns:320px 1fr; min-height:100vh}
+/* Sidebar */
+aside{
+  position:sticky; top:0; height:100vh; overflow:auto; background:var(--panel);
+  border-right:1px solid var(--border); padding:20px 16px;
+}
+aside h2{font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--muted); margin:18px 6px 8px}
+.brand{display:flex; align-items:center; gap:10px; font-size:20px; font-weight:800; margin-bottom:6px}
+.brand .dot{font-size:22px}
+.searchbox{width:100%; padding:9px 12px; border-radius:10px; border:1px solid var(--border);
+  background:var(--panel2); color:var(--text); margin:10px 0 8px; outline:none}
+.searchbox:focus{border-color:var(--accent)}
+aside nav ul{list-style:none; margin:0; padding-left:10px}
+aside nav>ul{padding-left:0}
+aside nav a{display:block; color:var(--muted); text-decoration:none; padding:5px 8px;
+  border-radius:8px; font-size:14px; border-left:2px solid transparent}
+aside nav a:hover{color:var(--text); background:var(--panel2)}
+aside nav a.active{color:var(--accent); border-left-color:var(--accent); background:var(--panel2)}
+aside nav ul ul a{font-size:13px; color:var(--muted)}
+.controls{display:flex; flex-wrap:wrap; gap:6px; margin:10px 0}
+.btn{cursor:pointer; border:1px solid var(--border); background:var(--panel2); color:var(--text);
+  padding:7px 10px; border-radius:9px; font-size:12.5px; font-weight:600}
+.btn:hover{border-color:var(--accent); color:var(--accent)}
+.btn.active{background:var(--accent); color:#08111f; border-color:var(--accent)}
+/* Main */
+main{padding:38px 48px 120px; max-width:1000px}
+.progress{position:fixed; top:0; left:320px; right:0; height:3px; background:transparent; z-index:50}
+.progress>i{display:block; height:100%; width:0; background:linear-gradient(90deg,var(--accent),var(--accent2))}
+h1{font-size:34px; line-height:1.2; margin:.2em 0 .4em; font-weight:850}
+h2{font-size:25px; margin:1.6em 0 .5em; padding-bottom:.3em; border-bottom:2px solid var(--border); scroll-margin-top:20px}
+h3{font-size:19px; margin:1.4em 0 .4em; color:var(--accent); scroll-margin-top:20px}
+h4{font-size:16px; margin:1.2em 0 .3em; color:var(--accent2)}
+a{color:var(--accent)}
+p,li{color:var(--text)}
+hr{border:none; border-top:1px solid var(--border); margin:2em 0}
+code{background:var(--code); padding:2px 6px; border-radius:6px; font-size:13.5px;
+  font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace}
+pre{background:var(--code); border:1px solid var(--border); border-radius:12px; padding:16px;
+  overflow:auto; font-size:13px; box-shadow:var(--shadow)}
+pre code{background:none; padding:0}
+blockquote{margin:.6em 0; padding:12px 16px; border-left:4px solid var(--accent2);
+  background:var(--panel); border-radius:0 10px 10px 0}
+blockquote p{margin:.3em 0; color:var(--text)}
+table{border-collapse:collapse; width:100%; margin:1em 0; font-size:14px; box-shadow:var(--shadow); border-radius:10px; overflow:hidden}
+th,td{border:1px solid var(--border); padding:9px 12px; text-align:left; vertical-align:top}
+th{background:var(--panel2); font-weight:700}
+tr:nth-child(even) td{background:var(--panel)}
+/* Q&A practice cards */
+.qa{margin:14px 0; border:1px solid var(--border); border-radius:12px; overflow:hidden; background:var(--panel)}
+.qa .q{display:flex; gap:10px; align-items:flex-start; padding:13px 16px; cursor:pointer;
+  background:linear-gradient(180deg,var(--panel2),var(--panel)); font-weight:700}
+.qa .q . qicon{color:var(--q)}
+.qa .q .badge{margin-left:auto; font-size:11px; font-weight:700; color:var(--muted);
+  border:1px solid var(--border); padding:2px 8px; border-radius:20px; white-space:nowrap}
+.qa .a{max-height:0; overflow:hidden; transition:max-height .3s ease; padding:0 16px}
+.qa.open .a{max-height:2000px; padding:4px 16px 14px}
+.qa .q .chev{transition:transform .25s; color:var(--muted)}
+.qa.open .q .chev{transform:rotate(90deg)}
+.hidden{display:none !important}
+mark{background:var(--q); color:#000; padding:0 2px; border-radius:3px}
+.tip{font-size:13px; color:var(--muted); margin-top:6px}
+@media (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  aside{position:static; height:auto; border-right:none; border-bottom:1px solid var(--border)}
+  .progress{left:0}
+  main{padding:24px 18px 90px}
+}
+@media print{
+  aside,.progress,.controls{display:none}
+  .layout{display:block}
+  .qa .a{max-height:none !important; padding:4px 16px 14px}
+  body{background:#fff; color:#000}
+}
+</style>
+</head>
+<body>
+<div class="progress"><i></i></div>
+<div class="layout">
+  <aside>
+    <div class="brand"><span class="dot">🎬</span> MovieCompass</div>
+    <div class="tip">Interview Prep — click a ❓ to reveal the answer.</div>
+    <input id="search" class="searchbox" placeholder="Filter sections…" />
+    <div class="controls">
+      <button class="btn" id="expandAll">Reveal all</button>
+      <button class="btn" id="collapseAll">Hide all</button>
+      <button class="btn" id="themeBtn">☀️ Light</button>
+    </div>
+    <h2>Contents</h2>
+    <nav><div class="toc">
+<ul>
+<li><a href="#moviecompass-frontend-interview-prep-guide">MovieCompass — Frontend Interview Prep Guide</a><ul>
+<li><a href="#table-of-contents">Table of Contents</a></li>
+<li><a href="#1-the-pitch">1. The Pitch</a></li>
+<li><a href="#2-architecture-the-big-picture">2. Architecture — The Big Picture</a></li>
+<li><a href="#3-frontend-deep-dive">3. Frontend Deep Dive</a><ul>
+<li><a href="#stack">Stack</a></li>
+<li><a href="#folder-structure-feature-first">Folder structure (feature-first)</a></li>
+</ul>
+</li>
+<li><a href="#4-state-management-the-heart-of-the-frontend-story">4. State Management — the heart of the frontend story</a><ul>
+<li><a href="#the-reducer-cache-pattern-moviescontext">The reducer + cache pattern (MoviesContext)</a></li>
+<li><a href="#optimistic-ui-usercontext">Optimistic UI (UserContext)</a></li>
+</ul>
+</li>
+<li><a href="#5-performance-patterns">5. Performance Patterns</a><ul>
+<li><a href="#a-use-context-selector-usercontext">a) use-context-selector (UserContext)</a></li>
+<li><a href="#b-split-state-actions-contexts-usercontext-moviemodalcontext">b) Split State / Actions contexts (UserContext, MovieModalContext)</a></li>
+<li><a href="#c-usememo-on-context-value-moviescontext">c) useMemo on context value (MoviesContext)</a></li>
+<li><a href="#d-intersectionobserver-hooks">d) IntersectionObserver hooks</a></li>
+<li><a href="#e-client-side-caching">e) Client-side caching</a></li>
+</ul>
+</li>
+<li><a href="#6-typescript-questions">6. TypeScript Questions</a></li>
+<li><a href="#7-authentication-flow-end-to-end">7. Authentication Flow (end to end)</a><ul>
+<li><a href="#emailpassword-login">Email/password login</a></li>
+<li><a href="#google-oauth2-authorization-code-flow">Google OAuth2 (authorization code flow)</a></li>
+<li><a href="#authfetch-the-centralized-authenticated-client-apiauthfetchts">authFetch — the centralized authenticated client (api/authFetch.ts)</a></li>
+</ul>
+</li>
+<li><a href="#8-backend-what-a-frontend-dev-should-confidently-explain">8. Backend (what a frontend dev should confidently explain)</a></li>
+<li><a href="#9-the-ai-ollama-layer-servicesollama_recommenderpy">9. The AI / Ollama Layer (services/ollama_recommender.py)</a></li>
+<li><a href="#10-docker-devops">10. Docker &amp; DevOps</a></li>
+<li><a href="#11-testing">11. Testing</a></li>
+<li><a href="#12-known-weaknesses-trade-offs-raise-these-before-they-do">12. Known Weaknesses &amp; Trade-offs (raise these BEFORE they do)</a></li>
+<li><a href="#13-rapid-fire-qa-bank">13. Rapid-Fire Q&amp;A Bank</a></li>
+<li><a href="#14-smart-questions-to-ask-the-interviewer">14. Smart Questions to Ask the Interviewer</a></li>
+<li><a href="#15-why-this-stack-technology-justifications">15. Why This Stack? — Technology Justifications</a><ul>
+<li><a href="#why-mongodb-and-not-postgresql-mysql-a-relational-db">🟢 Why MongoDB (and not PostgreSQL / MySQL / a relational DB)?</a></li>
+<li><a href="#why-fastapi-and-not-flask-django-express-node">🟢 Why FastAPI (and not Flask / Django / Express / Node)?</a></li>
+<li><a href="#why-react-and-not-vue-angular-svelte">🟢 Why React (and not Vue / Angular / Svelte)?</a></li>
+<li><a href="#why-vite-and-not-create-react-app-webpack">🟢 Why Vite (and not Create React App / Webpack)?</a></li>
+<li><a href="#why-tailwind-and-not-css-modules-styled-components-plain-css">🟢 Why Tailwind (and not CSS Modules / styled-components / plain CSS)?</a></li>
+<li><a href="#why-a-local-llm-via-ollama-and-not-the-openai-api">🟢 Why a local LLM via Ollama (and not the OpenAI API)?</a></li>
+<li><a href="#one-liner-cheat-sheet">One-liner cheat sheet</a></li>
+</ul>
+</li>
+<li><a href="#16-design-patterns-deep-dive">16. Design Patterns Deep Dive</a></li>
+<li><a href="#17-architecture-system-design-questions">17. Architecture &amp; System-Design Questions</a></li>
+<li><a href="#final-tips">Final tips</a></li>
+</ul>
+</li>
+</ul>
+</div>
+</nav>
+  </aside>
+  <main>
+    <h1 id="moviecompass-frontend-interview-prep-guide">MovieCompass — Frontend Interview Prep Guide</h1>
+<blockquote>
+<p>A complete, brutally honest study guide for defending this project in a frontend
+developer interview. It covers architecture, the React/TypeScript frontend in depth,
+the FastAPI backend, the Ollama/Mistral AI layer, Docker, and a long list of <strong>real
+questions interviewers ask</strong> — each with a model answer grounded in <em>your actual code</em>.</p>
+</blockquote>
+<hr />
+<h2 id="table-of-contents">Table of Contents</h2>
+<ol>
+<li><a href="#1-pitch">30-Second &amp; 2-Minute Pitch</a></li>
+<li><a href="#2-architecture">Architecture — The Big Picture</a></li>
+<li><a href="#3-frontend">Frontend Deep Dive</a></li>
+<li><a href="#4-state">State Management (the heart of the FE story)</a></li>
+<li><a href="#5-performance">Performance Patterns</a></li>
+<li><a href="#6-typescript">TypeScript Questions</a></li>
+<li><a href="#7-auth">Authentication Flow (end to end)</a></li>
+<li><a href="#8-backend">Backend (what a frontend dev should know)</a></li>
+<li><a href="#9-ai">The AI / Ollama Layer</a></li>
+<li><a href="#10-docker">Docker &amp; DevOps</a></li>
+<li><a href="#11-testing">Testing</a></li>
+<li><a href="#12-weaknesses">Known Weaknesses &amp; Trade-offs (interviewers LOVE these)</a></li>
+<li><a href="#13-rapidfire">Rapid-Fire Q&amp;A Bank</a></li>
+<li><a href="#14-ask-back">Questions YOU should ask them</a></li>
+<li><a href="#15-why-stack">Why This Stack? — Technology Justifications</a></li>
+<li><a href="#16-patterns">Design Patterns Deep Dive</a></li>
+<li><a href="#17-system-design">Architecture &amp; System-Design Questions</a></li>
+</ol>
+<hr />
+<p><a name="1-pitch"></a></p>
+<h2 id="1-the-pitch">1. The Pitch</h2>
+<p><strong>30-second version:</strong></p>
+<blockquote>
+<p>"MovieCompass is a full-stack, AI-powered movie discovery platform. The frontend is a
+React 19 + TypeScript SPA built with Vite, Tailwind, and shadcn/ui. It talks to a
+FastAPI (Python) backend that integrates the TMDB API for movie data, MongoDB for user
+data, JWT + Google OAuth2 for auth, and a locally-hosted Mistral LLM via Ollama for
+personalized recommendations. The whole thing is containerized with Docker Compose."</p>
+</blockquote>
+<p><strong>2-minute version — add:</strong>
+- Frontend state is managed entirely with <strong>React Context + <code>useReducer</code></strong> (no Redux), with a
+  client-side caching layer built on JS <code>Map</code>s for movies, casts, reviews, and trailers.
+- I implemented <strong>optimistic UI</strong> for watchlist/favorites/ratings, <strong>infinite scroll</strong> with
+  <code>IntersectionObserver</code>, and a centralized <strong><code>authFetch</code></strong> wrapper that injects the JWT and
+  auto-logs-out on token expiry.
+- The backend is <strong>layered</strong> (endpoints → services → schemas), fully async for I/O via
+  <code>aiohttp</code>/<code>asyncio.gather</code>, validates everything with <strong>Pydantic v2</strong>, and ships with a
+  <strong>multi-stage Docker build that runs the test suite as a build gate</strong>.</p>
+<hr />
+<p><a name="2-architecture"></a></p>
+<h2 id="2-architecture-the-big-picture">2. Architecture — The Big Picture</h2>
+<pre><code>React SPA (Vite)  ⇄  FastAPI backend  ⇄  MongoDB Atlas
+   :5173               :8000                (users)
+                         │  ⇅
+                         ├── TMDB API   (movie data)
+                         ├── Ollama/Mistral :11434  (AI recs)
+                         └── Gmail SMTP  (email verify / reset)
+</code></pre>
+<p>Four Docker services in <code>docker-compose.yml</code>: <strong>ollama</strong>, <strong>backend</strong>, <strong>frontend</strong>.
+MongoDB is <em>external</em> (Atlas) — deliberately not in compose.</p>
+<p><strong>Q: Is this really "microservices"?</strong></p>
+<blockquote>
+<p>Honest answer: "The README calls it microservices, but it's more accurately a <strong>service-oriented /
+multi-container architecture</strong>. There's one backend monolith plus two supporting services (the LLM
+and the DB). True microservices would split auth, movies, and users into independently deployable
+services with their own datastores. For a project this size, a modular monolith is the right call —
+microservices would be over-engineering."</p>
+</blockquote>
+<p><strong>Q: Why separate the AI into its own container?</strong></p>
+<blockquote>
+<p>"Ollama runs a 7B-parameter model that needs its own runtime, model weights (cached in a Docker
+volume so they survive restarts), and a long startup. Isolating it means the backend stays light,
+and I can scale or swap the model independently. The backend talks to it over an OpenAI-compatible
+HTTP API."</p>
+</blockquote>
+<hr />
+<p><a name="3-frontend"></a></p>
+<h2 id="3-frontend-deep-dive">3. Frontend Deep Dive</h2>
+<h3 id="stack">Stack</h3>
+<ul>
+<li><strong>React 19</strong>, <strong>TypeScript 5.8</strong>, <strong>Vite 6</strong> (build + dev server)</li>
+<li><strong>Tailwind CSS 3.4</strong> + <strong>shadcn/ui</strong> (components built on <strong>Radix UI</strong> primitives)</li>
+<li><strong>Framer Motion</strong> (animations), <strong>React Router 7</strong>, <strong>lucide-react</strong> (icons)</li>
+<li><strong><code>use-context-selector</code></strong> (selective context subscriptions — see §5)</li>
+</ul>
+<h3 id="folder-structure-feature-first">Folder structure (feature-first)</h3>
+<pre><code>src/
+├── api/         authFetch.ts, logoutRegistry.ts   ← networking + auth plumbing
+├── contexts/    Auth, User, Movies, MovieModal, Message  ← global state
+├── hooks/       useInfiniteScroll, useFetchOnView, useAuthSubmit, ...
+├── components/   feature folders (auth/, dashboard/, search/, ui/, ...)
+├── pages/        route-level screens
+├── types/        shared TS types per domain
+└── data/         constants, static content
+</code></pre>
+<p><strong>Q: Why this structure?</strong></p>
+<blockquote>
+<p>"I grouped by <strong>feature/domain</strong> rather than by file type, so everything for, say, the auth flow
+lives together. The <code>ui/</code> folder holds the generic shadcn primitives (Button, Dialog, Card), and
+<code>components/&lt;feature&gt;/</code> holds composed, app-specific components. Cross-cutting logic lives in
+<code>contexts/</code>, <code>hooks/</code>, and <code>api/</code>."</p>
+</blockquote>
+<p><strong>Q: What is shadcn/ui and why use it over a component library like MUI?</strong></p>
+<blockquote>
+<p>"shadcn/ui isn't an installed dependency — it's a set of <strong>copy-in</strong> components built on Radix UI
+primitives and styled with Tailwind. The code lives in <em>my</em> repo (<code>components/ui/</code>), so I own it and
+can customize freely. Radix gives me accessibility (focus traps, ARIA, keyboard nav) for free on
+things like the movie detail Dialog and the rating Select. Versus MUI, I avoid a heavy runtime CSS-in-JS
+dependency and get full control of styling through Tailwind."</p>
+</blockquote>
+<hr />
+<p><a name="4-state"></a></p>
+<h2 id="4-state-management-the-heart-of-the-frontend-story">4. State Management — the heart of the frontend story</h2>
+<p>There is <strong>no Redux/Zustand/React Query</strong>. State is split across <strong>five Context providers</strong>, each
+backed by <code>useReducer</code>. Provider nesting (in <code>App.tsx</code>):</p>
+<pre><code>AuthProvider → MessageProvider → UserProvider → MoviesProvider → MovieModalProvider
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>Responsibility</th>
+<th>Pattern</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuthContext</code></td>
+<td>Auth <em>form</em> UI state (login/signup toggle, password visibility, errors)</td>
+<td>single context + reducer</td>
+</tr>
+<tr>
+<td><code>MessageContext</code></td>
+<td>Global toast/notification system</td>
+<td>single context + reducer</td>
+</tr>
+<tr>
+<td><code>UserContext</code></td>
+<td>Authenticated user data, profile, AI recs, watchlist/fav/ratings</td>
+<td><strong>split State/Actions contexts</strong> + <code>use-context-selector</code></td>
+</tr>
+<tr>
+<td><code>MoviesContext</code></td>
+<td>TMDB data + <strong>client-side cache</strong> (popular, by-genre, search, casts, reviews)</td>
+<td>single context + reducer + <code>useMemo</code></td>
+</tr>
+<tr>
+<td><code>MovieModalContext</code></td>
+<td>Movie detail modal open/close + trailer cache</td>
+<td><strong>split State/Actions contexts</strong></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Q: Why Context + useReducer instead of Redux?</strong></p>
+<blockquote>
+<p>"For this app's size, Redux would be boilerplate overhead. <code>useReducer</code> gives me the same predictable
+reducer pattern — actions, pure reducers, a single dispatch — without the library. I split state into
+<em>domain-specific</em> contexts so unrelated updates don't cause global re-renders, and I addressed the
+classic Context performance pitfall with <code>use-context-selector</code> and split state/action contexts."</p>
+</blockquote>
+<p><strong>Q: Why not React Query / SWR for the server state?</strong></p>
+<blockquote>
+<p>"Honest answer: React Query would actually be a <strong>great fit</strong> here and would replace a lot of my
+hand-rolled code — caching, deduplication, loading/error states, and pagination are exactly what it
+solves. I built it manually with reducers + <code>Map</code>-based caches to demonstrate I understand the
+underlying mechanics, but in production I'd reach for React Query (or RTK Query) to delete ~40% of
+my context code and get request cancellation, stale-while-revalidate, and retries for free."</p>
+</blockquote>
+<h3 id="the-reducer-cache-pattern-moviescontext">The reducer + cache pattern (MoviesContext)</h3>
+<p>State holds <code>Map</code>s keyed by id, e.g. <code>moviesByGenre: Map&lt;genreId, Movie[]&gt;</code>, <code>casts: Map&lt;movieId, Cast[]&gt;</code>,
+plus per-key <code>loading</code>/<code>error</code>/<code>page</code>/<code>hasMore</code> Maps. Each fetch:
+1. dispatches a <code>..._START</code> action,
+2. fetches, <strong>deduplicates</strong> against existing ids (<code>new Set(prev.map(m =&gt; m.id))</code>),
+3. dispatches <code>..._SUCCESS</code> merging new data into a <strong>new Map</strong> (to keep references immutable).</p>
+<p><strong>Q: Why create a new <code>Map</code> on every update instead of mutating?</strong></p>
+<blockquote>
+<p>"React's reducer relies on <strong>referential identity</strong> to know state changed. If I mutated the existing
+Map (<code>state.casts.set(...)</code>) and returned the same state object, React might bail out of the re-render.
+So I do <code>new Map(state.casts).set(id, value)</code> — a shallow copy with the one change. It's immutable
+update semantics, same as spreading an object or array."</p>
+</blockquote>
+<p><strong>Q: How do you prevent duplicate movies during infinite scroll?</strong></p>
+<blockquote>
+<p>"Each <code>_SUCCESS</code> reducer builds a <code>Set</code> of existing ids and filters incoming results: 
+<code>movies.filter(m =&gt; !ids.has(m.id))</code>. TMDB pages can overlap or re-order, so this guards against
+rendering the same card twice (which would also violate React's <code>key</code> uniqueness)."</p>
+</blockquote>
+<h3 id="optimistic-ui-usercontext">Optimistic UI (UserContext)</h3>
+<p><code>toggleMovieOnServer</code>, <code>setMovieRating</code>, <code>removeMovieRating</code> all <strong>dispatch the local state change
+first</strong>, then fire the network request, and <strong>revert on failure</strong>:</p>
+<pre><code class="language-ts">dispatch({ type: &quot;TOGGLE_MOVIE_IN_LIST&quot;, list, movieId });  // optimistic
+try { await authFetch(...) }
+catch { dispatch({ type: &quot;TOGGLE_MOVIE_IN_LIST&quot;, list, movieId }); /* revert */ }
+</code></pre>
+<p><strong>Q: Walk me through your optimistic update. What's the risk?</strong></p>
+<blockquote>
+<p>"I update the UI immediately so toggling a favorite feels instant, then sync the server in the
+background. On error I dispatch the inverse action to roll back. The subtle risk is <strong>stale closures</strong>:
+inside the async function I read <code>state.user!</code> which is the snapshot from <em>before</em> the dispatch, so I
+compute the HTTP verb from the pre-flip list. It works, but a cleaner approach would derive the
+intended action up front or use a functional reducer that returns the next list. I'd also debounce
+rapid toggles to avoid racing requests."</p>
+</blockquote>
+<hr />
+<p><a name="5-performance"></a></p>
+<h2 id="5-performance-patterns">5. Performance Patterns</h2>
+<h3 id="a-use-context-selector-usercontext">a) <code>use-context-selector</code> (UserContext)</h3>
+<p>The user object updates often (ratings, watchlist). A plain context would re-render <strong>every</strong> consumer
+on any change.</p>
+<p><strong>Q: What problem does <code>use-context-selector</code> solve?</strong></p>
+<blockquote>
+<p>"React's built-in Context re-renders <strong>all</strong> consumers whenever the provider value changes, regardless
+of which slice they actually use. <code>use-context-selector</code> lets a component subscribe to a <em>selector</em> of
+the context, so it only re-renders when that specific slice changes. I used it for <code>UserContext</code> because
+the user object mutates frequently."</p>
+</blockquote>
+<h3 id="b-split-state-actions-contexts-usercontext-moviemodalcontext">b) Split State / Actions contexts (UserContext, MovieModalContext)</h3>
+<p>Actions (functions) are <strong>stable</strong> and memoized; state changes constantly. Splitting them means
+components that only need actions (e.g. a <code>MovieCard</code> that calls <code>openModal</code>) never re-render when
+state changes.</p>
+<p><strong>Q: Why two contexts — <code>UserStateContext</code> and <code>UserActionsContext</code>?</strong></p>
+<blockquote>
+<p>"Components like movie cards only need <em>action</em> functions (<code>toggleToFavorite</code>, <code>openModal</code>), not the
+state. If actions and state shared one context, a state change would re-render those cards needlessly.
+By memoizing the actions object and putting it in its own provider, action-only consumers stay inert
+during state updates. It's the same idea as separating dispatch from state."</p>
+</blockquote>
+<h3 id="c-usememo-on-context-value-moviescontext">c) <code>useMemo</code> on context value (MoviesContext)</h3>
+<p>The provider's <code>value</code> is wrapped in <code>useMemo([state, fetchMoviesByIds])</code> so a new object isn't created
+every render.</p>
+<h3 id="d-intersectionobserver-hooks">d) IntersectionObserver hooks</h3>
+<ul>
+<li><strong><code>useInfiniteScroll</code></strong> — observes a sentinel div; when it enters the viewport (with a <code>600px</code>
+  <code>rootMargin</code> to prefetch early), calls <code>fetchFn</code>. It <strong>unobserves during the fetch</strong> and re-observes
+  after, plus guards with <code>isFetching</code>/<code>isLoading</code>/<code>hasMore</code> to prevent duplicate page loads.</li>
+<li><strong><code>useFetchOnView</code></strong> — fires a fetch <strong>exactly once</strong> when an element scrolls into view (uses a
+  <code>fetchedRef</code> boolean so re-renders don't re-trigger). Used for lazy-loading per-movie data like cast.</li>
+</ul>
+<p><strong>Q: Why IntersectionObserver instead of a scroll event listener?</strong></p>
+<blockquote>
+<p>"Scroll listeners fire on every pixel and force you to read layout (<code>getBoundingClientRect</code>), which
+can cause jank and layout thrashing. <code>IntersectionObserver</code> is <strong>async and off the main thread</strong> — the
+browser tells me when the sentinel crosses a threshold. The <code>rootMargin</code> lets me prefetch the next
+page <em>before</em> the user hits the bottom, so scrolling feels seamless."</p>
+</blockquote>
+<h3 id="e-client-side-caching">e) Client-side caching</h3>
+<p>Casts, reviews, trailers, and movies-by-id are cached in Maps and <strong>short-circuit</strong> before fetching:
+<code>if (state.casts.has(movieId) || state.castsLoading.get(movieId)) return;</code></p>
+<hr />
+<p><a name="6-typescript"></a></p>
+<h2 id="6-typescript-questions">6. TypeScript Questions</h2>
+<p>Config highlights (<code>tsconfig.app.json</code>): <code>strict: true</code>, <code>noUnusedLocals/Parameters</code>,
+<code>moduleResolution: "bundler"</code>, <code>verbatimModuleSyntax: true</code>, <code>erasableSyntaxOnly: true</code>,
+<code>noFallthroughCasesInSwitch</code>, <code>jsx: "react-jsx"</code>, <code>noEmit</code> (Vite/esbuild transpiles; <code>tsc -b</code> only type-checks).</p>
+<p><strong>Q: What does <code>strict: true</code> actually turn on?</strong></p>
+<blockquote>
+<p>"It's an umbrella for <code>strictNullChecks</code>, <code>noImplicitAny</code>, <code>strictFunctionTypes</code>,
+<code>strictBindCallApply</code>, <code>strictPropertyInitialization</code>, <code>noImplicitThis</code>, and <code>alwaysStrict</code>. The big
+one is <code>strictNullChecks</code> — <code>null</code>/<code>undefined</code> aren't assignable to other types, which forces me to
+handle <code>state.user</code> possibly being <code>null</code> everywhere."</p>
+</blockquote>
+<p><strong>Q: You use <code>import type {...}</code> a lot. Why?</strong></p>
+<blockquote>
+<p>"With <code>verbatimModuleSyntax</code>, type-only imports must be explicitly marked so the bundler can <strong>erase</strong>
+them entirely from the output (they have no runtime presence). It avoids accidental runtime imports of
+things that are only types and prevents circular-dependency issues."</p>
+</blockquote>
+<p><strong>Q: How are your reducer actions typed?</strong></p>
+<blockquote>
+<p>"As <strong>discriminated unions</strong> — each action has a literal <code>type</code> field, and TypeScript narrows the
+payload based on it inside the <code>switch</code>. So in <code>case 'FETCH_GENRE_PAGE_SUCCESS'</code>, TS knows
+<code>action.payload</code> has <code>{ genreId, page, movies, hasMore }</code>. Combined with <code>noFallthroughCasesInSwitch</code>,
+the compiler catches missing breaks and unhandled cases."</p>
+</blockquote>
+<p><strong>Q: Where do you use generics?</strong></p>
+<blockquote>
+<p>"The contexts are typed with <code>createContext&lt;T | undefined&gt;(undefined)</code>, and the custom hooks throw if
+used outside their provider, narrowing <code>T | undefined</code> to <code>T</code>. The fetch helpers return typed shapes
+like <code>MoviesResponse</code>. I could push generics further — e.g. a generic <code>useCache&lt;K, V&gt;</code> hook to replace
+the repeated Map-cache logic."</p>
+</blockquote>
+<p><strong>Q: Honest TS weakness in your code?</strong></p>
+<blockquote>
+<p>"I use <code>any</code> in the <code>catch (err: any)</code> blocks and error parsers (<code>getErrorMessage</code>). It's pragmatic
+because caught values are <code>unknown</code> by default and could be anything, but the stricter, correct
+approach is <code>catch (err: unknown)</code> followed by type narrowing (<code>err instanceof Error</code>). I do narrow
+with <code>instanceof Response</code> in places, so the pattern is half-there."</p>
+</blockquote>
+<hr />
+<p><a name="7-auth"></a></p>
+<h2 id="7-authentication-flow-end-to-end">7. Authentication Flow (end to end)</h2>
+<h3 id="emailpassword-login">Email/password login</h3>
+<ol>
+<li><code>useAuthSubmit</code> posts form-encoded creds to <code>POST /auth/token</code> (OAuth2 password grant).</li>
+<li>Backend <code>authenticate_user</code> verifies the bcrypt hash, checks <code>is_verified</code>, returns a <strong>JWT</strong>
+   (<code>sub = user.id</code>, 30-min expiry, HS256).</li>
+<li>Frontend stores <code>access_token</code> in <strong><code>localStorage</code></strong>, then calls <code>fetchUserProfile()</code>.</li>
+</ol>
+<h3 id="google-oauth2-authorization-code-flow">Google OAuth2 (authorization code flow)</h3>
+<ol>
+<li><code>GET /auth/google/login</code> → redirects to Google consent.</li>
+<li>Google redirects back to <code>GET /auth/google/callback?code=...</code>.</li>
+<li>Backend exchanges the code for a Google access token, fetches userinfo, upserts the user, mints
+   our own JWT, and redirects to <code>FRONTEND_URL/auth/callback#access_token=...</code>.</li>
+<li><code>GoogleCallbackHandler</code> reads the token from the <strong>URL hash</strong>, stores it, fetches the profile.</li>
+</ol>
+<p><strong>Q: Why put the token in the URL <em>hash</em> (<code>#</code>) and not a query param?</strong></p>
+<blockquote>
+<p>"The fragment after <code>#</code> is <strong>never sent to the server</strong> in subsequent requests and doesn't land in
+server access logs the way query strings do. It's a slightly safer place to hand a token to a SPA. The
+handler immediately parses it out of <code>window.location.hash</code> and moves it to storage."</p>
+</blockquote>
+<h3 id="authfetch-the-centralized-authenticated-client-apiauthfetchts"><code>authFetch</code> — the centralized authenticated client (<code>api/authFetch.ts</code>)</h3>
+<pre><code class="language-ts">const token = localStorage.getItem(&quot;access_token&quot;);
+if (!token) { callLogout(); redirect(&quot;/auth?mode=login&quot;); return new Promise(()=&gt;{}); }
+const res = await fetch(`${BACKEND_URL}${path}`, {...opts, headers:{...opts.headers, Authorization:`Bearer ${token}`}});
+if (res.ok) return res;
+if (res.status === 401 || res.status === 403 || await isTokenError(res)) {
+  callLogout(); showError(&quot;Session expired&quot;); redirect(...); return new Promise(()=&gt;{});
+}
+return res; // other errors → caller handles
+</code></pre>
+<p><strong>Q: Why does <code>authFetch</code> return <code>new Promise(() =&gt; {})</code> on auth failure?</strong></p>
+<blockquote>
+<p>"It returns a <strong>forever-pending promise</strong> so the calling code's <code>await</code> never resolves after I've
+already triggered a logout + redirect. It stops the rest of the function from running with bad data
+mid-redirect. It's a clever hack, but it's unusual — a cleaner design would <code>throw</code> a typed
+<code>AuthError</code> and let callers <code>catch</code> it, or use an <code>AbortController</code>. The pending promise can in
+theory leak if the component unmounts."</p>
+</blockquote>
+<p><strong>Q: Explain the <code>logoutRegistry</code> / <code>setGlobalNavigate</code> pattern.</strong></p>
+<blockquote>
+<p>"<code>authFetch</code> lives <strong>outside</strong> the React tree, so it can't call hooks like <code>useNavigate</code> or access the
+<code>UserContext</code> <code>logout</code>. To bridge that, I register the <code>logout</code> function and the router's <code>navigate</code>
+into module-level variables (<code>registerLogout</code>, <code>setGlobalNavigate</code>) from inside the providers. Then
+<code>authFetch</code> can invoke them via <code>callLogout()</code> / <code>globalNavigate(...)</code>. It breaks the
+non-component-can't-use-hooks barrier without prop-drilling or a circular import. The trade-off is
+hidden global state and an init-order dependency."</p>
+</blockquote>
+<p><strong>Q: JWT in <code>localStorage</code> — what's wrong with that, and how would you fix it?</strong></p>
+<blockquote>
+<p>"It's the <strong>#1 security critique</strong> of this project, and I'd raise it before they do. <code>localStorage</code> is
+readable by any JavaScript on the page, so a single XSS vulnerability leaks the token. The industry-
+standard fix is to store the token in an <strong><code>httpOnly</code>, <code>Secure</code>, <code>SameSite</code> cookie</strong> so JS can't read
+it, and pair it with CSRF protection. I'd also add a <strong>short-lived access token + refresh token</strong>
+rotation so a leaked access token expires fast. I chose localStorage for simplicity and because it
+sidesteps CORS+credentials cookie complexity in a split-origin dev setup, but I understand the
+trade-off."</p>
+</blockquote>
+<p><strong>ProtectedRoute:</strong> checks <code>isAuthenticated</code>; if not but a token exists, calls <code>fetchUserProfile()</code> to
+rehydrate; otherwise redirects to <code>/auth?mode=login</code>. Shows a spinner while <code>isLoading</code>.</p>
+<p><strong>Email verification &amp; password reset:</strong> signup sends a JWT-bearing link via Gmail SMTP (fired through
+FastAPI <strong><code>BackgroundTasks</code></strong> so the request returns immediately). A daily <strong>APScheduler</strong> cron deletes
+unverified users older than 24h.</p>
+<hr />
+<p><a name="8-backend"></a></p>
+<h2 id="8-backend-what-a-frontend-dev-should-confidently-explain">8. Backend (what a frontend dev should confidently explain)</h2>
+<p><strong>Layered architecture:</strong> <code>api/endpoints/*</code> (routing) → <code>services/*</code> (business logic) →
+<code>schemas/*</code> (Pydantic models) → <code>core/config.py</code> (settings). Auth is injected via a FastAPI
+<strong>dependency</strong> <code>get_current_user</code> (<code>Depends(oauth2_scheme)</code>).</p>
+<p><strong>Q: How does FastAPI's dependency injection work here?</strong></p>
+<blockquote>
+<p>"<code>get_current_user</code> is a dependency that extracts the bearer token (<code>OAuth2PasswordBearer</code>), verifies
+the JWT, loads the user from Mongo, and checks <code>is_verified</code>. Any endpoint that declares
+<code>current_user: User = Depends(get_current_user)</code> gets an authenticated user injected — and
+automatically returns 401/403 otherwise. It's reusable, testable, and self-documenting in Swagger."</p>
+</blockquote>
+<p><strong>Q: Sync vs async in the backend — explain.</strong></p>
+<blockquote>
+<p>"TMDB calls are fully async: <code>aiohttp</code> for HTTP and <code>asyncio.gather</code> to fan out parallel requests —
+e.g. <code>fetch_multiple_movies_details</code> fetches many movies concurrently. <strong>But</strong> the MongoDB access uses
+<strong><code>pymongo</code>, which is synchronous</strong>, inside <code>async def</code> handlers. That's a real flaw: a blocking DB
+call stalls the event loop. The correct fix is <strong>Motor</strong> (async MongoDB driver) or running sync calls
+in a threadpool. I'd call this out proactively."</p>
+</blockquote>
+<p><strong>Q: How is validation handled?</strong></p>
+<blockquote>
+<p>"Pydantic v2 models. I have a <code>SharedValidators</code> mixin with <code>@field_validator(..., check_fields=False)</code>
+so the same username/password/phone rules apply across <code>UserCreate</code>, <code>UpdateUserProfile</code>, etc. without
+duplication. <code>model_config = ConfigDict(extra='forbid')</code> rejects unexpected fields. Validation errors
+are caught by a custom exception handler that reshapes them into a consistent
+<code>{ errors: [{ field, message }] }</code> envelope the frontend can map to form fields."</p>
+</blockquote>
+<p><strong>Q: How do frontend and backend agree on error shape?</strong></p>
+<blockquote>
+<p>"Custom handlers (<code>validation_exception_handler</code>, <code>http_exception_handler</code>) normalize <em>everything</em> to
+<code>{ errors: [{field?, message}] }</code>. On the frontend, <code>transformBackendErrors</code> maps snake_case fields
+(<code>first_name</code>) to camelCase form fields (<code>firstName</code>) and shows them inline; errors without a <code>field</code>
+become a global toast. That contract is the glue between the two halves."</p>
+</blockquote>
+<p><strong>Endpoints you should be able to name:</strong> <code>/auth/*</code> (signup, token, google, verify-email, forgot/reset
+password), <code>/users/me</code> (+ watchlist/favorite/rating sub-routes, recommendations),
+<code>/movies/*</code> (popular, genre, search, by-ids, cast, reviews, trailer).</p>
+<hr />
+<p><a name="9-ai"></a></p>
+<h2 id="9-the-ai-ollama-layer-servicesollama_recommenderpy">9. The AI / Ollama Layer (<code>services/ollama_recommender.py</code>)</h2>
+<p><strong>Flow:</strong>
+1. Gather the user's favorites, watchlist, and ratings; resolve their TMDB <strong>titles</strong>.
+2. <strong>Bucket ratings</strong> into high (8–10), medium (6–7), low (1–5).
+3. Build an "enhanced prompt" that emphasizes favorites + highly-rated films, includes watchlist as
+   "interest," and lists movies to <strong>avoid</strong> (disliked + already-known, to prevent duplicates).
+4. Run a <strong><code>pydantic-ai</code> <code>Agent</code></strong> against <strong>Mistral</strong> served by Ollama over an OpenAI-compatible API
+   (<code>temperature: 0.2</code> for consistency, <code>max_tokens: 768</code>).
+5. Parse the model's JSON array (with a regex fallback for malformed output), dedupe, cap at 20 titles.
+6. Back in the endpoint, <strong>search TMDB</strong> for each title to turn names into real movie objects with
+   posters/ids, then return them.</p>
+<p><strong>Q: Why a <em>local</em> LLM (Ollama/Mistral) instead of the OpenAI API?</strong></p>
+<blockquote>
+<p>"Cost and privacy. No per-token billing, no sending user preference data to a third party, and it works
+offline. Trade-offs: I host a 7B model (heavy, slower, needs the container), and quality is below
+GPT-4-class models. Because Ollama exposes an OpenAI-compatible endpoint, I could swap to OpenAI by
+changing one base URL."</p>
+</blockquote>
+<p><strong>Q: How do you handle the LLM returning garbage / non-JSON?</strong></p>
+<blockquote>
+<p>"Defense in depth: a strict system prompt demanding <em>only</em> a JSON array, low temperature for
+determinism, a <code>parse_json_array</code> that first tries <code>JSON.loads</code> then <strong>regex-extracts</strong> the first
+<code>[...]</code> block, a dedupe pass, and a hard cap of 20. If everything fails it returns <code>[]</code>, and the
+endpoint <strong>falls back</strong> to favorites-based recs or an empty list — it never crashes the request."</p>
+</blockquote>
+<p><strong>Q: What's slow about the recommendation endpoint?</strong></p>
+<blockquote>
+<p>"After the LLM returns titles, I search TMDB for each one <strong>sequentially</strong> in a loop. That's up to 20
+serial network round-trips. I'd parallelize with <code>asyncio.gather</code> (like I already do elsewhere) to cut
+latency dramatically. The LLM call itself is also the dominant cost — I'd cache recommendations per
+user and only regenerate when their preferences change."</p>
+</blockquote>
+<hr />
+<p><a name="10-docker"></a></p>
+<h2 id="10-docker-devops">10. Docker &amp; DevOps</h2>
+<p><strong><code>docker-compose.yml</code>:</strong> <code>ollama</code> (healthcheck on :11434, model volume), <code>backend</code> (waits for
+<code>ollama: service_healthy</code>), <code>frontend</code> (waits for backend). Mongo is external (Atlas).</p>
+<p><strong>Backend <code>Dockerfile</code> — multi-stage:</strong></p>
+<pre><code>base    → install deps
+test    → copy app+tests, RUN pytest (endpoints, services, integration); build FAILS if tests fail
+runtime → copy app from test stage (no tests), slim final image
+</code></pre>
+<p><strong>Q: Why a multi-stage build, and why run tests <em>inside</em> the build?</strong></p>
+<blockquote>
+<p>"Multi-stage keeps the final image <strong>small and clean</strong> — the test code and dev artifacts never ship to
+the runtime image. Running <code>pytest</code> in the <code>test</code> stage makes the <strong>build itself a quality gate</strong>: if
+any test fails, <code>docker build</code> fails and the broken image is never produced. It's a poor-man's CI baked
+into the image pipeline."</p>
+</blockquote>
+<p><strong>Q: Walk through the Ollama container startup.</strong></p>
+<blockquote>
+<p>"A custom <code>entrypoint.sh</code> checks whether the Mistral model exists in the mounted volume. If not, it
+starts a temporary <code>ollama serve</code>, waits for the API (curl retry loop), pulls the model, kills the
+temp server, then <code>exec ollama serve</code> in the foreground. The model lives in a named volume
+(<code>ollama-models</code>) so it's only downloaded once and survives restarts. The compose <code>healthcheck</code> gates
+the backend from starting until Ollama responds."</p>
+</blockquote>
+<p><strong>Frontend <code>Dockerfile</code>:</strong> <code>npm ci</code> → <code>npm run build</code> (tsc type-check + Vite build) → serve the static
+<code>dist/</code> with <code>serve</code>. Package files are copied first for <strong>layer caching</strong> so deps only reinstall when
+<code>package.json</code> changes.</p>
+<p><strong>Q: A security issue in the backend Dockerfile?</strong></p>
+<blockquote>
+<p>"Yes — <code>COPY .env ./</code> bakes secrets (JWT <code>SECRET_KEY</code>, DB string, Google secret) <strong>into an image
+layer</strong>. Anyone with the image can extract them. Secrets should be injected at <strong>runtime</strong> via env
+vars / Docker secrets / a vault, never copied into the image. Compose already does <code>env_file</code> at
+runtime for the actual services, so the build-time copy (needed because tests import settings) is the
+liability — I'd inject a dummy/test env for the test stage instead."</p>
+</blockquote>
+<hr />
+<p><a name="11-testing"></a></p>
+<h2 id="11-testing">11. Testing</h2>
+<p><strong>Backend</strong> has three suites: <code>tests/endpoints</code>, <code>tests/services</code>, <code>tests/integration</code>. The integration
+<code>conftest.py</code> is worth studying:
+- <strong><code>mongomock</code></strong> replaces MongoDB with an in-memory fake (via <code>monkeypatch.setattr</code>).
+- Email sending is <strong>stubbed</strong> to a no-op that records the last message.
+- TMDB <code>make_request</code> is <strong>monkeypatched</strong> to return canned fixtures (no real network).
+- A <code>TestClient</code> (Starlette) drives the app; a <code>make_token</code> helper mints JWTs for authed requests.</p>
+<p><strong>Q: How do you test without hitting MongoDB / TMDB / Gmail?</strong></p>
+<blockquote>
+<p>"Dependency seams + monkeypatching. <code>mongomock</code> gives an in-memory Mongo; I patch the module-level
+<code>users_collection</code>. TMDB's single <code>make_request</code> choke-point is patched to return fixtures, so I test
+business logic deterministically and offline. Emails are stubbed. This is fast and hermetic — no
+flaky network."</p>
+</blockquote>
+<p><strong>Q: Biggest testing gap?</strong></p>
+<blockquote>
+<p>"<strong>No frontend tests at all.</strong> I'd add Vitest + React Testing Library for the reducers (pure functions —
+easy, high-value), the custom hooks, and <code>authFetch</code>; plus Playwright for the critical auth + browse
+flows. The reducers especially are pure and trivial to unit test."</p>
+</blockquote>
+<hr />
+<p><a name="12-weaknesses"></a></p>
+<h2 id="12-known-weaknesses-trade-offs-raise-these-before-they-do">12. Known Weaknesses &amp; Trade-offs (raise these BEFORE they do)</h2>
+<p>Interviewers respect self-awareness more than a flawless façade. Have 4–5 of these ready:</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Issue</th>
+<th>Better approach</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><strong>JWT in <code>localStorage</code></strong> → XSS-exfiltratable</td>
+<td><code>httpOnly</code>+<code>Secure</code>+<code>SameSite</code> cookie + CSRF token</td>
+</tr>
+<tr>
+<td>2</td>
+<td><strong>No refresh tokens</strong> — 30-min expiry forces re-login</td>
+<td>short access token + rotating refresh token</td>
+</tr>
+<tr>
+<td>3</td>
+<td><strong><code>pymongo</code> (sync) inside async handlers</strong> blocks the event loop</td>
+<td><strong>Motor</strong> async driver, or threadpool offload</td>
+</tr>
+<tr>
+<td>4</td>
+<td><strong><code>.env</code> copied into Docker image</strong> = secrets in a layer</td>
+<td>runtime injection / Docker secrets / vault</td>
+</tr>
+<tr>
+<td>5</td>
+<td><strong>Search filters ignored</strong> — <code>/movies/search</code> accepts <code>genre/min_rating/year</code> but <code>search_movies</code> never uses them</td>
+<td>pass through to TMDB <code>discover</code> or filter results</td>
+</tr>
+<tr>
+<td>6</td>
+<td><strong>Sequential TMDB lookups</strong> in recommendations (up to 20 serial calls)</td>
+<td><code>asyncio.gather</code> to parallelize; cache recs</td>
+</tr>
+<tr>
+<td>7</td>
+<td><strong>No server-side caching</strong> of TMDB → repeated identical calls</td>
+<td>Redis / in-memory TTL cache</td>
+</tr>
+<tr>
+<td>8</td>
+<td><strong>Hand-rolled server-state</strong> (caching/dedup/pagination)</td>
+<td>React Query / RTK Query</td>
+</tr>
+<tr>
+<td>9</td>
+<td><strong>No frontend tests</strong></td>
+<td>Vitest + RTL + Playwright</td>
+</tr>
+<tr>
+<td>10</td>
+<td><strong><code>@app.on_event</code> deprecated</strong></td>
+<td>FastAPI <code>lifespan</code> context manager</td>
+</tr>
+<tr>
+<td>11</td>
+<td><strong><code>any</code> in catch blocks</strong></td>
+<td><code>unknown</code> + narrowing</td>
+</tr>
+<tr>
+<td>12</td>
+<td><strong>No rate limiting / no HTTPS termination shown</strong></td>
+<td>reverse proxy (nginx/traefik) + slowapi</td>
+</tr>
+<tr>
+<td>13</td>
+<td><strong><code>registerLogout(logout)</code> runs every render</strong> in UserContext</td>
+<td>call inside <code>useEffect</code> once</td>
+</tr>
+<tr>
+<td>14</td>
+<td><strong><code>authFetch</code> returns never-resolving promise</strong></td>
+<td>throw typed <code>AuthError</code>; handle in callers</td>
+</tr>
+<tr>
+<td>15</td>
+<td><strong>CORS hardcoded to localhost</strong>; same with origins</td>
+<td>env-driven allowed origins</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Q: If you rebuilt this today, what would you change first?</strong></p>
+<blockquote>
+<p>"Three things: (1) move auth tokens to httpOnly cookies with refresh rotation; (2) swap <code>pymongo</code> for
+Motor so the async story is real end-to-end; (3) adopt React Query on the frontend to replace my manual
+caching contexts. Those three address the most serious security, performance, and maintainability gaps
+respectively."</p>
+</blockquote>
+<hr />
+<p><a name="13-rapidfire"></a></p>
+<h2 id="13-rapid-fire-qa-bank">13. Rapid-Fire Q&amp;A Bank</h2>
+<p><strong>React / JS</strong></p>
+<ul>
+<li><strong>Controlled vs uncontrolled inputs?</strong> "Auth form uses <code>FormData</code> off the form element (uncontrolled),
+  reading values on submit — less re-rendering. Profile form is more controlled via <code>useProfileForm</code>."</li>
+<li><strong>Why <code>key</code> in lists?</strong> "React uses <code>key</code> to match elements across renders for efficient reconciliation;
+  I use stable movie ids, never array index, and dedupe to keep them unique."</li>
+<li><strong>What is <code>StrictMode</code> doing?</strong> "In dev it double-invokes effects/renders to surface impure logic and
+  cleanup bugs. My IntersectionObserver hooks clean up on unmount, so they're StrictMode-safe."</li>
+<li><strong><code>useCallback</code> vs <code>useMemo</code>?</strong> "<code>useCallback</code> memoizes a function identity, <code>useMemo</code> a computed value.
+  I <code>useCallback</code> the context action functions so split-context consumers stay stable, and <code>useMemo</code> the
+  Movies context <code>value</code> object."</li>
+<li><strong>Closures / stale state?</strong> "Covered in the optimistic-update answer — async functions capture the state
+  snapshot at call time; deps arrays and functional updates mitigate it."</li>
+<li><strong>Event loop / microtasks?</strong> "Relevant to <code>asyncio.gather</code> on the backend and Promise ordering in
+  <code>authFetch</code>."</li>
+</ul>
+<p><strong>CSS / UI</strong></p>
+<ul>
+<li><strong>Why Tailwind?</strong> "Utility-first → no context-switching to CSS files, no naming bikeshedding, dead-code
+  elimination via PomCSS purge, consistent design tokens. Trade-off: verbose className strings, mitigated
+  by extracting components and <code>cn()</code>/<code>tailwind-merge</code>."</li>
+<li><strong>How do you do animations?</strong> "Framer Motion for the auth mode-toggle slide (<code>direction</code> in AuthContext
+  drives the transition), modal transitions, and list reveals."</li>
+<li><strong>Responsive/mobile?</strong> "Tailwind breakpoints, mobile-first; separate <code>AuthMobileHeader</code> vs sidebar."</li>
+<li><strong>Accessibility?</strong> "Radix primitives under shadcn give focus management, ARIA roles, and keyboard nav on
+  Dialog/Select/Avatar for free."</li>
+</ul>
+<p><strong>Routing</strong></p>
+<ul>
+<li><strong>How does protected routing work?</strong> "<code>ProtectedRoute</code> wraps the <code>/dashboard</code> layout route; nested
+  routes (search, watchlist, favorites, ratings, profile) render in its <code>&lt;Outlet&gt;</code>. Unknown paths
+  <code>Navigate</code> to <code>/</code>."</li>
+</ul>
+<p><strong>General</strong></p>
+<ul>
+<li><strong>How do you handle loading &amp; errors?</strong> "Every async slice tracks <code>loading</code>/<code>error</code> in its reducer;
+  UI shows skeletons (shadcn <code>Skeleton</code>) and a global toast system (<code>MessageContext</code>) for errors."</li>
+<li><strong>How is config managed?</strong> "Backend: Pydantic <code>BaseSettings</code> reads <code>.env</code>. Frontend: Vite env vars
+  (<code>import.meta.env.VITE_BACKEND_URL</code>) exposed only when prefixed <code>VITE_</code>."</li>
+</ul>
+<hr />
+<p><a name="14-ask-back"></a></p>
+<h2 id="14-smart-questions-to-ask-the-interviewer">14. Smart Questions to Ask the Interviewer</h2>
+<ul>
+<li>"How is state management handled in your codebase — Redux, Zustand, React Query, or Context?"</li>
+<li>"What's your approach to auth token storage and refresh on the frontend?"</li>
+<li>"Do you colocate tests with components, and what's your coverage philosophy?"</li>
+<li>"How do you handle server-state caching and request deduplication?"</li>
+<li>"What does your component library / design system story look like — bespoke, shadcn, or a vendor lib?"</li>
+<li>"How are frontend and backend error contracts defined and kept in sync?"</li>
+</ul>
+<hr />
+<p><a name="15-why-stack"></a></p>
+<h2 id="15-why-this-stack-technology-justifications">15. Why This Stack? — Technology Justifications</h2>
+<p>This is one of the <strong>most common interview themes</strong>: "Why did you choose X and not Y?" Have a crisp,
+trade-off-aware answer for every major technology. Never answer "because it's popular" — always give a
+<em>reason tied to this project</em> plus the <em>alternative you rejected and why</em>.</p>
+<h3 id="why-mongodb-and-not-postgresql-mysql-a-relational-db">🟢 Why MongoDB (and not PostgreSQL / MySQL / a relational DB)?</h3>
+<blockquote>
+<p>"I chose MongoDB because the <strong>data model fits a document store naturally</strong>. A user in MovieCompass is
+essentially one self-contained document: profile fields plus <strong>embedded arrays</strong> — <code>favorite_movies</code>,
+<code>watchlist</code>, and <code>ratings</code> (an array of <code>{movie_id, rating}</code> sub-documents). All of that lives in a
+single document, so the common operation — <em>load everything about the current user</em> — is <strong>one query,
+no JOINs</strong>."</p>
+</blockquote>
+<p>Back it up with specifics from your code:
+- <strong>Schema flexibility:</strong> users have different shapes — a Google OAuth user has <code>google_id</code> and no
+  <code>hashed_password</code>; a local user is the reverse; <code>auth_provider</code> can be <code>local</code>, <code>google</code>, or <code>both</code>.
+  A document model absorbs that without <code>ALTER TABLE</code> migrations or nullable-column sprawl.
+- <strong>Atomic array operators:</strong> you use Mongo's <code>$addToSet</code>, <code>$pull</code>, and the positional <code>$</code> operator
+  (<code>ratings.$.rating</code>) to add/remove favorites and update a specific rating <strong>atomically in the
+  database</strong> — no read-modify-write race. That's a genuinely good fit for the feature set.
+- <strong>The movie data itself isn't in Mongo</strong> — it's fetched live from TMDB. Mongo only stores <em>user</em> data
+  (IDs + preferences), which is a small, denormalized, read-heavy workload. Perfect for a document DB.</p>
+<p><strong>Q: When would MongoDB be the <em>wrong</em> choice here?</strong></p>
+<blockquote>
+<p>"If the app grew relational features — e.g. 'users who rated this movie also liked…', social graphs,
+friend networks, or complex analytical queries across users — a relational DB (or a graph DB) would
+shine because those are JOIN-heavy and benefit from a fixed schema and referential integrity. Mongo
+also doesn't give me multi-document ACID transactions by default, and there's <strong>no enforced schema at
+the DB level</strong> — my Pydantic models are the only thing guaranteeing shape. For money or
+inventory-style data I'd pick Postgres."</p>
+</blockquote>
+<p><strong>Q: MongoDB vs PostgreSQL's JSONB — couldn't Postgres do both?</strong></p>
+<blockquote>
+<p>"Fair point — Postgres with <code>JSONB</code> columns gives you document-style flexibility <em>and</em> relational
+power, and many teams default to it for that reason. I went with Mongo because the access pattern is
+almost purely document-shaped and I wanted the ergonomic array update operators. If I expected to mix
+relational and document workloads, Postgres + JSONB would be the safer, more future-proof bet."</p>
+</blockquote>
+<p><strong>Q: How do you model the rating update — and why is it interesting?</strong></p>
+<blockquote>
+<p>"Adding a rating checks if one exists for that <code>movie_id</code>: if yes, it uses a filtered update with the
+<strong>positional <code>$</code> operator</strong> to set just that element (<code>{'ratings.$.rating': value}</code>); if no, it
+<code>$addToSet</code>s a new sub-document. Both are single atomic DB operations — I never load the array into
+the app, mutate it, and write it back, which would be racy under concurrent requests."</p>
+</blockquote>
+<p><strong>Q: Why Atlas (cloud) and not a Mongo container in compose?</strong></p>
+<blockquote>
+<p>"I deliberately kept Mongo external — managed Atlas gives me backups, replication, monitoring, and TLS
+without ops work, and it means the database survives <code>docker-compose down</code>. The trade-off is a hard
+dependency on an external service and network latency; for purely local dev you could point the same
+connection string at a local Mongo container."</p>
+</blockquote>
+<hr />
+<h3 id="why-fastapi-and-not-flask-django-express-node">🟢 Why FastAPI (and not Flask / Django / Express / Node)?</h3>
+<blockquote>
+<p>"FastAPI gave me three things that directly shaped this project: <strong>native async</strong>, <strong>Pydantic-based
+validation and serialization</strong>, and <strong>automatic OpenAPI docs</strong>. Since the backend is heavily I/O-bound
+— it's mostly orchestrating calls to TMDB, MongoDB, the LLM, and SMTP — <code>async</code>/<code>await</code> lets me run
+those concurrently (<code>asyncio.gather</code>) instead of blocking per request."</p>
+</blockquote>
+<p>Specifics to cite:
+- <strong>Pydantic v2 is built in.</strong> My request/response models, validation rules (<code>SharedValidators</code> mixin),
+  and serialization all come from the same type definitions. Define the model once and I get request
+  parsing, validation, error messages, and JSON responses — no separate serializer layer like Django
+  REST Framework needs.
+- <strong>Dependency Injection.</strong> <code>Depends(get_current_user)</code> cleanly injects the authenticated user into any
+  endpoint and auto-returns 401/403. Reusable, testable, and self-documenting.
+- <strong>Automatic interactive docs.</strong> <code>/docs</code> (Swagger) and <code>/redoc</code> are generated from the type hints —
+  zero extra work, and great for a frontend dev consuming the API.
+- <strong>Type hints = editor + runtime safety.</strong> The same annotations drive autocomplete, validation, and docs.</p>
+<p><strong>Q: FastAPI vs Flask?</strong></p>
+<blockquote>
+<p>"Flask is synchronous-first and minimal — you bolt on validation (marshmallow), serialization, and
+docs yourself. FastAPI bakes in async, validation, and OpenAPI. For an I/O-bound, API-first service
+like this, FastAPI removes a lot of boilerplate. Flask would've meant more glue code for the same
+result."</p>
+</blockquote>
+<p><strong>Q: FastAPI vs Django / Django REST Framework?</strong></p>
+<blockquote>
+<p>"Django is 'batteries-included' — ORM, admin, auth, migrations. That's powerful for a content-heavy,
+DB-centric app with a relational schema. But it's heavier than I needed, opinionated toward its ORM
+(which is relational, not Mongo), and async support is newer/partial. My app is a thin, async API
+layer over external services with a document DB — FastAPI is the leaner fit. If I needed a built-in
+admin panel and relational models, Django would win."</p>
+</blockquote>
+<p><strong>Q: FastAPI vs Node/Express (staying all-JavaScript)?</strong></p>
+<blockquote>
+<p>"A valid alternative — one language across the stack reduces context-switching, and Node is excellent
+for I/O concurrency. I chose Python because the <strong>AI/LLM ecosystem is Python-first</strong> (<code>pydantic-ai</code>,
+the Ollama/OpenAI clients, data tooling), and Pydantic + FastAPI gave me stronger built-in validation
+and auto-docs than a typical Express setup, where I'd add <code>zod</code>/<code>joi</code> + <code>swagger-jsdoc</code> manually. The
+trade-off is two languages to maintain."</p>
+</blockquote>
+<p><strong>Q: FastAPI runs on Uvicorn — what is that?</strong></p>
+<blockquote>
+<p>"Uvicorn is an <strong>ASGI</strong> server (Asynchronous Server Gateway Interface). Unlike WSGI (Flask/Django's
+traditional sync interface), ASGI supports async request handling and long-lived connections. FastAPI
+is an ASGI framework, and Uvicorn is the server process that actually runs it — that's the
+<code>CMD ["uvicorn", "app.main:application", ...]</code> in my Dockerfile."</p>
+</blockquote>
+<hr />
+<h3 id="why-react-and-not-vue-angular-svelte">🟢 Why React (and not Vue / Angular / Svelte)?</h3>
+<blockquote>
+<p>"React for the <strong>ecosystem and component model</strong>. The huge library ecosystem (Radix/shadcn, Framer
+Motion, React Router), the largest hiring pool, and a mental model — components + hooks +
+unidirectional data flow — I'm most productive in. Vue and Svelte are excellent and arguably simpler
+for small apps; Angular is heavier and more opinionated (good for large enterprise teams). For a
+SPA this size with rich third-party UI needs, React hit the sweet spot."</p>
+</blockquote>
+<p><strong>Q: React 19 specifically — anything notable?</strong></p>
+<blockquote>
+<p>"I'm on React 19. I'm not leaning on the newest features like the <code>use</code> hook or Actions heavily, but
+being current means access to the latest concurrent rendering and the improved ref/Context handling.
+My patterns (Context + reducers, <code>use-context-selector</code>) are version-agnostic."</p>
+</blockquote>
+<h3 id="why-vite-and-not-create-react-app-webpack">🟢 Why Vite (and not Create React App / Webpack)?</h3>
+<blockquote>
+<p>"Vite for <strong>dev speed</strong>. It serves source over native ES modules with esbuild for instant cold starts
+and near-instant HMR, versus CRA/Webpack which bundle everything up front and get slow as the app
+grows. For production it bundles with Rollup (tree-shaking, code-splitting). CRA is also effectively
+deprecated now. My <code>vite.config.ts</code> is minimal — the React plugin plus an <code>@</code> path alias."</p>
+</blockquote>
+<h3 id="why-tailwind-and-not-css-modules-styled-components-plain-css">🟢 Why Tailwind (and not CSS Modules / styled-components / plain CSS)?</h3>
+<blockquote>
+<p>"Utility-first Tailwind keeps styles <strong>colocated</strong> with markup, eliminates naming overhead, and purges
+unused CSS at build time for a tiny bundle. Versus styled-components, there's <strong>no runtime CSS-in-JS
+cost</strong>. It pairs perfectly with shadcn/ui, which ships Tailwind-styled components I own. The downside —
+long className strings — I manage with component extraction and <code>tailwind-merge</code>/<code>cn()</code>."</p>
+</blockquote>
+<h3 id="why-a-local-llm-via-ollama-and-not-the-openai-api">🟢 Why a local LLM via Ollama (and not the OpenAI API)?</h3>
+<blockquote>
+<p>"Covered in §9: <strong>cost</strong> (no per-token billing), <strong>privacy</strong> (user preference data never leaves my
+infra), and <strong>offline capability</strong>. Trade-off is hosting a heavy 7B model and lower quality than
+GPT-4-class. Because Ollama exposes an OpenAI-compatible endpoint, swapping to OpenAI is a one-line
+base-URL change."</p>
+</blockquote>
+<h3 id="one-liner-cheat-sheet">One-liner cheat sheet</h3>
+<table>
+<thead>
+<tr>
+<th>Choice</th>
+<th>One-sentence justification</th>
+<th>Main alternative rejected</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>MongoDB</strong></td>
+<td>User = one document with embedded arrays; atomic array ops; flexible auth schema</td>
+<td>Postgres (relational/JSONB)</td>
+</tr>
+<tr>
+<td><strong>FastAPI</strong></td>
+<td>Async + Pydantic validation + auto OpenAPI for an I/O-bound API</td>
+<td>Flask / Django / Express</td>
+</tr>
+<tr>
+<td><strong>React</strong></td>
+<td>Ecosystem, hiring pool, component+hooks model</td>
+<td>Vue / Angular / Svelte</td>
+</tr>
+<tr>
+<td><strong>Vite</strong></td>
+<td>Instant dev server + HMR; CRA is dead</td>
+<td>Webpack / CRA</td>
+</tr>
+<tr>
+<td><strong>Tailwind</strong></td>
+<td>Colocated, zero-runtime, purged CSS; pairs with shadcn</td>
+<td>styled-components / CSS Modules</td>
+</tr>
+<tr>
+<td><strong>Ollama/Mistral</strong></td>
+<td>Free, private, offline; OpenAI-compatible API</td>
+<td>OpenAI API</td>
+</tr>
+<tr>
+<td><strong>Context+useReducer</strong></td>
+<td>Right-sized state without Redux boilerplate</td>
+<td>Redux / Zustand / React Query</td>
+</tr>
+<tr>
+<td><strong>JWT</strong></td>
+<td>Stateless, scales horizontally, no server session store</td>
+<td>Server-side sessions</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<p><a name="16-patterns"></a></p>
+<h2 id="16-design-patterns-deep-dive">16. Design Patterns Deep Dive</h2>
+<p>Interviewers often ask "what design patterns did you use?" Name them explicitly — it signals you think
+in patterns, not just code.</p>
+<table>
+<thead>
+<tr>
+<th>Pattern</th>
+<th>Where in your code</th>
+<th>What to say</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Reducer / Flux pattern</strong></td>
+<td>All 5 contexts (<code>useReducer</code> + typed actions)</td>
+<td>"Predictable state via pure reducers, dispatched actions, single source of truth — Redux's model without the library."</td>
+</tr>
+<tr>
+<td><strong>Provider pattern</strong></td>
+<td>Every Context provider in <code>App.tsx</code></td>
+<td>"Inject cross-cutting state into the tree without prop-drilling."</td>
+</tr>
+<tr>
+<td><strong>Container/Presentational split</strong></td>
+<td><code>pages/</code> (smart) vs <code>components/ui/</code> (dumb)</td>
+<td>"Pages orchestrate data + actions; UI components are pure and reusable."</td>
+</tr>
+<tr>
+<td><strong>Custom hooks (composition)</strong></td>
+<td><code>useInfiniteScroll</code>, <code>useFetchOnView</code>, <code>useAuthSubmit</code></td>
+<td>"Encapsulate and reuse stateful logic; hooks compose instead of inherit."</td>
+</tr>
+<tr>
+<td><strong>Facade</strong></td>
+<td><code>authFetch</code></td>
+<td>"One function hides token injection, error handling, and redirect-on-401 behind a <code>fetch</code>-like API."</td>
+</tr>
+<tr>
+<td><strong>Registry / Service Locator</strong></td>
+<td><code>logoutRegistry</code>, <code>setGlobalNavigate</code></td>
+<td>"Module-level registry lets non-React code reach React-owned functions."</td>
+</tr>
+<tr>
+<td><strong>Adapter</strong></td>
+<td><code>transformBackendErrors</code>, the <code>raw → UserProfile</code> mapping</td>
+<td>"Adapts the backend's snake_case contract to the frontend's camelCase model."</td>
+</tr>
+<tr>
+<td><strong>Optimistic update</strong></td>
+<td><code>toggleMovieOnServer</code>, <code>setMovieRating</code></td>
+<td>"Update UI first, reconcile with server, roll back on failure."</td>
+</tr>
+<tr>
+<td><strong>Repository / layered service</strong></td>
+<td>backend <code>services/*</code> over <code>pymongo</code></td>
+<td>"Endpoints never touch the DB directly; services encapsulate persistence."</td>
+</tr>
+<tr>
+<td><strong>Dependency Injection</strong></td>
+<td>FastAPI <code>Depends(get_current_user)</code></td>
+<td>"Framework injects auth; endpoints declare what they need."</td>
+</tr>
+<tr>
+<td><strong>Strategy (lite)</strong></td>
+<td><code>auth_provider</code> (<code>local</code>/<code>google</code>/<code>both</code>) branching</td>
+<td>"Different auth strategies behind one user model."</td>
+</tr>
+<tr>
+<td><strong>Mixin</strong></td>
+<td><code>SharedValidators</code> Pydantic base</td>
+<td>"Share field validators across multiple schemas via inheritance."</td>
+</tr>
+<tr>
+<td><strong>Singleton (module)</strong></td>
+<td><code>settings</code>, the Mongo <code>client</code> at import time</td>
+<td>"One shared instance per process — though it hurts testability (see weaknesses)."</td>
+</tr>
+<tr>
+<td><strong>Observer</strong></td>
+<td><code>IntersectionObserver</code> in scroll hooks; reducer subscriptions</td>
+<td>"Browser notifies on intersection; components subscribe to context slices."</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Q: What's the most important pattern in your frontend, and why?</strong></p>
+<blockquote>
+<p>"The <strong>reducer + domain-split context</strong> pattern. It gives me Redux-style predictability — every state
+change is a pure function of (state, action) — while keeping unrelated state in separate providers so
+updates stay localized. Layered on top is the <strong>Map-based cache</strong> inside those reducers, which is my
+hand-rolled equivalent of a query cache."</p>
+</blockquote>
+<p><strong>Q: Did you use any anti-patterns, knowingly?</strong></p>
+<blockquote>
+<p>"A couple I'd flag honestly: the module-level <strong>registry/global-navigate</strong> pattern is effectively
+hidden global mutable state with an init-order dependency — convenient but not pure. And
+<code>registerLogout(logout)</code> runs on every render instead of inside an effect. Both work, but I know why
+they're smells and how I'd refactor them."</p>
+</blockquote>
+<hr />
+<p><a name="17-system-design"></a></p>
+<h2 id="17-architecture-system-design-questions">17. Architecture &amp; System-Design Questions</h2>
+<p>These are higher-altitude questions about how the system fits together and how it would scale. Even for
+a frontend role, showing this thinking sets you apart.</p>
+<p><strong>Q: Walk me through what happens, end to end, when a user opens the dashboard.</strong></p>
+<blockquote>
+<p>"The browser loads the SPA. <code>ProtectedRoute</code> checks <code>isAuthenticated</code>; if there's a token but no user
+in state, it calls <code>fetchUserProfile()</code> → <code>authFetch('/users/me')</code> with the Bearer token. FastAPI's
+<code>get_current_user</code> dependency verifies the JWT, loads the user from Mongo, checks <code>is_verified</code>, and
+returns it. Meanwhile <code>MoviesContext</code> fetches popular movies from <code>/movies/popular</code>, which the backend
+proxies from TMDB. Cards render from state; scrolling triggers the IntersectionObserver sentinel to
+fetch the next page, which is deduped and merged into the cache."</p>
+</blockquote>
+<p><strong>Q: Why does the backend proxy TMDB instead of the frontend calling TMDB directly?</strong></p>
+<blockquote>
+<p>"Three reasons. <strong>(1) Secret protection</strong> — the TMDB API key stays server-side; it'd be exposed in
+the browser if the frontend called TMDB directly. <strong>(2) A stable internal contract</strong> — I reshape
+TMDB's responses into my own <code>Movie</code>/<code>MovieResponse</code> schemas, so the frontend depends on <em>my</em> API, not
+TMDB's, and I can swap data sources later. <strong>(3) Server-side orchestration</strong> — things like
+recommendations need to combine TMDB + LLM + user data, which has to happen on the backend anyway."</p>
+</blockquote>
+<p><strong>Q: How would you scale this to 100k users?</strong></p>
+<blockquote>
+<p>"Several layers. <strong>Caching:</strong> add Redis to cache TMDB responses (genres, popular, movie details rarely
+change) so I'm not re-hitting TMDB and getting rate-limited. <strong>DB:</strong> Mongo Atlas scales horizontally
+via sharding; my queries are already keyed by indexed <code>id</code>/<code>email</code>. <strong>Async correctness:</strong> swap
+<code>pymongo</code> for <strong>Motor</strong> so DB calls don't block the event loop. <strong>Backend:</strong> it's stateless (JWT
+auth, no server sessions), so I can run N replicas behind a load balancer. <strong>Frontend:</strong> serve the
+static build from a CDN. <strong>AI:</strong> the LLM is the bottleneck — I'd cache recommendations per user and
+regenerate only when preferences change, and run Ollama on dedicated GPU nodes or move to a hosted
+inference API."</p>
+</blockquote>
+<p><strong>Q: Your backend is stateless — why does that matter?</strong></p>
+<blockquote>
+<p>"Auth state lives entirely in the JWT the client holds, not in server memory. So any backend instance
+can serve any request — no sticky sessions, no shared session store. That's what makes horizontal
+scaling trivial: just add more containers behind a load balancer."</p>
+</blockquote>
+<p><strong>Q: How do the frontend and backend stay in sync on the API contract?</strong></p>
+<blockquote>
+<p>"Today it's manual — I keep TypeScript types in <code>types/</code> mirroring the Pydantic schemas, and a custom
+error envelope (<code>{errors:[{field,message}]}</code>) both sides agree on. The improvement would be to
+<strong>generate</strong> the TS client/types from FastAPI's OpenAPI schema (e.g. <code>openapi-typescript</code>), so the
+contract is single-sourced and drift is impossible."</p>
+</blockquote>
+<p><strong>Q: What happens if TMDB or Ollama is down?</strong></p>
+<blockquote>
+<p>"TMDB: <code>make_request</code> maps upstream errors to proper HTTP codes and raises <code>HTTPException</code>, so the
+frontend gets a clean error and shows a toast rather than crashing. Ollama: the recommendation flow is
+wrapped in try/except with a <strong>fallback</strong> to favorites-based recs or an empty list — a degraded but
+non-broken experience. What's missing is <strong>retries with backoff</strong> and a <strong>circuit breaker</strong> so I don't
+hammer a failing dependency; I'd add those (and a timeout on every external call) for production."</p>
+</blockquote>
+<p><strong>Q: How do you handle secrets and configuration across environments?</strong></p>
+<blockquote>
+<p>"Backend config is centralized in a Pydantic <code>BaseSettings</code> class that reads from <code>.env</code> / environment
+variables — one typed object (<code>settings</code>) used everywhere. Frontend uses Vite env vars (<code>VITE_</code>-
+prefixed, exposed via <code>import.meta.env</code>). The known issue is that the Docker <em>build</em> copies <code>.env</code> into
+the image for the test stage — secrets shouldn't live in image layers; I'd inject them only at runtime."</p>
+</blockquote>
+<p><strong>Q: Where are the trust boundaries / what's your security model?</strong></p>
+<blockquote>
+<p>"Public, unauthenticated endpoints: all <code>/movies/*</code> and the <code>/auth/*</code> flows. Everything under
+<code>/users/me</code> requires a valid JWT via the <code>get_current_user</code> dependency. Passwords are bcrypt-hashed
+(never stored plaintext). Email verification gates login. Validation happens at the schema boundary
+with Pydantic (<code>extra='forbid'</code> rejects unexpected fields). The weak spots I'd harden: token storage
+(localStorage→httpOnly cookie), add rate limiting, refresh tokens, and HTTPS termination via a
+reverse proxy."</p>
+</blockquote>
+<p><strong>Q: If two requests modify the same user's watchlist concurrently, what happens?</strong></p>
+<blockquote>
+<p>"Because I use Mongo's atomic <code>$addToSet</code>/<code>$pull</code> operators, the database serializes those updates
+correctly — no lost writes from a read-modify-write race. On the frontend, rapid optimistic toggles
+could still race at the network layer; I'd debounce them and/or key requests so the last intent wins."</p>
+</blockquote>
+<p><strong>Q: How is pagination implemented across the system?</strong></p>
+<blockquote>
+<p>"Page-based. The frontend tracks <code>currentPage</code>/<code>hasMore</code> per collection in the reducer, requests
+<code>?page=N</code>, and the backend forwards it to TMDB. <code>hasMore</code> is inferred from whether a page returned any
+results. The cache merges + dedupes pages. A more robust approach for large/changing datasets would be
+<strong>cursor-based</strong> pagination, but page-based is fine for TMDB's model."</p>
+</blockquote>
+<hr />
+<h2 id="final-tips">Final tips</h2>
+<ul>
+<li><strong>Lead with trade-offs.</strong> For every choice (Context vs Redux, local LLM vs OpenAI, localStorage vs
+  cookies), state <em>why</em> and <em>what you'd do differently at scale</em>. That signals senior thinking.</li>
+<li><strong>Know your three flagship FE features cold:</strong> the optimistic-update + revert flow, the
+  <code>Map</code>-based caching + dedup reducer pattern, and the <code>authFetch</code> + <code>logoutRegistry</code> global-bridge.</li>
+<li><strong>Don't oversell "microservices."</strong> Call it a multi-container / service-oriented architecture.</li>
+<li><strong>Be ready to whiteboard</strong> the auth flow (login → JWT → localStorage → authFetch → 401 → logout) and
+  the infinite-scroll IntersectionObserver lifecycle.</li>
+</ul>
+<p>Good luck — you built something genuinely full-stack and non-trivial. Own the trade-offs and you'll do great. 🎬</p>
+  </main>
+</div>
+<script>
+// Wrap each "Q:" paragraph + following blockquote into a collapsible practice card.
+function buildQA(){
+  const main = document.querySelector('main');
+  const ps = Array.from(main.querySelectorAll('p'));
+  ps.forEach(p=>{
+    const strong = p.querySelector('strong');
+    const txt = (strong?strong.textContent:p.textContent).trim();
+    if(!/^Q[:.]/i.test(txt)) return;
+    let ans = p.nextElementSibling;
+    if(!ans || ans.tagName!=='BLOCKQUOTE') return;
+    const card = document.createElement('div');
+    card.className='qa';
+    const qhead = txt.replace(/^Q[:.]\s*/i,'');
+    const q = document.createElement('div');
+    q.className='q';
+    q.innerHTML = '<span class="qicon">❓</span><span class="qtext">'+qhead+'</span>'+
+                  '<span class="badge">reveal</span><span class="chev">▶</span>';
+    const a = document.createElement('div');
+    a.className='a';
+    p.replaceWith(card);
+    card.appendChild(q);
+    card.appendChild(a);
+    a.appendChild(ans);
+    q.addEventListener('click', ()=>{
+      card.classList.toggle('open');
+      q.querySelector('.badge').textContent = card.classList.contains('open')?'hide':'reveal';
+    });
+  });
+}
+
+function buildSidebarActiveTracking(){
+  const links = Array.from(document.querySelectorAll('aside nav a'));
+  const map = {};
+  links.forEach(l=>{ const id=l.getAttribute('href').slice(1); if(id) map[id]=l; });
+  const heads = Array.from(document.querySelectorAll('main h2, main h3')).filter(h=>h.id);
+  const obs = new IntersectionObserver(entries=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){
+        links.forEach(l=>l.classList.remove('active'));
+        const l = map[e.target.id]; if(l) l.classList.add('active');
+      }
+    });
+  }, {rootMargin:'-10% 0px -80% 0px'});
+  heads.forEach(h=>obs.observe(h));
+}
+
+function progressBar(){
+  const bar = document.querySelector('.progress>i');
+  const main = document.querySelector('main');
+  window.addEventListener('scroll', ()=>{
+    const h = document.body.scrollHeight - window.innerHeight;
+    bar.style.width = (h>0 ? (window.scrollY/h*100) : 0) + '%';
+  });
+}
+
+function controls(){
+  document.getElementById('expandAll').onclick=()=>{
+    document.querySelectorAll('.qa').forEach(c=>{c.classList.add('open');
+      c.querySelector('.badge').textContent='hide';});
+  };
+  document.getElementById('collapseAll').onclick=()=>{
+    document.querySelectorAll('.qa').forEach(c=>{c.classList.remove('open');
+      c.querySelector('.badge').textContent='reveal';});
+  };
+  const tbtn=document.getElementById('themeBtn');
+  tbtn.onclick=()=>{
+    const cur=document.documentElement.getAttribute('data-theme');
+    const next=cur==='light'?'dark':'light';
+    document.documentElement.setAttribute('data-theme',next);
+    tbtn.textContent = next==='light'?'🌙 Dark':'☀️ Light';
+  };
+  // search filter over sidebar + content sections
+  const box=document.getElementById('search');
+  box.addEventListener('input', ()=>{
+    const q=box.value.toLowerCase().trim();
+    document.querySelectorAll('aside nav a').forEach(a=>{
+      a.parentElement.classList.toggle('hidden', q && !a.textContent.toLowerCase().includes(q));
+    });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  buildQA();
+  buildSidebarActiveTracking();
+  progressBar();
+  controls();
+});
+</script>
+</body>
+</html>
