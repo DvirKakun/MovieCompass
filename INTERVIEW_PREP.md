@@ -23,6 +23,9 @@
 12. [Known Weaknesses & Trade-offs (interviewers LOVE these)](#12-weaknesses)
 13. [Rapid-Fire Q&A Bank](#13-rapidfire)
 14. [Questions YOU should ask them](#14-ask-back)
+15. [Why This Stack? — Technology Justifications](#15-why-stack)
+16. [Design Patterns Deep Dive](#16-patterns)
+17. [Architecture & System-Design Questions](#17-system-design)
 
 ---
 
@@ -554,6 +557,267 @@ Interviewers respect self-awareness more than a flawless façade. Have 4–5 of 
 - "How do you handle server-state caching and request deduplication?"
 - "What does your component library / design system story look like — bespoke, shadcn, or a vendor lib?"
 - "How are frontend and backend error contracts defined and kept in sync?"
+
+---
+
+<a name="15-why-stack"></a>
+## 15. Why This Stack? — Technology Justifications
+
+This is one of the **most common interview themes**: "Why did you choose X and not Y?" Have a crisp,
+trade-off-aware answer for every major technology. Never answer "because it's popular" — always give a
+*reason tied to this project* plus the *alternative you rejected and why*.
+
+### 🟢 Why MongoDB (and not PostgreSQL / MySQL / a relational DB)?
+
+> "I chose MongoDB because the **data model fits a document store naturally**. A user in MovieCompass is
+> essentially one self-contained document: profile fields plus **embedded arrays** — `favorite_movies`,
+> `watchlist`, and `ratings` (an array of `{movie_id, rating}` sub-documents). All of that lives in a
+> single document, so the common operation — *load everything about the current user* — is **one query,
+> no JOINs**."
+
+Back it up with specifics from your code:
+- **Schema flexibility:** users have different shapes — a Google OAuth user has `google_id` and no
+  `hashed_password`; a local user is the reverse; `auth_provider` can be `local`, `google`, or `both`.
+  A document model absorbs that without `ALTER TABLE` migrations or nullable-column sprawl.
+- **Atomic array operators:** you use Mongo's `$addToSet`, `$pull`, and the positional `$` operator
+  (`ratings.$.rating`) to add/remove favorites and update a specific rating **atomically in the
+  database** — no read-modify-write race. That's a genuinely good fit for the feature set.
+- **The movie data itself isn't in Mongo** — it's fetched live from TMDB. Mongo only stores *user* data
+  (IDs + preferences), which is a small, denormalized, read-heavy workload. Perfect for a document DB.
+
+**Q: When would MongoDB be the *wrong* choice here?**
+> "If the app grew relational features — e.g. 'users who rated this movie also liked…', social graphs,
+> friend networks, or complex analytical queries across users — a relational DB (or a graph DB) would
+> shine because those are JOIN-heavy and benefit from a fixed schema and referential integrity. Mongo
+> also doesn't give me multi-document ACID transactions by default, and there's **no enforced schema at
+> the DB level** — my Pydantic models are the only thing guaranteeing shape. For money or
+> inventory-style data I'd pick Postgres."
+
+**Q: MongoDB vs PostgreSQL's JSONB — couldn't Postgres do both?**
+> "Fair point — Postgres with `JSONB` columns gives you document-style flexibility *and* relational
+> power, and many teams default to it for that reason. I went with Mongo because the access pattern is
+> almost purely document-shaped and I wanted the ergonomic array update operators. If I expected to mix
+> relational and document workloads, Postgres + JSONB would be the safer, more future-proof bet."
+
+**Q: How do you model the rating update — and why is it interesting?**
+> "Adding a rating checks if one exists for that `movie_id`: if yes, it uses a filtered update with the
+> **positional `$` operator** to set just that element (`{'ratings.$.rating': value}`); if no, it
+> `$addToSet`s a new sub-document. Both are single atomic DB operations — I never load the array into
+> the app, mutate it, and write it back, which would be racy under concurrent requests."
+
+**Q: Why Atlas (cloud) and not a Mongo container in compose?**
+> "I deliberately kept Mongo external — managed Atlas gives me backups, replication, monitoring, and TLS
+> without ops work, and it means the database survives `docker-compose down`. The trade-off is a hard
+> dependency on an external service and network latency; for purely local dev you could point the same
+> connection string at a local Mongo container."
+
+---
+
+### 🟢 Why FastAPI (and not Flask / Django / Express / Node)?
+
+> "FastAPI gave me three things that directly shaped this project: **native async**, **Pydantic-based
+> validation and serialization**, and **automatic OpenAPI docs**. Since the backend is heavily I/O-bound
+> — it's mostly orchestrating calls to TMDB, MongoDB, the LLM, and SMTP — `async`/`await` lets me run
+> those concurrently (`asyncio.gather`) instead of blocking per request."
+
+Specifics to cite:
+- **Pydantic v2 is built in.** My request/response models, validation rules (`SharedValidators` mixin),
+  and serialization all come from the same type definitions. Define the model once and I get request
+  parsing, validation, error messages, and JSON responses — no separate serializer layer like Django
+  REST Framework needs.
+- **Dependency Injection.** `Depends(get_current_user)` cleanly injects the authenticated user into any
+  endpoint and auto-returns 401/403. Reusable, testable, and self-documenting.
+- **Automatic interactive docs.** `/docs` (Swagger) and `/redoc` are generated from the type hints —
+  zero extra work, and great for a frontend dev consuming the API.
+- **Type hints = editor + runtime safety.** The same annotations drive autocomplete, validation, and docs.
+
+**Q: FastAPI vs Flask?**
+> "Flask is synchronous-first and minimal — you bolt on validation (marshmallow), serialization, and
+> docs yourself. FastAPI bakes in async, validation, and OpenAPI. For an I/O-bound, API-first service
+> like this, FastAPI removes a lot of boilerplate. Flask would've meant more glue code for the same
+> result."
+
+**Q: FastAPI vs Django / Django REST Framework?**
+> "Django is 'batteries-included' — ORM, admin, auth, migrations. That's powerful for a content-heavy,
+> DB-centric app with a relational schema. But it's heavier than I needed, opinionated toward its ORM
+> (which is relational, not Mongo), and async support is newer/partial. My app is a thin, async API
+> layer over external services with a document DB — FastAPI is the leaner fit. If I needed a built-in
+> admin panel and relational models, Django would win."
+
+**Q: FastAPI vs Node/Express (staying all-JavaScript)?**
+> "A valid alternative — one language across the stack reduces context-switching, and Node is excellent
+> for I/O concurrency. I chose Python because the **AI/LLM ecosystem is Python-first** (`pydantic-ai`,
+> the Ollama/OpenAI clients, data tooling), and Pydantic + FastAPI gave me stronger built-in validation
+> and auto-docs than a typical Express setup, where I'd add `zod`/`joi` + `swagger-jsdoc` manually. The
+> trade-off is two languages to maintain."
+
+**Q: FastAPI runs on Uvicorn — what is that?**
+> "Uvicorn is an **ASGI** server (Asynchronous Server Gateway Interface). Unlike WSGI (Flask/Django's
+> traditional sync interface), ASGI supports async request handling and long-lived connections. FastAPI
+> is an ASGI framework, and Uvicorn is the server process that actually runs it — that's the
+> `CMD ["uvicorn", "app.main:application", ...]` in my Dockerfile."
+
+---
+
+### 🟢 Why React (and not Vue / Angular / Svelte)?
+
+> "React for the **ecosystem and component model**. The huge library ecosystem (Radix/shadcn, Framer
+> Motion, React Router), the largest hiring pool, and a mental model — components + hooks +
+> unidirectional data flow — I'm most productive in. Vue and Svelte are excellent and arguably simpler
+> for small apps; Angular is heavier and more opinionated (good for large enterprise teams). For a
+> SPA this size with rich third-party UI needs, React hit the sweet spot."
+
+**Q: React 19 specifically — anything notable?**
+> "I'm on React 19. I'm not leaning on the newest features like the `use` hook or Actions heavily, but
+> being current means access to the latest concurrent rendering and the improved ref/Context handling.
+> My patterns (Context + reducers, `use-context-selector`) are version-agnostic."
+
+### 🟢 Why Vite (and not Create React App / Webpack)?
+
+> "Vite for **dev speed**. It serves source over native ES modules with esbuild for instant cold starts
+> and near-instant HMR, versus CRA/Webpack which bundle everything up front and get slow as the app
+> grows. For production it bundles with Rollup (tree-shaking, code-splitting). CRA is also effectively
+> deprecated now. My `vite.config.ts` is minimal — the React plugin plus an `@` path alias."
+
+### 🟢 Why Tailwind (and not CSS Modules / styled-components / plain CSS)?
+
+> "Utility-first Tailwind keeps styles **colocated** with markup, eliminates naming overhead, and purges
+> unused CSS at build time for a tiny bundle. Versus styled-components, there's **no runtime CSS-in-JS
+> cost**. It pairs perfectly with shadcn/ui, which ships Tailwind-styled components I own. The downside —
+> long className strings — I manage with component extraction and `tailwind-merge`/`cn()`."
+
+### 🟢 Why a local LLM via Ollama (and not the OpenAI API)?
+
+> "Covered in §9: **cost** (no per-token billing), **privacy** (user preference data never leaves my
+> infra), and **offline capability**. Trade-off is hosting a heavy 7B model and lower quality than
+> GPT-4-class. Because Ollama exposes an OpenAI-compatible endpoint, swapping to OpenAI is a one-line
+> base-URL change."
+
+### One-liner cheat sheet
+
+| Choice | One-sentence justification | Main alternative rejected |
+|---|---|---|
+| **MongoDB** | User = one document with embedded arrays; atomic array ops; flexible auth schema | Postgres (relational/JSONB) |
+| **FastAPI** | Async + Pydantic validation + auto OpenAPI for an I/O-bound API | Flask / Django / Express |
+| **React** | Ecosystem, hiring pool, component+hooks model | Vue / Angular / Svelte |
+| **Vite** | Instant dev server + HMR; CRA is dead | Webpack / CRA |
+| **Tailwind** | Colocated, zero-runtime, purged CSS; pairs with shadcn | styled-components / CSS Modules |
+| **Ollama/Mistral** | Free, private, offline; OpenAI-compatible API | OpenAI API |
+| **Context+useReducer** | Right-sized state without Redux boilerplate | Redux / Zustand / React Query |
+| **JWT** | Stateless, scales horizontally, no server session store | Server-side sessions |
+
+---
+
+<a name="16-patterns"></a>
+## 16. Design Patterns Deep Dive
+
+Interviewers often ask "what design patterns did you use?" Name them explicitly — it signals you think
+in patterns, not just code.
+
+| Pattern | Where in your code | What to say |
+|---|---|---|
+| **Reducer / Flux pattern** | All 5 contexts (`useReducer` + typed actions) | "Predictable state via pure reducers, dispatched actions, single source of truth — Redux's model without the library." |
+| **Provider pattern** | Every Context provider in `App.tsx` | "Inject cross-cutting state into the tree without prop-drilling." |
+| **Container/Presentational split** | `pages/` (smart) vs `components/ui/` (dumb) | "Pages orchestrate data + actions; UI components are pure and reusable." |
+| **Custom hooks (composition)** | `useInfiniteScroll`, `useFetchOnView`, `useAuthSubmit` | "Encapsulate and reuse stateful logic; hooks compose instead of inherit." |
+| **Facade** | `authFetch` | "One function hides token injection, error handling, and redirect-on-401 behind a `fetch`-like API." |
+| **Registry / Service Locator** | `logoutRegistry`, `setGlobalNavigate` | "Module-level registry lets non-React code reach React-owned functions." |
+| **Adapter** | `transformBackendErrors`, the `raw → UserProfile` mapping | "Adapts the backend's snake_case contract to the frontend's camelCase model." |
+| **Optimistic update** | `toggleMovieOnServer`, `setMovieRating` | "Update UI first, reconcile with server, roll back on failure." |
+| **Repository / layered service** | backend `services/*` over `pymongo` | "Endpoints never touch the DB directly; services encapsulate persistence." |
+| **Dependency Injection** | FastAPI `Depends(get_current_user)` | "Framework injects auth; endpoints declare what they need." |
+| **Strategy (lite)** | `auth_provider` (`local`/`google`/`both`) branching | "Different auth strategies behind one user model." |
+| **Mixin** | `SharedValidators` Pydantic base | "Share field validators across multiple schemas via inheritance." |
+| **Singleton (module)** | `settings`, the Mongo `client` at import time | "One shared instance per process — though it hurts testability (see weaknesses)." |
+| **Observer** | `IntersectionObserver` in scroll hooks; reducer subscriptions | "Browser notifies on intersection; components subscribe to context slices." |
+
+**Q: What's the most important pattern in your frontend, and why?**
+> "The **reducer + domain-split context** pattern. It gives me Redux-style predictability — every state
+> change is a pure function of (state, action) — while keeping unrelated state in separate providers so
+> updates stay localized. Layered on top is the **Map-based cache** inside those reducers, which is my
+> hand-rolled equivalent of a query cache."
+
+**Q: Did you use any anti-patterns, knowingly?**
+> "A couple I'd flag honestly: the module-level **registry/global-navigate** pattern is effectively
+> hidden global mutable state with an init-order dependency — convenient but not pure. And
+> `registerLogout(logout)` runs on every render instead of inside an effect. Both work, but I know why
+> they're smells and how I'd refactor them."
+
+---
+
+<a name="17-system-design"></a>
+## 17. Architecture & System-Design Questions
+
+These are higher-altitude questions about how the system fits together and how it would scale. Even for
+a frontend role, showing this thinking sets you apart.
+
+**Q: Walk me through what happens, end to end, when a user opens the dashboard.**
+> "The browser loads the SPA. `ProtectedRoute` checks `isAuthenticated`; if there's a token but no user
+> in state, it calls `fetchUserProfile()` → `authFetch('/users/me')` with the Bearer token. FastAPI's
+> `get_current_user` dependency verifies the JWT, loads the user from Mongo, checks `is_verified`, and
+> returns it. Meanwhile `MoviesContext` fetches popular movies from `/movies/popular`, which the backend
+> proxies from TMDB. Cards render from state; scrolling triggers the IntersectionObserver sentinel to
+> fetch the next page, which is deduped and merged into the cache."
+
+**Q: Why does the backend proxy TMDB instead of the frontend calling TMDB directly?**
+> "Three reasons. **(1) Secret protection** — the TMDB API key stays server-side; it'd be exposed in
+> the browser if the frontend called TMDB directly. **(2) A stable internal contract** — I reshape
+> TMDB's responses into my own `Movie`/`MovieResponse` schemas, so the frontend depends on *my* API, not
+> TMDB's, and I can swap data sources later. **(3) Server-side orchestration** — things like
+> recommendations need to combine TMDB + LLM + user data, which has to happen on the backend anyway."
+
+**Q: How would you scale this to 100k users?**
+> "Several layers. **Caching:** add Redis to cache TMDB responses (genres, popular, movie details rarely
+> change) so I'm not re-hitting TMDB and getting rate-limited. **DB:** Mongo Atlas scales horizontally
+> via sharding; my queries are already keyed by indexed `id`/`email`. **Async correctness:** swap
+> `pymongo` for **Motor** so DB calls don't block the event loop. **Backend:** it's stateless (JWT
+> auth, no server sessions), so I can run N replicas behind a load balancer. **Frontend:** serve the
+> static build from a CDN. **AI:** the LLM is the bottleneck — I'd cache recommendations per user and
+> regenerate only when preferences change, and run Ollama on dedicated GPU nodes or move to a hosted
+> inference API."
+
+**Q: Your backend is stateless — why does that matter?**
+> "Auth state lives entirely in the JWT the client holds, not in server memory. So any backend instance
+> can serve any request — no sticky sessions, no shared session store. That's what makes horizontal
+> scaling trivial: just add more containers behind a load balancer."
+
+**Q: How do the frontend and backend stay in sync on the API contract?**
+> "Today it's manual — I keep TypeScript types in `types/` mirroring the Pydantic schemas, and a custom
+> error envelope (`{errors:[{field,message}]}`) both sides agree on. The improvement would be to
+> **generate** the TS client/types from FastAPI's OpenAPI schema (e.g. `openapi-typescript`), so the
+> contract is single-sourced and drift is impossible."
+
+**Q: What happens if TMDB or Ollama is down?**
+> "TMDB: `make_request` maps upstream errors to proper HTTP codes and raises `HTTPException`, so the
+> frontend gets a clean error and shows a toast rather than crashing. Ollama: the recommendation flow is
+> wrapped in try/except with a **fallback** to favorites-based recs or an empty list — a degraded but
+> non-broken experience. What's missing is **retries with backoff** and a **circuit breaker** so I don't
+> hammer a failing dependency; I'd add those (and a timeout on every external call) for production."
+
+**Q: How do you handle secrets and configuration across environments?**
+> "Backend config is centralized in a Pydantic `BaseSettings` class that reads from `.env` / environment
+> variables — one typed object (`settings`) used everywhere. Frontend uses Vite env vars (`VITE_`-
+> prefixed, exposed via `import.meta.env`). The known issue is that the Docker *build* copies `.env` into
+> the image for the test stage — secrets shouldn't live in image layers; I'd inject them only at runtime."
+
+**Q: Where are the trust boundaries / what's your security model?**
+> "Public, unauthenticated endpoints: all `/movies/*` and the `/auth/*` flows. Everything under
+> `/users/me` requires a valid JWT via the `get_current_user` dependency. Passwords are bcrypt-hashed
+> (never stored plaintext). Email verification gates login. Validation happens at the schema boundary
+> with Pydantic (`extra='forbid'` rejects unexpected fields). The weak spots I'd harden: token storage
+> (localStorage→httpOnly cookie), add rate limiting, refresh tokens, and HTTPS termination via a
+> reverse proxy."
+
+**Q: If two requests modify the same user's watchlist concurrently, what happens?**
+> "Because I use Mongo's atomic `$addToSet`/`$pull` operators, the database serializes those updates
+> correctly — no lost writes from a read-modify-write race. On the frontend, rapid optimistic toggles
+> could still race at the network layer; I'd debounce them and/or key requests so the last intent wins."
+
+**Q: How is pagination implemented across the system?**
+> "Page-based. The frontend tracks `currentPage`/`hasMore` per collection in the reducer, requests
+> `?page=N`, and the backend forwards it to TMDB. `hasMore` is inferred from whether a page returned any
+> results. The cache merges + dedupes pages. A more robust approach for large/changing datasets would be
+> **cursor-based** pagination, but page-based is fine for TMDB's model."
 
 ---
 
