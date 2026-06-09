@@ -231,6 +231,52 @@ mark{background:var(--q); color:#000; padding:0 2px; border-radius:3px}
 <li><a href="#g-the-recommendation-pipeline-servicesollama_recommenderpy-endpointsuserspy">G. The recommendation pipeline (services/ollama_recommender.py + endpoints/users.py)</a></li>
 </ul>
 </li>
+<li><a href="#20-react-hooks-complete-reference">20. React Hooks — Complete Reference</a><ul>
+<li><a href="#usestate">useState</a></li>
+<li><a href="#usereducer">useReducer</a></li>
+<li><a href="#usecontext-and-use-context-selector">useContext (and use-context-selector)</a></li>
+<li><a href="#useeffect">useEffect</a></li>
+<li><a href="#usecallback">useCallback</a></li>
+<li><a href="#usememo">useMemo</a></li>
+<li><a href="#useref">useRef</a></li>
+</ul>
+</li>
+<li><a href="#21-custom-hooks-complete-reference">21. Custom Hooks — Complete Reference</a><ul>
+<li><a href="#useinfinitescroll-reusable-infinite-scrolling">useInfiniteScroll — reusable infinite scrolling</a></li>
+<li><a href="#usefetchonview-fetch-once-when-visible-lazy-loading">useFetchOnView — fetch once when visible (lazy loading)</a></li>
+<li><a href="#useauthsubmit-loginsignup-form-submission">useAuthSubmit — login/signup form submission</a></li>
+<li><a href="#useauthmode-loginsignup-mode-synced-to-the-url">useAuthMode — login/signup mode synced to the URL</a></li>
+<li><a href="#useprofileform-profile-update-form-logic">useProfileForm — profile update form logic</a></li>
+<li><a href="#useauthcontent-presentational-content-selector">useAuthContent — presentational content selector</a></li>
+</ul>
+</li>
+<li><a href="#22-context-management-deep-dive">22. Context Management — Deep Dive</a><ul>
+<li><a href="#the-problem-context-solves-prop-drilling">The problem Context solves: prop-drilling</a></li>
+<li><a href="#the-provider-tree-apptsx">The provider tree (App.tsx)</a></li>
+<li><a href="#the-core-context-performance-problem">The core Context performance problem</a></li>
+<li><a href="#each-contexts-job-quick-map">Each context's job (quick map)</a></li>
+<li><a href="#when-not-to-use-context">When NOT to use Context</a></li>
+</ul>
+</li>
+<li><a href="#23-more-react-patterns-in-this-project">23. More React Patterns in This Project</a></li>
+<li><a href="#24-backend-syntax-patterns-deep-dive">24. Backend Syntax &amp; Patterns — Deep Dive</a><ul>
+<li><a href="#layered-architecture-the-requests-journey">Layered architecture (the request's journey)</a></li>
+<li><a href="#fastapi-routing-apirouter">FastAPI routing &amp; APIRouter</a></li>
+<li><a href="#dependency-injection-depends">Dependency Injection (Depends)</a></li>
+<li><a href="#pydantic-models-validators-and-the-mixin">Pydantic models, validators, and the mixin</a></li>
+<li><a href="#async-concurrency">Async + concurrency</a></li>
+<li><a href="#centralized-exception-handling-consistent-error-contract">Centralized exception handling → consistent error contract</a></li>
+<li><a href="#background-tasks-scheduled-jobs">Background tasks &amp; scheduled jobs</a></li>
+<li><a href="#config-as-typed-settings-basesettings">Config as typed settings (BaseSettings)</a></li>
+</ul>
+</li>
+<li><a href="#25-why-jwt-authentication-deep-dive">25. Why JWT? — Authentication Deep Dive</a><ul>
+<li><a href="#what-a-jwt-is">What a JWT is</a></li>
+<li><a href="#why-not-send-username-password-on-every-request">Why NOT send username + password on every request?</a></li>
+<li><a href="#the-honest-trade-offs-mention-these-it-shows-depth">The honest trade-offs (mention these — it shows depth)</a></li>
+<li><a href="#session-stateful-vs-jwt-stateless-the-one-liner">Session (stateful) vs JWT (stateless) — the one-liner</a></li>
+</ul>
+</li>
 <li><a href="#final-tips">Final tips</a></li>
 </ul>
 </li>
@@ -268,6 +314,12 @@ questions interviewers ask</strong> — each with a model answer grounded in <em
 <li><a href="#17-system-design">Architecture &amp; System-Design Questions</a></li>
 <li><a href="#18-syntax">Core Syntax &amp; Language Features (explained)</a></li>
 <li><a href="#19-walkthrough">Code Walkthrough — Line by Line</a></li>
+<li><a href="#20-hooks">React Hooks — Complete Reference</a></li>
+<li><a href="#21-custom-hooks">Custom Hooks — Complete Reference</a></li>
+<li><a href="#22-context">Context Management — Deep Dive</a></li>
+<li><a href="#23-react-patterns">More React Patterns in This Project</a></li>
+<li><a href="#24-backend-deep">Backend Syntax &amp; Patterns — Deep Dive</a></li>
+<li><a href="#25-jwt">Why JWT? — Authentication Deep Dive</a></li>
 </ol>
 <hr />
 <p><a name="1-pitch"></a></p>
@@ -1583,6 +1635,667 @@ fallback for malformed output) → dedupe and cap at 20 → back in the endpoint
 title to convert names into real movie objects. The whole thing is wrapped in try/except with a
 favorites-based fallback and finally an empty list, so it degrades gracefully and never 500s."</p>
 </blockquote>
+<hr />
+<p><a name="20-hooks"></a></p>
+<h2 id="20-react-hooks-complete-reference">20. React Hooks — Complete Reference</h2>
+<p>Hooks are functions that let a <strong>function component</strong> "hook into" React state and lifecycle. Two rules
+govern all of them:
+1. <strong>Only call hooks at the top level</strong> — never inside loops, conditions, or nested functions. React
+   identifies each hook by its <strong>call order</strong>, so the order must be identical on every render.
+2. <strong>Only call hooks from React functions</strong> — components or other hooks (this is why <code>authFetch</code> can't
+   use them and needs the registry bridge from §7).</p>
+<blockquote>
+<p><strong>Why the rules?</strong> React stores hook state in an internal array indexed by call order. If you called a
+hook conditionally, the indices would shift between renders and React would hand back the wrong
+state — leading to bugs like "my state randomly belongs to a different variable."</p>
+</blockquote>
+<p>Below, every built-in hook this project uses, in the format <strong>Syntax → When → Why → Without it →
+Example</strong>.</p>
+<hr />
+<h3 id="usestate"><code>useState</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const [value, setValue] = useState&lt;T&gt;(initialValue);
+setValue(next);                 // replace
+setValue(prev =&gt; prev + 1);     // functional update (uses latest value)
+</code></pre>
+<p><strong>When:</strong> simple, local, independent pieces of UI state (a toggle, an input, a "isFetching" flag).
+<strong>Why:</strong> calling the setter tells React this component must re-render with the new value. React
+<em>preserves</em> the value across renders (a plain variable would reset to its initial value every render).
+<strong>Without it:</strong> if you used a normal <code>let x = 0</code>, changing it would <strong>not</strong> re-render the component, and
+the value would reset on the next render — the UI would never update.
+<strong>In the project:</strong> <code>useInfiniteScroll</code> uses <code>const [isFetching, setIsFetching] = useState(false)</code> to
+track an in-flight page load and block duplicate fetches.</p>
+<pre><code class="language-ts">const [isFetching, setIsFetching] = useState(false);
+const loadNextPage = async () =&gt; {
+  if (isFetching || isLoading || !hasMore) return; // guard
+  setIsFetching(true);
+  try { await fetchFn(); } finally { setIsFetching(false); }
+};
+</code></pre>
+<blockquote>
+<p><strong>Functional updates matter:</strong> use <code>setX(prev =&gt; ...)</code> when the next value depends on the previous one,
+to avoid stale-state bugs from batched updates.</p>
+</blockquote>
+<hr />
+<h3 id="usereducer"><code>useReducer</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const [state, dispatch] = useReducer(reducer, initialState);
+// reducer: (state, action) =&gt; newState   (must be PURE)
+dispatch({ type: &quot;SET_LOADING&quot;, payload: true });
+</code></pre>
+<p><strong>When:</strong> complex state with many sub-fields and many transition types, or when the next state depends on
+the previous one in non-trivial ways. <strong>This project's primary state tool</strong> — all 5 contexts use it.
+<strong>Why:</strong> centralizes every state transition in one pure function, so logic is predictable, testable, and
+co-located. It scales far better than juggling 15 <code>useState</code> calls.
+<strong>Without it:</strong> you'd have many <code>useState</code>s and update logic scattered across event handlers — hard to
+follow, easy to create inconsistent states (e.g. forgetting to clear an error when starting a fetch).
+<strong>In the project:</strong> <code>MoviesContext</code> has ~20 action types (genres, popular, by-genre, search, casts,
+reviews) all funneled through one reducer with immutable updates.</p>
+<pre><code class="language-ts">function moviesReducer(state, action) {
+  switch (action.type) {
+    case &quot;FETCH_POPULAR_PAGE_START&quot;: return { ...state, popularLoading: true, popularError: null };
+    case &quot;FETCH_POPULAR_PAGE_SUCCESS&quot;: { /* dedupe + merge */ return {...state, ...}; }
+    default: return state;   // ALWAYS return current state for unknown actions
+  }
+}
+</code></pre>
+<blockquote>
+<p><strong>Reducer must be pure:</strong> no <code>fetch</code>, no mutation, no <code>Date.now()</code> inside it — same input → same output.
+Side effects live in the action creators (the context functions), not the reducer.</p>
+</blockquote>
+<p><strong><code>useState</code> vs <code>useReducer</code>:</strong> "useState for a few independent values; useReducer when state transitions
+are complex or interdependent. A reducer is essentially <code>useState</code> with the update logic extracted into a
+named, testable function."</p>
+<hr />
+<h3 id="usecontext-and-use-context-selector"><code>useContext</code> (and <code>use-context-selector</code>)</h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const value = useContext(MyContext);
+// project also uses:
+import { useContext } from &quot;use-context-selector&quot;;
+const watchlist = useContextSelector(UserStateContext, s =&gt; s.user?.watchlist);
+</code></pre>
+<p><strong>When:</strong> share state/functions with a deep subtree without <strong>prop-drilling</strong> (passing props through many
+intermediate components that don't care about them).
+<strong>Why:</strong> any descendant can read the context directly. The project uses it for auth/user data, movie
+caches, the modal, and toasts — all needed in many far-apart places.
+<strong>Without it:</strong> you'd thread <code>user</code>, <code>logout</code>, <code>showError</code>, etc. through every layer as props — verbose,
+fragile, and a maintenance nightmare (a new prop means editing every component in the chain).
+<strong>The catch:</strong> plain <code>useContext</code> re-renders <strong>every consumer</strong> whenever the provider value changes. See
+§22 for how the project fixes this with split contexts + <code>use-context-selector</code>.</p>
+<blockquote>
+<p><strong>Custom-hook wrapper pattern:</strong> every context exposes a <code>useX()</code> hook that throws if used outside its
+provider — this gives a clear error and <strong>narrows the type</strong> from <code>T | undefined</code> to <code>T</code>.</p>
+</blockquote>
+<hr />
+<h3 id="useeffect"><code>useEffect</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">useEffect(() =&gt; {
+  // side effect (subscriptions, fetches, DOM, timers)
+  return () =&gt; { /* cleanup */ };   // optional
+}, [dep1, dep2]);                    // dependency array
+</code></pre>
+<p><strong>Dependency array semantics:</strong>
+- <code>[]</code> → run <strong>once</strong> after mount (and cleanup on unmount).
+- <code>[a, b]</code> → run after mount and whenever <code>a</code> or <code>b</code> changes.
+- <em>omitted</em> → run after <strong>every</strong> render (rarely what you want).</p>
+<p><strong>When:</strong> synchronize a component with something <strong>outside</strong> React — network requests, event listeners,
+observers, timers, manual DOM, <code>localStorage</code>.
+<strong>Why:</strong> rendering must be pure; effects are where side effects belong, run <em>after</em> the DOM is painted.
+<strong>Without it:</strong> putting a fetch or subscription directly in the component body runs it on <strong>every render</strong>
+(infinite loops, duplicate listeners, memory leaks). And without the <strong>cleanup</strong> return, observers/timers
+pile up and leak.
+<strong>In the project:</strong></p>
+<pre><code class="language-ts">// useInfiniteScroll — set up an observer, clean it up when deps change/unmount
+useEffect(() =&gt; {
+  const el = sentinelRef.current; if (!el) return;
+  observerRef.current?.disconnect();
+  observerRef.current = new IntersectionObserver(([entry]) =&gt; {...}, { rootMargin });
+  observerRef.current.observe(el);
+  return () =&gt; observerRef.current?.disconnect();   // cleanup prevents leaks
+}, [hasMore, isLoading, isFetching]);
+
+// ProtectedRoute — react to auth state changes
+useEffect(() =&gt; {
+  if (!isAuthenticated &amp;&amp; !isLoading) { token ? fetchUserProfile() : navigate(&quot;/auth?mode=login&quot;); }
+}, [isAuthenticated, isLoading, ...]);
+</code></pre>
+<blockquote>
+<p><strong>Cleanup + StrictMode:</strong> in dev, React 18/19 StrictMode mounts→unmounts→remounts each component to
+surface missing cleanup. The project's observer hooks disconnect on cleanup, so they're StrictMode-safe.
+<strong>Stale closures:</strong> an effect captures the variables from the render it ran in; that's why the
+dependency array must list everything the effect reads, or you'll act on outdated values.</p>
+</blockquote>
+<hr />
+<h3 id="usecallback"><code>useCallback</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const memoizedFn = useCallback(() =&gt; { /* ... */ }, [deps]);
+</code></pre>
+<p><strong>When:</strong> you need a function to keep the <strong>same identity</strong> across renders — because it's a dependency of
+another hook, or passed to a memoized/<code>use-context-selector</code> consumer.
+<strong>Why:</strong> a function defined in a component body is <strong>recreated every render</strong> (new reference). If that
+function is in a dependency array or context value, the new reference triggers re-runs/re-renders.
+<code>useCallback</code> returns the <em>same</em> function instance until its deps change.
+<strong>Without it:</strong> in the project, the action functions in <code>UserContext</code> would get a new identity every
+render, defeating the split-context optimization and causing action-only consumers (movie cards) to
+re-render needlessly; and <code>fetchMoviesByIds</code> (a dep of <code>useMemo</code>) would change every render, recomputing
+the context value constantly.
+<strong>In the project:</strong></p>
+<pre><code class="language-ts">const fetchMoviesByIds = useCallback(async (ids) =&gt; {...}, [state.fetchedMoviesById]);
+const logout = useCallback(() =&gt; { localStorage.removeItem(&quot;access_token&quot;); dispatch({type:&quot;CLEAR_USER&quot;}); }, []);
+</code></pre>
+<blockquote>
+<p><strong>Don't over-use it.</strong> <code>useCallback</code> has its own cost; it's only worthwhile when the stable identity
+actually matters (deps arrays, memoized children, context values). Wrapping every function is noise.</p>
+</blockquote>
+<hr />
+<h3 id="usememo"><code>useMemo</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const memoizedValue = useMemo(() =&gt; computeExpensiveValue(a, b), [a, b]);
+</code></pre>
+<p><strong>When:</strong> (1) caching an expensive computation, or (2) keeping an <strong>object/array identity stable</strong> so it
+doesn't trigger downstream re-renders.
+<strong>Why:</strong> like <code>useCallback</code> but for values. The project uses it mainly for reason (2).
+<strong>Without it:</strong> the <code>MoviesContext</code> <code>value={{ state, fetchGenres, ... }}</code> object would be a <strong>new object
+every render</strong>, so <em>every</em> consumer of that context re-renders on every provider render — exactly the
+performance trap context is infamous for.
+<strong>In the project:</strong></p>
+<pre><code class="language-ts">const contextValue = useMemo(
+  () =&gt; ({ state, fetchGenres, fetchPopularPage, /* ...all actions */, fetchMoviesByIds }),
+  [state, fetchMoviesByIds]   // new object only when state or that fn changes
+);
+return &lt;MoviesContext.Provider value={contextValue}&gt;{children}&lt;/MoviesContext.Provider&gt;;
+</code></pre>
+<blockquote>
+<p><strong><code>useCallback(fn, d)</code> === <code>useMemo(() =&gt; fn, d)</code></strong> — <code>useCallback</code> is just sugar for memoizing a
+function. Same dependency-array rules apply.</p>
+</blockquote>
+<hr />
+<h3 id="useref"><code>useRef</code></h3>
+<p><strong>Syntax</strong></p>
+<pre><code class="language-ts">const ref = useRef&lt;T&gt;(initialValue);
+ref.current;            // read/write — does NOT trigger re-render
+&lt;div ref={ref} /&gt;       // attach to a DOM node
+</code></pre>
+<p><strong>When:</strong> (1) reference a DOM element, or (2) hold a mutable value that should <strong>persist across renders
+but not cause re-renders</strong> (flags, previous values, timer IDs, observer instances).
+<strong>Why:</strong> unlike state, mutating <code>ref.current</code> is invisible to React's render cycle — perfect for
+"bookkeeping" values.
+<strong>Without it:</strong> using <code>useState</code> for a "did I already fetch?" flag would re-render on every change (and
+could loop); using a plain variable would reset every render and lose the value.
+<strong>In the project:</strong></p>
+<pre><code class="language-ts">// useFetchOnView — fire exactly once, ever
+const ref = useRef&lt;HTMLDivElement|null&gt;(null);   // DOM node (the sentinel)
+const fetchedRef = useRef(false);                 // persistent flag, no re-render
+... if (entry.isIntersecting &amp;&amp; !fetchedRef.current) { fetchedRef.current = true; fetchFn(); }
+
+// useInfiniteScroll — keep the observer instance across renders
+const observerRef = useRef&lt;IntersectionObserver|null&gt;(null);
+</code></pre>
+<blockquote>
+<p><strong>Refs vs state in one line:</strong> "State is for values the UI renders from; refs are for values you need to
+remember but that shouldn't, by themselves, cause a render."</p>
+</blockquote>
+<hr />
+<p><a name="21-custom-hooks"></a></p>
+<h2 id="21-custom-hooks-complete-reference">21. Custom Hooks — Complete Reference</h2>
+<p>A <strong>custom hook</strong> is just a function whose name starts with <code>use</code> and that calls other hooks. It's how
+you <strong>extract and reuse stateful logic</strong> between components — the modern replacement for old
+mixins/HOCs/render-props. It returns whatever you want (values, functions, refs).</p>
+<blockquote>
+<p><strong>Why custom hooks instead of utility functions?</strong> Because they can <em>call hooks</em> (<code>useState</code>,
+<code>useEffect</code>, …). A plain function can't hold state or subscribe to effects; a custom hook can, and each
+component that calls it gets its <strong>own isolated copy</strong> of that state.</p>
+</blockquote>
+<p>This project has 6 custom hooks. For each: <strong>what it does → why it exists → what breaks without it.</strong></p>
+<hr />
+<h3 id="useinfinitescroll-reusable-infinite-scrolling"><code>useInfiniteScroll</code> — reusable infinite scrolling</h3>
+<pre><code class="language-ts">const { sentinelRef, isFetching } = useInfiniteScroll({ fetchFn, hasMore, isLoading, rootMargin });
+// usage: &lt;div ref={sentinelRef} /&gt; at the bottom of the list
+</code></pre>
+<ul>
+<li><strong>What:</strong> wraps an <code>IntersectionObserver</code> that calls <code>fetchFn</code> when a sentinel element nears the
+  viewport (600px early via <code>rootMargin</code>), with guards against duplicate loads.</li>
+<li><strong>Why it exists:</strong> popular movies, genre pages, and search all need identical "load more on scroll"
+  behavior. The hook encapsulates the observer setup, the <code>isFetching</code> guard, the unobserve-during-fetch
+  trick, and cleanup — so each list is one line, not 30 duplicated lines.</li>
+<li><strong>Without it:</strong> every paginated list would re-implement observer logic (or worse, scroll-event
+  listeners with <code>getBoundingClientRect</code>), and you'd inevitably get duplicate-page bugs and leaks.</li>
+</ul>
+<hr />
+<h3 id="usefetchonview-fetch-once-when-visible-lazy-loading"><code>useFetchOnView</code> — fetch once when visible (lazy loading)</h3>
+<pre><code class="language-ts">const ref = useFetchOnView(() =&gt; fetchMovieCast(movie.id));
+// &lt;div ref={ref} /&gt; — fetch fires the first time it scrolls into view, then never again
+</code></pre>
+<ul>
+<li><strong>What:</strong> fires a fetch <strong>exactly once</strong> when an element first enters the viewport, using a
+  <code>fetchedRef</code> boolean so re-renders never re-trigger it.</li>
+<li><strong>Why it exists:</strong> lazy-load per-item data (e.g. a movie's cast) only when the user actually scrolls to
+  it — saving needless API calls for items never seen.</li>
+<li><strong>Without it:</strong> you'd either fetch everything up front (slow, wasteful) or risk re-fetching on every
+  render. The <code>useRef</code> flag is what makes "exactly once" reliable across React's re-render churn and
+  StrictMode double-invoke.</li>
+</ul>
+<hr />
+<h3 id="useauthsubmit-loginsignup-form-submission"><code>useAuthSubmit</code> — login/signup form submission</h3>
+<pre><code class="language-ts">const { handleSubmit, isLoading } = useAuthSubmit();
+// &lt;form onSubmit={handleSubmit}&gt;
+</code></pre>
+<ul>
+<li><strong>What:</strong> the whole auth submit pipeline — reads <code>FormData</code>, branches login vs signup (form-encoded
+  OAuth2 vs JSON), posts to the right endpoint, stores the JWT on success, maps backend errors to form
+  fields, shows toasts, and navigates.</li>
+<li><strong>Why it exists:</strong> keeps a large, stateful, side-effect-heavy flow out of the form component, which
+  stays focused on markup. Composes <code>useAuth</code> (form state), <code>useUserActions</code> (fetch profile), <code>useMessages</code>
+  (toasts), and <code>useNavigate</code>.</li>
+<li><strong>Without it:</strong> the <code>AuthForm</code> component would balloon with networking, error-mapping, token storage,
+  and navigation logic — mixing concerns and making the form hard to test or reuse.</li>
+</ul>
+<hr />
+<h3 id="useauthmode-loginsignup-mode-synced-to-the-url"><code>useAuthMode</code> — login/signup mode synced to the URL</h3>
+<pre><code class="language-ts">const { isLogin, direction, handleModeChange } = useAuthMode();
+</code></pre>
+<ul>
+<li><strong>What:</strong> reads <code>?mode=signup|login</code> from the URL (<code>useSearchParams</code>), sets the reducer mode on mount,
+  handles an <code>?error=</code> param (showing it once then stripping it from the URL), and exposes
+  <code>handleModeChange</code> that updates both state <em>and</em> the URL (and sets the slide <code>direction</code> for animation).</li>
+<li><strong>Why it exists:</strong> makes the auth mode <strong>shareable/bookmarkable and back-button friendly</strong> — the URL is
+  the source of truth, not just internal state.</li>
+<li><strong>Without it:</strong> refreshing or sharing a link would lose the login/signup mode; the error param would
+  re-show on every refresh; and animation direction logic would be duplicated in the component.</li>
+</ul>
+<hr />
+<h3 id="useprofileform-profile-update-form-logic"><code>useProfileForm</code> — profile update form logic</h3>
+<pre><code class="language-ts">const { handleSubmit, resetForm, isLoading, errors, getFieldError, clearMessages } = useProfileForm();
+</code></pre>
+<ul>
+<li><strong>What:</strong> collects only the <strong>changed</strong> profile fields from <code>FormData</code> (trims, skips empties), bails if
+  nothing changed, and calls <code>updateUserProfile</code>. Exposes loading/error/success state from <code>UserContext</code>.</li>
+<li><strong>Why it exists:</strong> centralizes "diff the form, submit only deltas" logic and bridges the form UI to the
+  user context. <code>handleSubmit</code>/<code>resetForm</code> are wrapped in <code>useCallback</code> for stable identities.</li>
+<li><strong>Without it:</strong> the profile page would re-implement field extraction + change-detection and wire up
+  context state manually — repeated and error-prone (e.g. accidentally PATCHing empty fields).</li>
+</ul>
+<hr />
+<h3 id="useauthcontent-presentational-content-selector"><code>useAuthContent</code> — presentational content selector</h3>
+<pre><code class="language-ts">const content = useAuthContent(isLogin);  // { title, subtitle, description, features[], cta, ... }
+</code></pre>
+<ul>
+<li><strong>What:</strong> returns the correct copy/icons for the login vs signup view. <em>Technically it calls no other
+  hooks</em> — it's a content map behind a hook-named function for API consistency.</li>
+<li><strong>Why it exists:</strong> keeps marketing copy out of the JSX so the sidebar component just renders
+  <code>content.title</code>, etc., and switching modes swaps all text at once.</li>
+<li><strong>Without it:</strong> the copy would be inline conditional ternaries scattered through the JSX — harder to
+  edit and to keep the two modes in sync.<blockquote>
+<p><strong>Honest note:</strong> since it uses no hooks, it could be a plain <code>getAuthContent(isLogin)</code> function. Naming
+it <code>use*</code> is a minor stylistic choice — a fair thing to acknowledge in an interview.</p>
+</blockquote>
+</li>
+</ul>
+<hr />
+<p><a name="22-context"></a></p>
+<h2 id="22-context-management-deep-dive">22. Context Management — Deep Dive</h2>
+<h3 id="the-problem-context-solves-prop-drilling">The problem Context solves: prop-drilling</h3>
+<p>Without Context, to get <code>user</code> or <code>showError</code> to a deeply nested component you pass it as a prop through
+<strong>every</strong> intermediate component, even ones that don't use it. That's "prop-drilling" — verbose, and
+every new shared value means editing the whole chain. Context provides a value to an entire subtree;
+any descendant reads it directly.</p>
+<h3 id="the-provider-tree-apptsx">The provider tree (<code>App.tsx</code>)</h3>
+<pre><code>&lt;Router&gt;
+ &lt;AuthProvider&gt;            // auth FORM ui state (login/signup toggle, password visibility)
+  &lt;MessageProvider&gt;        // global toasts — provided high so everything can showError/showSuccess
+   &lt;UserProvider&gt;          // authenticated user + profile + watchlist/fav/ratings + AI recs
+    &lt;MoviesProvider&gt;       // TMDB data + client-side caches
+     &lt;MovieModalProvider&gt;  // movie detail modal + trailer cache
+       &lt;Routes/&gt;
+</code></pre>
+<p><strong>Why this order matters:</strong> a provider can only consume contexts <strong>above</strong> it. <code>UserProvider</code> calls
+<code>useMessages()</code> (to show errors) and <code>useNavigate()</code>, so it must sit <strong>below</strong> <code>MessageProvider</code> and
+<strong>inside</strong> <code>Router</code>. Get the order wrong and you get "must be used within a Provider" crashes.</p>
+<h3 id="the-core-context-performance-problem">The core Context performance problem</h3>
+<blockquote>
+<p>"Plain React Context re-renders <strong>every</strong> consumer whenever the provider's <code>value</code> changes — regardless
+of which part of the value they use. With a frequently-changing value (like the user object), that
+causes app-wide re-render storms."</p>
+</blockquote>
+<p>This project applies <strong>three</strong> mitigations:</p>
+<p><strong>1) Stabilize the <code>value</code> with <code>useMemo</code></strong> (so it's not a brand-new object each render):</p>
+<pre><code class="language-ts">const contextValue = useMemo(() =&gt; ({ state, ...actions }), [state, fetchMoviesByIds]);
+</code></pre>
+<p>Without this, the provider hands down a new object reference every render → all consumers re-render even
+when nothing they care about changed.</p>
+<p><strong>2) Split State and Actions into separate contexts</strong> (<code>UserContext</code>, <code>MovieModalContext</code>):</p>
+<pre><code class="language-ts">const UserStateContext   = createContext&lt;UserState|undefined&gt;(undefined);    // changes often
+const UserActionsContext = createContext&lt;Actions|undefined&gt;(undefined);      // stable (memoized)
+...
+&lt;UserStateContext.Provider value={state}&gt;
+  &lt;UserActionsContext.Provider value={{ logout, toggleToFavorite, ... }}&gt;
+</code></pre>
+<ul>
+<li>Components that only need <strong>actions</strong> (e.g. a <code>MovieCard</code> calling <code>toggleToFavorite</code> or <code>openModal</code>)
+  subscribe to the <em>Actions</em> context, which <strong>never changes</strong> → they don't re-render when state updates.</li>
+<li>Only components that read <strong>state</strong> re-render on state changes.<blockquote>
+<p>"It's the same principle as Redux separating <code>dispatch</code> (stable) from <code>state</code> (changing)."</p>
+</blockquote>
+</li>
+</ul>
+<p><strong>3) <code>use-context-selector</code></strong> (<code>UserContext</code>): lets a component subscribe to a <strong>slice</strong> of context:</p>
+<pre><code class="language-ts">const watchlist = useContextSelector(UserStateContext, s =&gt; s.user?.watchlist);
+</code></pre>
+<p>Now the component re-renders <strong>only when that slice changes</strong>, not on every user-object mutation. This is
+the granular fix React's built-in <code>useContext</code> lacks (React's own <code>useContextSelector</code> is still
+experimental, hence the library).</p>
+<h3 id="each-contexts-job-quick-map">Each context's job (quick map)</h3>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>State shape highlights</th>
+<th>Notable technique</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>AuthContext</code></td>
+<td><code>isLogin</code>, <code>showPassword</code>, <code>errors</code>, <code>direction</code></td>
+<td>plain context + reducer (form UI only)</td>
+</tr>
+<tr>
+<td><code>MessageContext</code></td>
+<td><code>messages[]</code></td>
+<td><code>REPLACE_ALL_MESSAGES</code> shows one toast at a time; auto-dismiss via <code>setTimeout</code></td>
+</tr>
+<tr>
+<td><code>UserContext</code></td>
+<td><code>user</code>, <code>isAuthenticated</code>, <code>aiRecommendations</code>, <code>profileFieldErrors</code></td>
+<td><strong>split State/Actions</strong> + <code>use-context-selector</code> + optimistic updates</td>
+</tr>
+<tr>
+<td><code>MoviesContext</code></td>
+<td>Maps for genres/popular/by-genre/search/casts/reviews</td>
+<td><code>useMemo</code> value + Map-based cache + dedupe</td>
+</tr>
+<tr>
+<td><code>MovieModalContext</code></td>
+<td><code>selectedMovie</code>, <code>isOpen</code>, trailer Maps</td>
+<td><strong>split State/Actions</strong>; stable actions via <code>useMemo([])</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="when-not-to-use-context">When NOT to use Context</h3>
+<blockquote>
+<p>"Context is for <strong>low-frequency, widely-needed</strong> state (auth, theme, current user). For
+high-frequency server data with caching/refetching needs, a dedicated tool (React Query) is better —
+it handles caching, dedup, and background refresh that I hand-rolled here. And for purely local state,
+<code>useState</code> in the component is correct — lifting everything into context is an anti-pattern."</p>
+</blockquote>
+<hr />
+<p><a name="23-react-patterns"></a></p>
+<h2 id="23-more-react-patterns-in-this-project">23. More React Patterns in This Project</h2>
+<p><strong>Controlled vs uncontrolled forms</strong></p>
+<blockquote>
+<p>"The auth and profile forms are <strong>uncontrolled</strong> — I read values from the DOM via <code>new
+FormData(e.currentTarget)</code> on submit, instead of binding each input to <code>useState</code>. Pros: far fewer
+re-renders (no state update per keystroke) and less code. Cons: I can't easily validate/transform on
+every keystroke. For these simple forms it's the right trade-off; a complex wizard would justify
+controlled inputs or a form library like React Hook Form."</p>
+</blockquote>
+<p><strong>Conditional rendering</strong></p>
+<pre><code class="language-tsx">{isLoading &amp;&amp; &lt;Spinner /&gt;}
+{error ? &lt;Error msg={error} /&gt; : &lt;List items={items} /&gt;}
+{user?.watchlist.length === 0 &amp;&amp; &lt;EmptyState /&gt;}
+</code></pre>
+<blockquote>
+<p>"Use <code>&amp;&amp;</code> for show/hide, ternaries for either/or. I guard on loading/error/empty in that order so the
+UI always reflects the current async phase."</p>
+</blockquote>
+<p><strong>Lists &amp; keys</strong></p>
+<blockquote>
+<p>"Every <code>.map</code> to JSX needs a stable, unique <code>key</code> — I use movie <code>id</code>, never the array index, because
+index keys break when the list reorders or items are inserted/removed, causing React to reuse the wrong
+DOM node and component state. My pagination dedupe also keeps keys unique."</p>
+</blockquote>
+<p><strong>Composition with <code>children</code></strong></p>
+<pre><code class="language-tsx">&lt;ProtectedRoute&gt;&lt;DashboardLayout /&gt;&lt;/ProtectedRoute&gt;
+function ProtectedRoute({ children }: { children: ReactNode }) { ...; return &lt;&gt;{children}&lt;/&gt;; }
+</code></pre>
+<blockquote>
+<p>"I compose via the <code>children</code> prop and React Router's <code>&lt;Outlet/&gt;</code> for nested routes, rather than
+inheritance. 'Composition over inheritance' is the React way — wrappers like <code>ProtectedRoute</code> add
+behavior around whatever they wrap."</p>
+</blockquote>
+<p><strong>Layout / nested routes (<code>&lt;Outlet/&gt;</code>)</strong></p>
+<blockquote>
+<p>"<code>/dashboard</code> renders <code>DashboardLayout</code>, and its child routes (search, watchlist, favorites, ratings,
+profile) render into the layout's <code>&lt;Outlet/&gt;</code>. Shared chrome (sidebar/navbar) renders once; only the
+outlet swaps on navigation."</p>
+</blockquote>
+<p><strong>Accessibility via primitives (Radix/shadcn)</strong></p>
+<blockquote>
+<p>"The movie detail modal is a Radix <code>Dialog</code> — I get focus-trapping, <code>Esc</code>-to-close, scroll-locking,
+and ARIA roles for free. The rating control is a Radix <code>Select</code>; the avatar uses Radix <code>Avatar</code> with a
+fallback. Building these from scratch accessibly is hard; the primitives handle it."</p>
+</blockquote>
+<p><strong>Animation pattern (Framer Motion)</strong></p>
+<blockquote>
+<p>"The login↔signup transition uses a <code>direction</code> value (<code>+1</code>/<code>-1</code>) from the auth reducer to drive a
+slide animation, so the panels slide the correct way depending on which mode you came from."</p>
+</blockquote>
+<p><strong>Render-bridge to non-React code (Registry pattern)</strong></p>
+<blockquote>
+<p>"Covered in §7: <code>authFetch</code> lives outside the component tree, so I register <code>logout</code> and <code>navigate</code>
+into module-level slots from inside providers (<code>registerLogout</code>, <code>setGlobalNavigate</code>). It's how
+non-component code triggers React-owned behavior."</p>
+</blockquote>
+<p><strong>Error/empty/loading states as first-class UI</strong></p>
+<blockquote>
+<p>"Every async slice in my reducers tracks <code>loading</code>/<code>error</code> (often per-id via Maps), and components
+render skeletons (shadcn <code>Skeleton</code>) while loading and a toast/empty state on error — so the UI is
+never blank or frozen during I/O."</p>
+</blockquote>
+<p><strong>What's missing (be honest):</strong> "No <strong>Error Boundary</strong> (a class component or <code>react-error-boundary</code> to
+catch render-time crashes and show a fallback), no <code>React.lazy</code>/<code>Suspense</code> <strong>code-splitting</strong> (the whole
+app ships in one bundle), and no <code>React.memo</code> on heavy list items. All three are things I'd add to harden
+and speed up the app."</p>
+<hr />
+<p><a name="24-backend-deep"></a></p>
+<h2 id="24-backend-syntax-patterns-deep-dive">24. Backend Syntax &amp; Patterns — Deep Dive</h2>
+<h3 id="layered-architecture-the-requests-journey">Layered architecture (the request's journey)</h3>
+<pre><code>HTTP request
+  → endpoints/*.py   (routing, params, response_model)        &quot;the controller&quot;
+    → services/*.py  (business logic, talks to DB/TMDB/LLM)    &quot;the service layer&quot;
+      → schemas/*.py (Pydantic validation + serialization)     &quot;the data contract&quot;
+        → core/config.py (typed settings)
+</code></pre>
+<blockquote>
+<p>"Endpoints stay thin — they parse input and call a service. Services hold the logic and are the only
+layer that touches MongoDB/TMDB. Schemas define the shapes that flow between them. This separation
+means I can test business logic without HTTP, and swap the web layer or DB without rewriting logic."</p>
+</blockquote>
+<h3 id="fastapi-routing-apirouter">FastAPI routing &amp; <code>APIRouter</code></h3>
+<pre><code class="language-python">router = APIRouter()
+@router.get(&quot;/popular&quot;, response_model=MovieResponse)
+async def get_popular_movies(page: int = Query(1, ge=1)):
+    return MovieResponse(movies=await fetch_popular_movies(page))
+# main.py: application.include_router(movies.router, prefix=&quot;/movies&quot;)
+</code></pre>
+<blockquote>
+<p>"<code>APIRouter</code> groups related routes; <code>include_router(..., prefix="/movies")</code> mounts them. <code>response_model</code>
+tells FastAPI the output schema — it validates and <strong>filters</strong> the response (so secrets like
+<code>hashed_password</code> never leak even if present on the object) and documents it in OpenAPI."</p>
+</blockquote>
+<h3 id="dependency-injection-depends">Dependency Injection (<code>Depends</code>)</h3>
+<pre><code class="language-python">oauth2_scheme = OAuth2PasswordBearer(tokenUrl=&quot;/auth/token&quot;)
+async def get_current_user(token: str = Depends(oauth2_scheme)) -&gt; User:
+    user_id = verify_user_token(token)          # decode/verify JWT
+    user = find_user_by_id(user_id)
+    if not user.is_verified: raise HTTPException(403, ...)
+    return user
+# any protected endpoint:
+async def read_users_me(current_user: User = Depends(get_current_user)): ...
+</code></pre>
+<blockquote>
+<p>"<code>Depends</code> resolves a dependency before the handler runs and injects the result. <code>OAuth2PasswordBearer</code>
+auto-extracts the <code>Authorization: Bearer &lt;token&gt;</code> header (and powers the Swagger 'Authorize' button).
+One declaration — <code>Depends(get_current_user)</code> — secures any endpoint and yields an authenticated user.
+Dependencies are reusable, testable, and self-documenting."</p>
+</blockquote>
+<h3 id="pydantic-models-validators-and-the-mixin">Pydantic models, validators, and the mixin</h3>
+<pre><code class="language-python">class SharedValidators(BaseModel):
+    @field_validator(&quot;password&quot;, &quot;new_password&quot;, mode=&quot;before&quot;, check_fields=False)
+    @classmethod
+    def validate_password(cls, value):
+        if len(value) &lt; 8: raise ValueError(&quot;Password must be at least 8 characters long&quot;)
+        ...
+
+class UserCreate(SharedValidators):
+    email: EmailStr
+    model_config = ConfigDict(extra=&quot;forbid&quot;)
+</code></pre>
+<blockquote>
+<p>"Pydantic validates and parses request bodies from type hints. <code>@field_validator</code> adds custom rules;
+<code>mode='before'</code> runs before type coercion, <code>check_fields=False</code> lets the <strong>mixin</strong> declare validators
+for fields it doesn't itself define (so <code>UserCreate</code>, <code>UpdateUserProfile</code>, etc. share one set of
+rules — DRY). <code>extra='forbid'</code> rejects unexpected fields, preventing mass-assignment. <code>EmailStr</code>
+validates email format. A raised <code>ValueError</code> becomes a 422 my custom handler reshapes."</p>
+</blockquote>
+<h3 id="async-concurrency">Async + concurrency</h3>
+<pre><code class="language-python">async def fetch_multiple_movies_details(ids):
+    tasks = [fetch_movie_details(i) for i in ids]
+    movies = await asyncio.gather(*tasks, return_exceptions=True)  # parallel
+    return [m for m in movies if isinstance(m, Movie)]
+</code></pre>
+<blockquote>
+<p>"FastAPI is async-native (ASGI). <code>aiohttp</code> makes non-blocking HTTP calls and <code>asyncio.gather</code> runs many
+at once, so fetching 20 movies is ~1 round-trip of latency instead of 20 sequential ones.
+<code>return_exceptions=True</code> keeps one failure from killing the batch. <strong>Caveat:</strong> my MongoDB calls use
+sync <code>pymongo</code>, which blocks the event loop — the correct fix is the async <code>Motor</code> driver (see §12)."</p>
+</blockquote>
+<h3 id="centralized-exception-handling-consistent-error-contract">Centralized exception handling → consistent error contract</h3>
+<pre><code class="language-python">@application.add_exception_handler(RequestValidationError, validation_exception_handler)
+# reshapes everything to: { &quot;errors&quot;: [ { &quot;field&quot;: &quot;...&quot;, &quot;message&quot;: &quot;...&quot; } ] }
+</code></pre>
+<blockquote>
+<p>"I register handlers that turn both Pydantic validation errors and my <code>HTTPException</code>s into one
+envelope: <code>{errors:[{field,message}]}</code>. The frontend's <code>transformBackendErrors</code> maps those fields to
+form inputs. One predictable shape across the whole API."</p>
+</blockquote>
+<h3 id="background-tasks-scheduled-jobs">Background tasks &amp; scheduled jobs</h3>
+<pre><code class="language-python">background_tasks.add_task(send_verification_email, email, link)   # after response, non-blocking
+scheduler.add_job(delete_unverified_users, &quot;cron&quot;, hour=3)        # APScheduler daily cleanup
+</code></pre>
+<blockquote>
+<p>"<code>BackgroundTasks</code> runs work <em>after</em> the response is sent — signup returns instantly while the email
+sends in the background. APScheduler runs a daily cron that deletes unverified users older than 24h.
+The <code>@app.on_event('startup'/'shutdown')</code> hooks start/stop the scheduler (these are deprecated now —
+I'd migrate to the <code>lifespan</code> API)."</p>
+</blockquote>
+<h3 id="config-as-typed-settings-basesettings">Config as typed settings (<code>BaseSettings</code>)</h3>
+<pre><code class="language-python">class Settings(BaseSettings):
+    SECRET_KEY: str
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+    class Config: env_file = &quot;.env&quot;
+settings = Settings()   # one shared, validated, typed object
+</code></pre>
+<blockquote>
+<p>"Pydantic <code>BaseSettings</code> reads env vars / <code>.env</code> and <strong>validates types at startup</strong> — a missing or
+malformed var fails fast rather than blowing up mid-request. Everything imports the one <code>settings</code>
+instance."</p>
+</blockquote>
+<hr />
+<p><a name="25-jwt"></a></p>
+<h2 id="25-why-jwt-authentication-deep-dive">25. Why JWT? — Authentication Deep Dive</h2>
+<p>This is a <strong>very common interview question</strong>, and you asked it directly: <em>why use a JWT instead of just
+sending the (encrypted) username + password on every request?</em></p>
+<h3 id="what-a-jwt-is">What a JWT is</h3>
+<blockquote>
+<p>"A JSON Web Token is a signed, self-contained token with three base64url parts: <strong>header</strong> (algorithm),
+<strong>payload</strong> (claims like <code>sub</code>=user id and <code>exp</code>=expiry), and <strong>signature</strong>. My backend signs it with a
+server secret using HS256. The signature lets the server verify the token is authentic and untampered
+<strong>without a database lookup</strong> — change one byte of the payload and the signature no longer matches."</p>
+</blockquote>
+<pre><code class="language-python">to_encode = { &quot;sub&quot;: user.id, &quot;exp&quot;: &lt;now + 30min&gt; }
+token = jwt.encode(to_encode, SECRET_KEY, algorithm=&quot;HS256&quot;)     # login: issue once
+payload = jwt.decode(token, SECRET_KEY, algorithms=[&quot;HS256&quot;])    # each request: verify
+</code></pre>
+<h3 id="why-not-send-username-password-on-every-request">Why NOT send username + password on every request?</h3>
+<p><strong>1) Credentials exposure &amp; attack surface.</strong></p>
+<blockquote>
+<p>"Sending the password on every request means it's transmitted, logged, and held in memory <strong>constantly</strong>
+— every request is another chance for it to leak (proxy logs, error logs, browser history, a
+compromised intermediary). With JWT, the password crosses the wire <strong>once</strong> at login. The token is a
+short-lived, revocable-by-expiry <strong>proxy</strong> for the credentials, scoped and disposable."</p>
+</blockquote>
+<p><strong>2) 'Encrypting' the password client-side doesn't help.</strong></p>
+<blockquote>
+<p>"If the frontend encrypts the password, then the encrypted blob <em>becomes</em> the password — an attacker
+who captures it can just replay it ('replay attack'). Client-side encryption also can't be trusted by
+the server (the client controls the key). The real transport security is <strong>HTTPS/TLS</strong>, which already
+encrypts everything in transit. So re-sending credentials adds risk without adding protection."</p>
+</blockquote>
+<p><strong>3) You'd have to verify the password every request — expensively.</strong></p>
+<blockquote>
+<p>"Password verification uses <strong>bcrypt</strong>, which is <em>deliberately slow</em> (a security feature against brute
+force) — tens of milliseconds per check. Doing that on every API call would wreck performance. Verifying
+a JWT signature is sub-millisecond CPU work. So JWT is both safer <em>and</em> faster."</p>
+</blockquote>
+<p><strong>4) Statelessness → horizontal scalability.</strong></p>
+<blockquote>
+<p>"The JWT carries the identity, so the server stores <strong>no session</strong>. Any backend instance can verify any
+request with just the secret — no shared session store, no sticky sessions. That's what lets me run N
+backend containers behind a load balancer (see §17). Server-side sessions would need a shared store
+(Redis/DB) and a lookup per request."</p>
+</blockquote>
+<p><strong>5) Decoupling &amp; expiry.</strong></p>
+<blockquote>
+<p>"The token has a built-in <code>exp</code>, so access auto-expires (mine: 30 min) without server bookkeeping. It
+also cleanly supports third-party logins — my Google OAuth flow mints the <em>same</em> kind of JWT after
+Google verifies the user, so the rest of the app treats local and Google users identically."</p>
+</blockquote>
+<h3 id="the-honest-trade-offs-mention-these-it-shows-depth">The honest trade-offs (mention these — it shows depth)</h3>
+<blockquote>
+<p>"JWTs are <strong>hard to revoke before expiry</strong> — since the server keeps no state, a stolen token is valid
+until it expires. Mitigations: keep access tokens short-lived and add a <strong>refresh token</strong> (rotating,
+revocable) — which my project currently lacks (§12). And storing the JWT in <strong>localStorage</strong> exposes it
+to XSS; an <code>httpOnly</code> cookie is safer. So JWT solves the <em>credential-transmission</em> and <em>scalability</em>
+problems well, but token storage and revocation are where I'd harden it."</p>
+</blockquote>
+<h3 id="session-stateful-vs-jwt-stateless-the-one-liner">Session (stateful) vs JWT (stateless) — the one-liner</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Server-side session</th>
+<th>JWT (this project)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Where identity lives</td>
+<td>server store (Redis/DB), client holds a session id</td>
+<td>inside the signed token the client holds</td>
+</tr>
+<tr>
+<td>Per-request cost</td>
+<td>DB/cache lookup</td>
+<td>verify signature (CPU only)</td>
+</tr>
+<tr>
+<td>Scaling</td>
+<td>needs shared session store / sticky sessions</td>
+<td>stateless — any instance, no shared store</td>
+</tr>
+<tr>
+<td>Revocation</td>
+<td>easy (delete session)</td>
+<td>hard (must wait for expiry / maintain a denylist)</td>
+</tr>
+<tr>
+<td>Best for</td>
+<td>server-rendered apps, need instant revoke</td>
+<td>APIs, SPAs, microservices, horizontal scale</td>
+</tr>
+</tbody>
+</table>
 <hr />
 <h2 id="final-tips">Final tips</h2>
 <ul>
